@@ -1,0 +1,249 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Rapport de Performance - Scolaris{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- En-tête -->
+    <div class="mb-8">
+        <div class="flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">Rapport de Performance Financière</h1>
+                <p class="text-gray-600">Année scolaire : {{ current_year.annee }}</p>
+            </div>
+            <div class="flex space-x-3">
+                <a href="{% url 'finances:reports_dashboard' %}" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition-colors">
+                    <i class="fas fa-arrow-left mr-2"></i>Retour
+                </a>
+                <a href="{% url 'finances:export_performance_report' %}" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 transition-colors">
+                    <i class="fas fa-download mr-2"></i>Exporter PDF
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Indicateurs clés -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+                    <i class="fas fa-users text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Total Étudiants</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ total_students }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-green-100 text-green-600">
+                    <i class="fas fa-door-open text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Total Classes</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ total_classes }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-purple-100 text-purple-600">
+                    <i class="fas fa-money-bill text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Total Paiements</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ total_paid|floatformat:0 }} FCFA</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-orange-100 text-orange-600">
+                    <i class="fas fa-chart-line text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Taux Recouvrement</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ recovery_rate|floatformat:1 }}%</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Graphique d'évolution -->
+    <div class="bg-white rounded-lg shadow mb-8">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900">Évolution Mensuelle des Paiements</h3>
+        </div>
+        <div class="p-6">
+            <canvas id="monthlyChart" width="400" height="200"></canvas>
+        </div>
+    </div>
+
+    <!-- Alertes et recommandations -->
+    <div class="bg-white rounded-lg shadow mb-8">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900">Alertes et Recommandations</h3>
+        </div>
+        <div class="p-6">
+            {% if alerts %}
+                <div class="space-y-4">
+                    {% for alert in alerts %}
+                    <div class="flex items-start p-4 rounded-lg border-l-4 
+                        {% if alert.severity == 'high' %}border-red-500 bg-red-50
+                        {% elif alert.severity == 'medium' %}border-orange-500 bg-orange-50
+                        {% else %}border-yellow-500 bg-yellow-50{% endif %}">
+                        <div class="flex-shrink-0">
+                            {% if alert.severity == 'high' %}
+                                <i class="fas fa-exclamation-circle text-red-500"></i>
+                            {% elif alert.severity == 'medium' %}
+                                <i class="fas fa-exclamation-triangle text-orange-500"></i>
+                            {% else %}
+                                <i class="fas fa-info-circle text-yellow-500"></i>
+                            {% endif %}
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium 
+                                {% if alert.severity == 'high' %}text-red-800
+                                {% elif alert.severity == 'medium' %}text-orange-800
+                                {% else %}text-yellow-800{% endif %}">
+                                {{ alert.message }}
+                            </p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-8">
+                    <i class="fas fa-check-circle text-green-500 text-4xl mb-4"></i>
+                    <p class="text-gray-600">Aucune alerte détectée. La situation financière est stable.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Projections -->
+    <div class="bg-white rounded-lg shadow mb-8">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900">Projections Financières</h3>
+        </div>
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h4 class="text-md font-semibold text-gray-900 mb-2">Montant Total Dû</h4>
+                    <p class="text-2xl font-bold text-gray-900">{{ total_due|floatformat:0 }} FCFA</p>
+                    <p class="text-sm text-gray-600 mt-1">Montant attendu pour l'année</p>
+                </div>
+                
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h4 class="text-md font-semibold text-gray-900 mb-2">Reste à Payer</h4>
+                    <p class="text-2xl font-bold text-red-600">{{ total_due|add:"-"|add:total_paid|floatformat:0 }} FCFA</p>
+                    <p class="text-sm text-gray-600 mt-1">Montant restant à recouvrer</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions recommandées -->
+    <div class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900">Actions Recommandées</h3>
+        </div>
+        <div class="p-6">
+            <div class="space-y-4">
+                <div class="flex items-start">
+                    <div class="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-chart-bar text-blue-600 text-sm"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h4 class="text-sm font-medium text-gray-900">Analyser les retards de paiement</h4>
+                        <p class="text-sm text-gray-600">Consultez le rapport des retards pour identifier les échéances en souffrance.</p>
+                        <a href="{% url 'finances:overdue_report' %}" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                            Voir le rapport des retards →
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="flex items-start">
+                    <div class="flex-shrink-0 w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-users text-green-600 text-sm"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h4 class="text-sm font-medium text-gray-900">Suivre les inscriptions</h4>
+                        <p class="text-sm text-gray-600">Vérifiez l'état des inscriptions et les paiements d'inscription.</p>
+                        <a href="{% url 'finances:inscriptions_report' %}" class="text-green-600 hover:text-green-800 text-sm font-medium">
+                            Voir le rapport d'inscriptions →
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="flex items-start">
+                    <div class="flex-shrink-0 w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-chart-line text-purple-600 text-sm"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h4 class="text-sm font-medium text-gray-900">Analyser les paiements de scolarité</h4>
+                        <p class="text-sm text-gray-600">Examinez les paiements de scolarité par classe et par tranche.</p>
+                        <a href="{% url 'finances:tuition_report' %}" class="text-purple-600 hover:text-purple-800 text-sm font-medium">
+                            Voir le rapport de scolarité →
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Script pour le graphique -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('monthlyChart').getContext('2d');
+    
+    const monthlyData = {{ monthly_data|safe }};
+    const labels = monthlyData.map(item => item.month_name);
+    const data = monthlyData.map(item => item.total);
+    
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Paiements (FCFA)',
+                data: data,
+                borderColor: 'rgb(59, 130, 246)',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                tension: 0.1,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                title: {
+                    display: true,
+                    text: 'Évolution des paiements par mois'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return value.toLocaleString() + ' FCFA';
+                        }
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %} 

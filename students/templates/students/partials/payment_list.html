@@ -1,0 +1,41 @@
+<div class="space-y-4">
+    {% if payments %}
+        {% for payment in payments %}
+        <div class="flex items-center justify-between p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
+            <div class="flex items-center gap-4">
+                <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                    <i class="fas fa-money-bill-wave text-green-600"></i>
+                </div>
+                <div>
+                    <div class="font-semibold text-slate-900">
+                        {% if payment.tranche %}
+                            Tranche {{ payment.tranche.number }}
+                        {% else %}
+                            Frais d'inscription
+                        {% endif %}
+                    </div>
+                    <div class="text-sm text-slate-500">
+                        {{ payment.payment_date|date:"d/m/Y" }} - {{ payment.get_mode_display }}
+                    </div>
+                </div>
+            </div>
+            <div class="text-right">
+                <div class="font-bold text-green-600">{{ payment.amount|floatformat:0 }} FCFA</div>
+                <div class="text-xs text-slate-500">Reçu {{ payment.receipt }}</div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="text-center py-8">
+            <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-money-bill-wave text-slate-400 text-xl"></i>
+            </div>
+            <h3 class="text-lg font-semibold text-slate-900 mb-2">Aucun paiement</h3>
+            <p class="text-slate-600 mb-4">Aucun paiement n'a été enregistré pour cet étudiant.</p>
+            <a href="{% url 'finances:payment_create' %}?student={{ student.pk }}" 
+               class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                <i class="fas fa-plus mr-2"></i>Nouveau paiement
+            </a>
+        </div>
+    {% endif %}
+</div> 

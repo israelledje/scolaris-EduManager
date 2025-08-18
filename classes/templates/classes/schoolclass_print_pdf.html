@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Fiche de classe - {{ schoolclass.name }}</title>
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 1.5cm 1.2cm 1.2cm 0cm;
+        }
+        html, body { height: 100%; margin: 0; padding: 0; }
+        body {
+            font-family: 'DejaVu Serif', 'Times New Roman', Times, serif;
+            background: #f4f6fa;
+            color: #222;
+            margin: 0;
+            padding: 0;
+        }
+        .main-layout {
+            display: flex;
+            min-height: 100vh;
+        }
+        .side-bar {
+            width: 1.2cm;
+            background: linear-gradient(180deg, #2563eb 0%, #1e293b 100%);
+            min-height: 100vh;
+        }
+        .container {
+            flex: 1;
+            max-width: 100%;
+            margin: 0;
+            background: #fff;
+            border-radius: 0 12px 12px 0;
+            box-shadow: 0 2px 12px #0002;
+            padding: 38px 40px 32px 40px;
+            border-left: 0.5cm solid #2563eb;
+            border-top: 1.5px solid #d1d5db;
+            border-bottom: 1.5px solid #d1d5db;
+            border-right: 1.5px solid #d1d5db;
+            min-height: 27cm;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 3px solid #1e293b;
+            padding-bottom: 18px;
+            margin-bottom: 32px;
+        }
+        .logo { height: 60px; }
+        .school-info { text-align: right; }
+        .school-name { font-size: 1.5rem; font-weight: bold; color: #1e293b; letter-spacing: 1px; }
+        .school-details { color: #64748b; font-size: 1rem; margin-top: 2px; }
+        .title {
+            font-size: 2.3rem;
+            font-weight: bold;
+            color: #2563eb;
+            margin-top: 18px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            text-shadow: 1px 2px 6px #2563eb22;
+        }
+        .subtitle {
+            color: #374151;
+            font-size: 1.15rem;
+            margin-top: 4px;
+            font-style: italic;
+        }
+        .section {
+            margin-bottom: 36px;
+        }
+        .section-title {
+            font-size: 1.18rem;
+            color: #1e293b;
+            font-weight: 700;
+            margin-bottom: 12px;
+            border-left: 5px solid #2563eb;
+            padding-left: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            background: linear-gradient(90deg, #2563eb11 0%, #fff 100%);
+        }
+        .info-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 38px;
+            margin-bottom: 18px;
+        }
+        .info-item { min-width: 180px; }
+        .info-label { color: #64748b; font-size: 1rem; font-weight: 500; }
+        .info-value { font-size: 1.08rem; font-weight: 600; color: #1e293b; }
+        .stat-box {
+            display: inline-block;
+            background: #f1f5f9;
+            color: #1e293b;
+            border-radius: 8px;
+            padding: 8px 18px;
+            font-weight: bold;
+            margin-right: 12px;
+            font-size: 1.08rem;
+            border: 1px solid #cbd5e1;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 1rem;
+            box-shadow: 0 1px 4px #2563eb11;
+        }
+        th, td {
+            border: 1px solid #cbd5e1;
+            padding: 8px 10px;
+            text-align: left;
+        }
+        th {
+            background: linear-gradient(90deg, #2563eb11 0%, #e5e7eb 100%);
+            color: #1e293b;
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        tr:nth-child(even) { background: #f8fafc; }
+        tr:nth-child(odd) { background: #fff; }
+        .footer {
+            text-align: right;
+            color: #64748b;
+            font-size: 0.98rem;
+            margin-top: 48px;
+            border-top: 1px solid #d1d5db;
+            padding-top: 18px;
+        }
+        .signature-block {
+            margin-top: 60px;
+            display: flex;
+            justify-content: flex-end;
+        }
+        .signature {
+            text-align: center;
+            margin-left: 60px;
+        }
+        .signature .label { color: #64748b; font-size: 1rem; }
+        .signature .name {
+            font-weight: bold;
+            color: #1e293b;
+            font-size: 1.08rem;
+            margin-top: 32px;
+            border-top: 1px solid #cbd5e1;
+            padding-top: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-layout">
+        <div class="side-bar"></div>
+        <div class="container">
+            <div class="header">
+                <img src="{{ logo_url }}" class="logo" alt="Logo">
+                <div class="school-info">
+                    <div class="school-name">{{ schoolclass.school.name|default:'Établissement scolaire' }}</div>
+                    <div class="school-details">
+                        {% if schoolclass.school.address %}{{ schoolclass.school.address }}<br>{% endif %}
+                        {% if schoolclass.school.phone %}Tél : {{ schoolclass.school.phone }}{% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="title">Fiche de classe : {{ schoolclass.name }}</div>
+            <div class="subtitle">Année scolaire : {{ schoolclass.year }}</div>
+
+            <div class="section">
+                <div class="section-title">Informations générales</div>
+                <div class="info-list">
+                    <div class="info-item">
+                        <div class="info-label">Niveau</div>
+                        <div class="info-value">{{ schoolclass.level }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Capacité</div>
+                        <div class="info-value">{{ schoolclass.capacity }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Salle</div>
+                        <div class="info-value">{{ schoolclass.classroom|default:'Non définie' }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Professeur titulaire</div>
+                        <div class="info-value">{{ schoolclass.main_teacher|default:'Non assigné' }}</div>
+                    </div>
+                </div>
+                <div>
+                    <span class="stat-box">Effectif : {{ students|length }}/{{ schoolclass.capacity }}</span>
+                    <span class="stat-box">Statut : {% if schoolclass.is_active %}Active{% else %}Inactive{% endif %}</span>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">Liste des élèves</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nom</th>
+                            <th>Prénom</th>
+                            <th>Matricule</th>
+                            <th>Sexe</th>
+                            <th>Statut</th>
+                            <th>Date de naissance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in students %}
+                        <tr>
+                            <td>{{ student.last_name }}</td>
+                            <td>{{ student.first_name }}</td>
+                            <td>{{ student.matricule }}</td>
+                            <td>{{ student.get_gender_display }}</td>
+                            <td>{% if student.is_active %}Actif{% else %}Inactif{% endif %}</td>
+                            <td>{% if student.birth_date %}{{ student.birth_date|date:'d/m/Y' }}{% endif %}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="section">
+                <div class="section-title">Équipe pédagogique</div>
+                {% if assigned_teachers %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nom</th>
+                            <th>Spécialité</th>
+                            <th>Email</th>
+                            <th>Professeur principal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for teacher_assignment in assigned_teachers %}
+                        <tr>
+                            <td>{{ teacher_assignment.teacher.first_name }} {{ teacher_assignment.teacher.last_name }}</td>
+                            <td>{{ teacher_assignment.teacher.specialization|default:'-' }}</td>
+                            <td>{{ teacher_assignment.teacher.email|default:'-' }}</td>
+                            <td>{% if teacher_assignment.is_main_teacher %}Oui{% else %}Non{% endif %}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div style="color:#888;">Aucun enseignant assigné à cette classe.</div>
+                {% endif %}
+            </div>
+
+            <div class="signature-block">
+                <div class="signature">
+                    <div class="label">Signature du chef d'établissement</div>
+                    <div class="name">&nbsp;</div>
+                </div>
+            </div>
+
+            <div class="footer">
+                Généré le {{ now|date:'d/m/Y H:i' }} via Scolaris
+            </div>
+        </div>
+    </div>
+</body>
+</html> 

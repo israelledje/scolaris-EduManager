@@ -1,0 +1,31 @@
+{% load widget_tweaks %}
+<div class="max-w-2xl mx-auto">
+    <div class="mb-6">
+        <h2 class="text-2xl font-bold text-slate-900 mb-1">Ajouter / Modifier une matière</h2>
+        <p class="text-slate-500 text-sm">Remplissez les informations de la matière. Tous les champs marqués d'une * sont obligatoires.</p>
+    </div>
+    <form method="post" action="{% if subject %}{% url 'subjects:subject_update_htmx' subject.id %}{% else %}{% url 'subjects:subject_create_htmx' %}{% endif %}" class="space-y-6">
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {% for field in form.visible_fields %}
+            <div>
+                <label for="{{ field.id_for_label }}" class="block text-slate-700 font-medium mb-1">
+                    {{ field.label }}{% if field.field.required %}<span class="text-red-500">*</span>{% endif %}
+                </label>
+                {{ field|add_class:'w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200' }}
+                {% if field.help_text %}
+                    <div class="text-xs text-slate-400 mt-1">{{ field.help_text }}</div>
+                {% endif %}
+                {% if field.errors %}
+                    <div class="text-red-600 text-xs mt-1">{{ field.errors|striptags }}</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 mt-6">
+            <button type="button" onclick="closeSubjectModal()" class="px-4 py-2 text-slate-700 hover:bg-slate-200 rounded-xl transition-colors duration-200">Annuler</button>
+            <button type="submit" class="px-6 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl">Enregistrer</button>
+        </div>
+    </form>
+</div> 

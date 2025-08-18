@@ -1,0 +1,763 @@
+{% extends "base.html" %}
+{% load static %}
+{% load widget_tweaks %}
+{% load dict_extras %}
+
+{% block page_title %}Liste des matières{% endblock %}
+
+{% block page_actions %}
+<div class="flex items-center gap-3">
+    <button class="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors duration-200">
+        <i class="fas fa-download text-slate-500"></i>
+        <span class="text-slate-700 font-medium">Exporter</span>
+    </button>
+    <button class="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors duration-200">
+        <i class="fas fa-upload text-slate-500"></i>
+        <span class="text-slate-700 font-medium">Importer</span>
+    </button>
+    <button class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+        onclick="openSubjectModal('create')"
+        type="button"
+    >
+        <i class="fas fa-plus"></i>
+        <span class="font-medium">Ajouter une matière</span>
+    </button>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Filtres et recherche -->
+<div class="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6 mb-6">
+    <div class="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+        <!-- Barre de recherche -->
+        <div class="flex-1 max-w-md">
+            <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <i class="fas fa-search text-slate-400"></i>
+                </div>
+                <input
+                    type="text"
+                    id="searchInput"
+                    class="w-full pl-11 pr-4 py-3 border border-slate-200 rounded-xl bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 placeholder-slate-400"
+                    placeholder="Rechercher une matière..."
+                    onkeyup="filterSubjects()"
+                />
+            </div>
+        </div>
+        <!-- Filtres enseignants -->
+        <div class="flex flex-wrap gap-3">
+    <div class="relative">
+        <button id="teacherFilterBtn" class="flex items-center gap-2 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors duration-200 min-w-32">
+            <i class="fas fa-chalkboard-teacher text-slate-500"></i>
+            <span class="text-slate-700 font-medium" id="teacherFilterText">Enseignant</span>
+            <i class="fas fa-chevron-down text-slate-400 text-sm transition-transform duration-200" id="teacherChevron"></i>
+        </button>
+        <div id="teacherDropdown" class="absolute top-full left-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-slate-200 py-2 z-10 opacity-0 invisible transform scale-95 transition-all duration-200">
+            <a href="#" data-teacher="all" class="teacher-filter-item block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors duration-200">
+                <i class="fas fa-list mr-2 text-slate-400"></i>
+                Tous les enseignants
+            </a>
+            {% for teacher in teachers %}
+            <a href="#" data-teacher="{{ teacher.id }}" data-teacher-name="{{ teacher }}" class="teacher-filter-item block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors duration-200">
+                <i class="fas fa-chalkboard-teacher mr-2 text-slate-400"></i>
+                {{ teacher }}
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    <button onclick="resetSubjectFilters()" class="flex items-center gap-2 px-4 py-3 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors duration-200">
+        <i class="fas fa-undo text-slate-500"></i>
+        <span class="text-slate-700 font-medium">Reset</span>
+    </button>
+</div>
+    </div>
+    <div id="activeSubjectFilters" class="mt-4 flex flex-wrap gap-2 hidden"></div>
+</div>
+
+<!-- Tableau des matières -->
+<div class="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">
+    <div class="px-6 py-4 border-b border-slate-200 bg-slate-50">
+        <div class="flex items-center justify-between">
+            <div>
+                <h3 class="text-lg font-semibold text-slate-900">Matières</h3>
+                <p class="text-sm text-slate-500"><span id="subjectCount">{{ subjects|length }}</span> matière<span id="subjectPlural">{{ subjects|length|pluralize }}</span> au total</p>
+            </div>
+        </div>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="min-w-full" id="subjectsTable">
+            <thead class="bg-slate-50 border-b border-slate-200">
+                <tr>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Nom</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Enseignants</th>
+                    <th class="px-6 py-4 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-slate-200" id="subjectsTableBody">
+                {% for subject in subjects %}
+                <tr class="hover:bg-slate-50 transition-colors duration-200 subject-row">
+                    <td class="px-6 py-4">
+                        <span class="font-semibold text-slate-900">{{ subject.name }}</span>
+                        {% if subject.code %}
+                        <span class="ml-2 inline-block bg-indigo-100 text-indigo-700 rounded px-2 py-0.5 text-xs align-middle font-mono tracking-wider">{{ subject.code }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4">
+                        {% with main_teachers=subject_main_teachers|dict_get:subject.id %}
+                            {% for teacher in main_teachers %}
+                                <span class="inline-block bg-emerald-100 text-emerald-700 rounded px-2 py-1 text-xs mr-1 font-semibold">{{ teacher }}</span>
+                            {% endfor %}
+                            {% for teacher in subject.teachers.all %}
+                                {% if teacher not in main_teachers %}
+                                    <span class="inline-block bg-indigo-100 text-indigo-700 rounded px-2 py-1 text-xs mr-1">{{ teacher }}</span>
+                                {% endif %}
+                            {% empty %}
+                                <span class="text-slate-400">*</span>
+                            {% endfor %}
+                        {% endwith %}
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                        <a href="{% url 'subjects:subject_detail' subject.id %}" class="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all duration-200" title="Voir la fiche"><i class="fas fa-eye"></i></a>
+                        <button
+                            onclick="openSubjectModal('edit', {{ subject.id }})"
+                            class="p-2 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all duration-200" title="Modifier"><i class="fas fa-edit"></i></button>
+                        <button
+                            onclick="openSubjectModal('delete', {{ subject.id }}, '{{ subject.name|escapejs }}')"
+                            class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200" title="Supprimer"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3" class="px-6 py-12 text-center">
+                        <div class="flex flex-col items-center">
+                            <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+                                <i class="fas fa-book text-2xl text-slate-400"></i>
+                            </div>
+                            <h3 class="text-lg font-semibold text-slate-900 mb-2">Aucune matière trouvée</h3>
+                            <p class="text-slate-500 text-sm mb-4">Commencez par ajouter votre première matière</p>
+                            <button onclick="openSubjectModal('create')" class="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors duration-200">
+                                <i class="fas fa-plus mr-2"></i>
+                                Ajouter une matière
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal -->
+<div id="subjectModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden opacity-0 transition-all duration-300" onclick="closeSubjectModal()">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto transform scale-95 transition-all duration-300" onclick="event.stopPropagation()">
+            <div class="flex items-center justify-between p-6 border-b border-slate-200">
+                <div>
+                    <h3 class="text-xl font-bold text-slate-900" id="modalTitle">Gestion matière</h3>
+                    <p class="text-slate-500 text-sm">Ajouter ou modifier les informations d'une matière</p>
+                </div>
+                <button onclick="closeSubjectModal()" class="p-2 hover:bg-slate-100 rounded-xl transition-colors duration-200">
+                    <i class="fas fa-times text-slate-400"></i>
+                </button>
+            </div>
+            <div class="p-6">
+                <div id="modal-content">
+                    <!-- Formulaire de création/modification -->
+                    <div id="subjectForm" class="hidden">
+                        <div class="max-w-2xl mx-auto">
+                            <div class="mb-6">
+                                <h2 class="text-2xl font-bold text-slate-900 mb-1" id="formTitle">Ajouter / Modifier une matière</h2>
+                                <p class="text-slate-500 text-sm">Remplissez les informations de la matière. Tous les champs marqués d'une * sont obligatoires.</p>
+                            </div>
+                            <form id="subjectFormElement" method="post" class="space-y-6">
+                                {% csrf_token %}
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label for="id_name" class="block text-slate-700 font-medium mb-1">
+                                            Nom de la matière<span class="text-red-500">*</span>
+                                        </label>
+                                        <input type="text" name="name" id="id_name" required class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200">
+                                        <div class="text-red-600 text-xs mt-1 hidden" id="name_error"></div>
+                                    </div>
+                                    <div>
+                                        <label for="id_code" class="block text-slate-700 font-medium mb-1">
+                                            Code matière
+                                        </label>
+                                        <input type="text" name="code" id="id_code" class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200">
+                                        <div class="text-red-600 text-xs mt-1 hidden" id="code_error"></div>
+                                    </div>
+                                    <div class="md:col-span-2">
+                                        <label for="id_description" class="block text-slate-700 font-medium mb-1">
+                                            Description
+                                        </label>
+                                        <textarea name="description" id="id_description" rows="3" class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"></textarea>
+                                        <div class="text-red-600 text-xs mt-1 hidden" id="description_error"></div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 mt-6">
+                                    <button type="button" onclick="closeSubjectModal()" class="px-4 py-2 text-slate-700 hover:bg-slate-200 rounded-xl transition-colors duration-200">Annuler</button>
+                                    <button type="submit" class="px-6 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl">
+                                        <span class="btn-text">Enregistrer</span>
+                                        <i class="fas fa-spinner fa-spin hidden loading-spinner"></i>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Formulaire de suppression -->
+                    <div id="deleteForm" class="hidden">
+                        <form id="deleteFormElement" method="post">
+                            {% csrf_token %}
+                            <div class="mb-6 text-center">
+                                <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <i class="fas fa-exclamation-triangle text-2xl text-red-600"></i>
+                                </div>
+                                <h2 class="text-lg font-bold text-slate-900 mb-2">Supprimer la matière ?</h2>
+                                <p class="text-slate-600">Voulez-vous vraiment supprimer la matière <b id="deleteSubjectName"></b> ? Cette action est irréversible.</p>
+                            </div>
+                            <div class="flex justify-center gap-3">
+                                <button type="button" onclick="closeSubjectModal()" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 transition-colors duration-200">Annuler</button>
+                                <button type="submit" class="px-6 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-all duration-200">
+                                    <span class="btn-text">Supprimer</span>
+                                    <i class="fas fa-spinner fa-spin hidden loading-spinner"></i>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Variables globales
+let currentModalType = null;
+let currentSubjectId = null;
+let currentTeacherFilter = null;
+let isDropdownOpen = false;
+
+// Fonction pour ouvrir la modal
+function openSubjectModal(type = 'create', subjectId = null, subjectName = '') {
+    const modal = document.getElementById('subjectModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const subjectForm = document.getElementById('subjectForm');
+    const deleteForm = document.getElementById('deleteForm');
+    const formTitle = document.getElementById('formTitle');
+    
+    currentModalType = type;
+    currentSubjectId = subjectId;
+    
+    // Réinitialiser les formulaires
+    subjectForm.classList.add('hidden');
+    deleteForm.classList.add('hidden');
+    
+    if (type === 'delete') {
+        modalTitle.textContent = 'Supprimer une matière';
+        deleteForm.classList.remove('hidden');
+        document.getElementById('deleteSubjectName').textContent = subjectName;
+        document.getElementById('deleteFormElement').action = `/subjects/${subjectId}/delete-ajax/`;
+    } else {
+        modalTitle.textContent = type === 'create' ? 'Ajouter une matière' : 'Modifier une matière';
+        formTitle.textContent = type === 'create' ? 'Ajouter une matière' : 'Modifier une matière';
+        subjectForm.classList.remove('hidden');
+        
+        if (type === 'create') {
+            document.getElementById('subjectFormElement').action = "/subjects/create-ajax/";
+            resetForm();
+        } else {
+            document.getElementById('subjectFormElement').action = `/subjects/${subjectId}/update-ajax/`;
+            loadSubjectData(subjectId);
+        }
+    }
+    
+    // Afficher la modal avec animation
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    
+    setTimeout(() => {
+        modal.classList.remove('opacity-0');
+        modal.querySelector('.bg-white').classList.remove('scale-95');
+    }, 10);
+}
+
+// Fonction pour fermer la modal
+function closeSubjectModal() {
+    const modal = document.getElementById('subjectModal');
+    
+    // Animation de fermeture
+    modal.classList.add('opacity-0');
+    modal.querySelector('.bg-white').classList.add('scale-95');
+    
+    setTimeout(() => {
+        modal.classList.add('hidden');
+        document.body.style.overflow = 'auto';
+        resetForm();
+    }, 300);
+}
+
+// Fonction pour gérer le dropdown des enseignants
+function toggleTeacherDropdown() {
+    const dropdown = document.getElementById('teacherDropdown');
+    const chevron = document.getElementById('teacherChevron');
+    
+    if (isDropdownOpen) {
+        closeTeacherDropdown();
+    } else {
+        openTeacherDropdown();
+    }
+}
+
+function openTeacherDropdown() {
+    const dropdown = document.getElementById('teacherDropdown');
+    const chevron = document.getElementById('teacherChevron');
+    
+    dropdown.classList.remove('opacity-0', 'invisible', 'scale-95');
+    dropdown.classList.add('opacity-100', 'visible', 'scale-100');
+    chevron.classList.add('rotate-180');
+    isDropdownOpen = true;
+}
+
+function closeTeacherDropdown() {
+    const dropdown = document.getElementById('teacherDropdown');
+    const chevron = document.getElementById('teacherChevron');
+    
+    dropdown.classList.add('opacity-0', 'invisible', 'scale-95');
+    dropdown.classList.remove('opacity-100', 'visible', 'scale-100');
+    chevron.classList.remove('rotate-180');
+    isDropdownOpen = false;
+}
+
+// Fonction pour filtrer par enseignant
+function filterByTeacher(teacherId, teacherName) {
+    currentTeacherFilter = teacherId === 'all' ? null : teacherId;
+    
+    // Mettre à jour le texte du bouton
+    const filterText = document.getElementById('teacherFilterText');
+    if (teacherId === 'all') {
+        filterText.textContent = 'Enseignant';
+    } else {
+        filterText.textContent = teacherName;
+    }
+    
+    // Appliquer les filtres
+    applyAllFilters();
+    closeTeacherDropdown();
+    updateActiveFilters();
+}
+
+// Fonction pour appliquer tous les filtres
+function applyAllFilters() {
+    const searchInput = document.getElementById('searchInput').value.toLowerCase();
+    const rows = document.querySelectorAll('#subjectsTableBody .subject-row');
+    let visibleCount = 0;
+    
+    rows.forEach((row, index) => {
+        const name = row.children[0].textContent.toLowerCase();
+        const teachersCell = row.children[1];
+        const teacherTags = teachersCell.querySelectorAll('.bg-indigo-100');
+        
+        let matchesSearch = name.includes(searchInput);
+        let matchesTeacher = true;
+        
+        // Vérifier le filtre enseignant
+        if (currentTeacherFilter) {
+            matchesTeacher = false;
+            teacherTags.forEach(tag => {
+                if (tag.textContent.toLowerCase().includes(currentTeacherFilter.toLowerCase())) {
+                    matchesTeacher = true;
+                }
+            });
+        }
+        
+        const isVisible = matchesSearch && matchesTeacher;
+        
+        if (isVisible) {
+            row.style.display = '';
+            row.style.opacity = '0';
+            row.style.transform = 'translateY(10px)';
+            
+            setTimeout(() => {
+                row.style.opacity = '1';
+                row.style.transform = 'translateY(0)';
+                row.style.transition = 'all 0.3s ease';
+            }, visibleCount * 50);
+            
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+    
+    // Mettre à jour le compteur
+    document.getElementById('subjectCount').textContent = visibleCount;
+    document.getElementById('subjectPlural').textContent = visibleCount > 1 ? 's' : '';
+}
+
+// Fonction pour mettre à jour l'affichage des filtres actifs
+function updateActiveFilters() {
+    const container = document.getElementById('activeSubjectFilters');
+    const searchInput = document.getElementById('searchInput').value;
+    let hasActiveFilters = false;
+    
+    container.innerHTML = '<span class="text-sm text-slate-600 font-medium">Filtres actifs:</span>';
+    
+    if (searchInput.trim()) {
+        container.innerHTML += `
+            <span class="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
+                Recherche: "${searchInput}"
+                <button onclick="clearSearchFilter()" class="hover:bg-blue-200 rounded-full p-0.5">
+                    <i class="fas fa-times text-xs"></i>
+                </button>
+            </span>
+        `;
+        hasActiveFilters = true;
+    }
+    
+    if (currentTeacherFilter) {
+        const teacherName = document.getElementById('teacherFilterText').textContent;
+        container.innerHTML += `
+            <span class="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
+                Enseignant: ${teacherName}
+                <button onclick="clearTeacherFilter()" class="hover:bg-green-200 rounded-full p-0.5">
+                    <i class="fas fa-times text-xs"></i>
+                </button>
+            </span>
+        `;
+        hasActiveFilters = true;
+    }
+    
+    container.classList.toggle('hidden', !hasActiveFilters);
+}
+
+// Fonction pour effacer le filtre de recherche
+function clearSearchFilter() {
+    document.getElementById('searchInput').value = '';
+    applyAllFilters();
+    updateActiveFilters();
+}
+
+// Fonction pour effacer le filtre enseignant
+function clearTeacherFilter() {
+    currentTeacherFilter = null;
+    document.getElementById('teacherFilterText').textContent = 'Enseignant';
+    applyAllFilters();
+    updateActiveFilters();
+}
+
+// Fonction pour réinitialiser le formulaire
+function resetForm() {
+    const form = document.getElementById('subjectFormElement');
+    form.reset();
+    
+    // Masquer toutes les erreurs
+    document.querySelectorAll('[id$="_error"]').forEach(error => {
+        error.classList.add('hidden');
+        error.textContent = '';
+    });
+}
+
+// Fonction pour charger les données d'une matière (simulation)
+function loadSubjectData(subjectId) {
+    showLoading(true);
+
+    fetch(`/subjects/${subjectId}/detail-ajax/`)
+        .then(response => response.json())
+        .then(data => {
+            console.log('Réponse AJAX matière:', data); // LOG POUR DIAGNOSTIC
+            if (data.success) {
+                const subject = data.subject;
+                document.getElementById('id_name').value = subject.name || '';
+                document.getElementById('id_code').value = subject.code || '';
+                document.getElementById('id_description').value = subject.description || '';
+                document.getElementById('id_coefficient').value = subject.coefficient || '';
+                document.getElementById('id_hours_per_week').value = subject.hours_per_week || '';
+                // À adapter si tu as un champ enseignants
+            } else {
+                showNotification('Erreur lors du chargement des données', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur lors du chargement:', error);
+            showNotification('Erreur lors du chargement des données', 'error');
+        })
+        .finally(() => {
+            showLoading(false);
+        });
+}
+
+// Fonction pour afficher/masquer le loading
+function showLoading(show) {
+    const buttons = document.querySelectorAll('button[type="submit"]');
+    buttons.forEach(button => {
+        const text = button.querySelector('.btn-text');
+        const spinner = button.querySelector('.loading-spinner');
+        
+        // Vérifier que les éléments existent avant d'accéder à leurs propriétés
+        if (text && spinner) {
+            if (show) {
+                button.disabled = true;
+                text.classList.add('hidden');
+                spinner.classList.remove('hidden');
+            } else {
+                button.disabled = false;
+                text.classList.remove('hidden');
+                spinner.classList.add('hidden');
+            }
+        }
+    });
+}
+
+// Fonction pour afficher les notifications
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    const typeClasses = {
+        success: 'bg-emerald-500',
+        error: 'bg-red-500',
+        warning: 'bg-amber-500',
+        info: 'bg-blue-500'
+    };
+    
+    notification.className = `fixed top-4 right-4 ${typeClasses[type]} text-white px-4 py-3 rounded-xl shadow-lg z-60 transform translate-x-full transition-transform duration-300`;
+    notification.innerHTML = `
+        <div class="flex items-center gap-2">
+            <i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+            <span>${message}</span>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.classList.remove('translate-x-full');
+    }, 10);
+    
+    setTimeout(() => {
+        notification.classList.add('translate-x-full');
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
+}
+
+// Fonction pour afficher les erreurs de formulaire
+function showFormErrors(html) {
+    // Parser le HTML pour extraire les erreurs
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    
+    // Réinitialiser les erreurs
+    document.querySelectorAll('[id$="_error"]').forEach(error => {
+        error.classList.add('hidden');
+        error.textContent = '';
+    });
+    
+    // Afficher les nouvelles erreurs
+    doc.querySelectorAll('.errorlist').forEach(errorList => {
+        const fieldName = errorList.previousElementSibling?.getAttribute('for')?.replace('id_', '');
+        if (fieldName) {
+            const errorDiv = document.getElementById(`${fieldName}_error`);
+            if (errorDiv) {
+                errorDiv.textContent = errorList.textContent.trim();
+                errorDiv.classList.remove('hidden');
+            }
+        }
+    });
+}
+
+// Fonctions de filtrage
+function filterSubjects() {
+    applyAllFilters();
+    updateActiveFilters();
+}
+
+function resetSubjectFilters() {
+    document.getElementById('searchInput').value = '';
+    currentTeacherFilter = null;
+    document.getElementById('teacherFilterText').textContent = 'Enseignant';
+    applyAllFilters();
+    updateActiveFilters();
+    showNotification('Filtres réinitialisés', 'info');
+}
+
+// Gestionnaire AJAX pour la soumission du formulaire de création/modification de matière
+
+document.addEventListener('DOMContentLoaded', function() {
+    const subjectForm = document.getElementById('subjectFormElement');
+    if (subjectForm) {
+        subjectForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const form = e.target;
+            const url = form.action;
+            const formData = new FormData(form);
+
+            // Afficher le spinner
+            const btn = form.querySelector('button[type="submit"]');
+            const btnText = btn.querySelector('.btn-text');
+            const spinner = btn.querySelector('.loading-spinner');
+            if (btnText && spinner) {
+                btnText.classList.add('hidden');
+                spinner.classList.remove('hidden');
+            }
+
+            fetch(url, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    closeSubjectModal();
+                    location.reload(); // Ou rafraîchir la liste dynamiquement
+                } else if (data.errors) {
+                    // Afficher les erreurs de validation
+                    for (const [field, messages] of Object.entries(data.errors)) {
+                        const errorDiv = document.getElementById(`${field}_error`);
+                        if (errorDiv) {
+                            errorDiv.textContent = messages.join(' ');
+                            errorDiv.classList.remove('hidden');
+                        }
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Erreur lors de la soumission du formulaire:', error);
+            })
+            .finally(() => {
+                if (btnText && spinner) {
+                    btnText.classList.remove('hidden');
+                    spinner.classList.add('hidden');
+                }
+            });
+        });
+    }
+});
+
+// Event Listeners
+document.addEventListener('DOMContentLoaded', function() {
+    // Bouton dropdown enseignant
+    document.getElementById('teacherFilterBtn').addEventListener('click', function(e) {
+        e.stopPropagation();
+        toggleTeacherDropdown();
+    });
+    
+    // Items du dropdown enseignant
+    document.querySelectorAll('.teacher-filter-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            const teacherId = this.dataset.teacher;
+            const teacherName = this.dataset.teacherName || 'Tous les enseignants';
+            filterByTeacher(teacherId, teacherName);
+        });
+    });
+    
+    // Fermer dropdown en cliquant ailleurs
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('#teacherFilterBtn') && !e.target.closest('#teacherDropdown')) {
+            closeTeacherDropdown();
+        }
+    });
+    
+    // Gestion des soumissions de formulaires
+    document.getElementById('subjectFormElement').addEventListener('submit', function(e) {
+        e.preventDefault();
+        showLoading(true);
+        
+        const formData = new FormData(this);
+        const url = this.action;
+        
+        fetch(url, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+            }
+        })
+        .then(response => response.text())
+        .then(html => {
+            if (html.includes('error') || html.includes('invalid')) {
+                // Afficher les erreurs
+                showFormErrors(html);
+                showNotification('Veuillez corriger les erreurs', 'error');
+            } else {
+                // Succès
+                showNotification(currentModalType === 'create' ? 'Matière créée avec succès' : 'Matière modifiée avec succès', 'success');
+                closeSubjectModal();
+                // Recharger la page ou mettre à jour la liste
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            showNotification('Erreur lors de l\'opération', 'error');
+        })
+        .finally(() => {
+            showLoading(false);
+        });
+    });
+
+    document.getElementById('deleteFormElement').addEventListener('submit', function(e) {
+        console.log('Formulaire de suppression soumis !');
+        e.preventDefault();
+        showLoading(true);
+        
+        const formData = new FormData(this);
+        const url = this.action;
+        console.log('URL de suppression:', url);
+        
+        fetch(url, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+            }
+        })
+        .then(response => {
+            console.log('Réponse reçue:', response.status, response.statusText);
+            if (response.ok) {
+                showNotification('Matière supprimée avec succès', 'success');
+                closeSubjectModal();
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            } else {
+                showNotification('Erreur lors de la suppression', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            showNotification('Erreur lors de la suppression', 'error');
+        })
+        .finally(() => {
+            showLoading(false);
+        });
+    });
+    
+    // Fermeture de la modal avec Échap
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeSubjectModal();
+            closeTeacherDropdown();
+        }
+    });
+    
+    // Animation d'entrée pour les lignes du tableau
+    const rows = document.querySelectorAll('.subject-row');
+    rows.forEach((row, index) => {
+        row.style.opacity = '0';
+        row.style.transform = 'translateY(20px)';
+        
+        setTimeout(() => {
+            row.style.opacity = '1';
+            row.style.transform = 'translateY(0)';
+            row.style.transition = 'all 0.5s ease';
+        }, index * 100);
+    });
+});
+</script>
+{% endblock %}

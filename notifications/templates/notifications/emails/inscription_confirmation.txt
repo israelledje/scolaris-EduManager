@@ -1,0 +1,28 @@
+CONFIRMATION D'INSCRIPTION - SCOLARIS
+
+🌟 BIENVENUE DANS NOTRE ÉTABLISSEMENT ! 🌟
+
+Nous sommes ravis de vous accueillir et nous nous engageons à offrir la meilleure éducation possible à votre enfant.
+
+DÉTAILS DE L'INSCRIPTION :
+- Élève : {{ inscription.student_name }}
+- Classe : {{ inscription.class_name }}
+- Année scolaire : {{ inscription.school_year }}
+- Mode de paiement : {{ inscription.payment_mode }}
+- Numéro de reçu : {{ inscription.receipt_number }}
+- Date de paiement : {{ inscription.payment_date }}
+
+FRAIS D'INSCRIPTION : {{ inscription.amount }} FCFA
+
+CONTACT :
+Pour toute question concernant l'inscription, veuillez nous contacter :
+- Téléphone : {{ inscription.school_phone|default:"Non renseigné" }}
+- Email : {{ inscription.school_email|default:"Non renseigné" }}
+
+Nous vous remercions pour votre confiance et nous nous réjouissons de cette collaboration dans l'éducation de votre enfant.
+
+L'équipe SCOLARIS
+
+---
+Cet email a été envoyé automatiquement. Merci de ne pas y répondre.
+© {% now "Y" %} SCOLARIS - Tous droits réservés

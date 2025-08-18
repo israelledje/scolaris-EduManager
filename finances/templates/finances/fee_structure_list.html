@@ -1,0 +1,255 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}Structures de Frais - Finances{% endblock %}
+{% block page_title %}Structures de Frais{% endblock %}
+{% block breadcrumb_current %}Structures de Frais{% endblock %}
+
+{% block page_actions %}
+<div class="flex items-center gap-3">
+    <a href="{% url 'finances:fee_structure_create' %}" class="btn-gradient text-white font-semibold py-2 px-4 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg">
+        <i class="fas fa-plus mr-2"></i>Nouvelle Structure
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Statistiques -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="card-hover bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-list text-blue-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-slate-500 text-sm font-medium">Total Structures</p>
+                    <p class="text-2xl font-bold text-slate-900">{{ total_structures }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card-hover bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-calendar-check text-green-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-slate-500 text-sm font-medium">Année en cours</p>
+                    <p class="text-2xl font-bold text-slate-900">
+                        {% if current_year %}
+                            {{ current_year.annee }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card-hover bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-layer-group text-purple-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-slate-500 text-sm font-medium">Tranches moyennes</p>
+                    <p class="text-2xl font-bold text-slate-900">
+                        {% if total_structures > 0 %}
+                            {% widthratio total_structures total_structures 1 %}
+                        {% else %}
+                            0
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulaire de recherche -->
+    <div class="card-hover bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6">
+        <h3 class="text-lg font-semibold text-slate-900 mb-4">
+            <i class="fas fa-search mr-2"></i>Recherche et Filtres
+        </h3>
+        
+        <form method="get" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div>
+                <label for="{{ search_form.year.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">Année scolaire</label>
+                {% render_field search_form.year class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="Sélectionner une année" %}
+            </div>
+            
+            <div>
+                <label for="{{ search_form.school_class.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">Classe</label>
+                {% render_field search_form.school_class class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="Sélectionner une classe" %}
+            </div>
+            
+            <div class="flex items-end gap-2">
+                <button type="submit" class="btn-gradient text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200">
+                    <i class="fas fa-search mr-2"></i>Rechercher
+                </button>
+                <a href="{% url 'finances:fee_structure_list' %}" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 px-4 rounded-xl transition-all duration-200">
+                    <i class="fas fa-times"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Liste des structures -->
+    <div class="card-hover bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-200/60">
+            <h3 class="text-lg font-semibold text-slate-900">
+                <i class="fas fa-list mr-2"></i>Liste des Structures de Frais
+            </h3>
+        </div>
+        
+        {% if page_obj %}
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-slate-50 border-b border-slate-200">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Classe</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Année</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Frais d'Inscription</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Frais de Scolarité</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Nombre de Tranches</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-slate-200">
+                        {% for fee_structure in page_obj %}
+                        <tr class="hover:bg-slate-50 transition-colors duration-200">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-xs">
+                                        {{ fee_structure.school_class.name.0 }}
+                                    </div>
+                                    <div class="ml-3">
+                                        <div class="text-sm font-medium text-slate-900">{{ fee_structure.school_class.name }}</div>
+                                        <div class="text-sm text-slate-500">{{ fee_structure.school_class.level.name }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                    {% if fee_structure.year.statut == 'EN_COURS' %}bg-green-100 text-green-800
+                                    {% else %}bg-slate-100 text-slate-800{% endif %}">
+                                    {{ fee_structure.year.annee }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-bold text-slate-900">{{ fee_structure.inscription_fee|floatformat:0 }} FCFA</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-bold text-slate-900">{{ fee_structure.tuition_total|floatformat:0 }} FCFA</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                    {{ fee_structure.tranche_count }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <div class="flex items-center gap-2">
+                                    <a href="{% url 'finances:fee_structure_detail' fee_structure.pk %}" 
+                                       class="text-blue-600 hover:text-blue-900 transition-colors duration-200" title="Voir les détails">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'finances:fee_structure_update' fee_structure.pk %}" 
+                                       class="text-amber-600 hover:text-amber-900 transition-colors duration-200" title="Modifier">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{% url 'finances:fee_structure_delete' fee_structure.pk %}" 
+                                       class="text-red-600 hover:text-red-900 transition-colors duration-200" title="Supprimer">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+            <div class="px-6 py-4 border-t border-slate-200">
+                <nav class="flex items-center justify-between">
+                    <div class="flex-1 flex justify-between sm:hidden">
+                        {% if page_obj.has_previous %}
+                            <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.year %}&year={{ request.GET.year }}{% endif %}{% if request.GET.school_class %}&school_class={{ request.GET.school_class }}{% endif %}" 
+                               class="relative inline-flex items-center px-4 py-2 border border-slate-300 text-sm font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50">
+                                Précédent
+                            </a>
+                        {% endif %}
+                        {% if page_obj.has_next %}
+                            <a href="?page={{ page_obj.next_page_number }}{% if request.GET.year %}&year={{ request.GET.year }}{% endif %}{% if request.GET.school_class %}&school_class={{ request.GET.school_class }}{% endif %}" 
+                               class="ml-3 relative inline-flex items-center px-4 py-2 border border-slate-300 text-sm font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50">
+                                Suivant
+                            </a>
+                        {% endif %}
+                    </div>
+                    <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                        <div>
+                            <p class="text-sm text-slate-700">
+                                Affichage de <span class="font-medium">{{ page_obj.start_index }}</span> à <span class="font-medium">{{ page_obj.end_index }}</span> 
+                                sur <span class="font-medium">{{ page_obj.paginator.count }}</span> résultats
+                            </p>
+                        </div>
+                        <div>
+                            <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                                {% if page_obj.has_previous %}
+                                    <a href="?page=1{% if request.GET.year %}&year={{ request.GET.year }}{% endif %}{% if request.GET.school_class %}&school_class={{ request.GET.school_class }}{% endif %}" 
+                                       class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-slate-300 bg-white text-sm font-medium text-slate-500 hover:bg-slate-50">
+                                        <i class="fas fa-angle-double-left"></i>
+                                    </a>
+                                    <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.year %}&year={{ request.GET.year }}{% endif %}{% if request.GET.school_class %}&school_class={{ request.GET.school_class }}{% endif %}" 
+                                       class="relative inline-flex items-center px-2 py-2 border border-slate-300 bg-white text-sm font-medium text-slate-500 hover:bg-slate-50">
+                                        <i class="fas fa-angle-left"></i>
+                                    </a>
+                                {% endif %}
+
+                                {% for num in page_obj.paginator.page_range %}
+                                    {% if page_obj.number == num %}
+                                        <span class="relative inline-flex items-center px-4 py-2 border border-blue-500 bg-blue-50 text-sm font-medium text-blue-600">
+                                            {{ num }}
+                                        </span>
+                                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                        <a href="?page={{ num }}{% if request.GET.year %}&year={{ request.GET.year }}{% endif %}{% if request.GET.school_class %}&school_class={{ request.GET.school_class }}{% endif %}" 
+                                           class="relative inline-flex items-center px-4 py-2 border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50">
+                                            {{ num }}
+                                        </a>
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% if page_obj.has_next %}
+                                    <a href="?page={{ page_obj.next_page_number }}{% if request.GET.year %}&year={{ request.GET.year }}{% endif %}{% if request.GET.school_class %}&school_class={{ request.GET.school_class }}{% endif %}" 
+                                       class="relative inline-flex items-center px-2 py-2 border border-slate-300 bg-white text-sm font-medium text-slate-500 hover:bg-slate-50">
+                                        <i class="fas fa-angle-right"></i>
+                                    </a>
+                                    <a href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.year %}&year={{ request.GET.year }}{% endif %}{% if request.GET.school_class %}&school_class={{ request.GET.school_class }}{% endif %}" 
+                                       class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-slate-300 bg-white text-sm font-medium text-slate-500 hover:bg-slate-50">
+                                        <i class="fas fa-angle-double-right"></i>
+                                    </a>
+                                {% endif %}
+                            </nav>
+                        </div>
+                    </div>
+                </nav>
+            </div>
+            {% endif %}
+
+        {% else %}
+            <div class="px-6 py-12 text-center">
+                <div class="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-exclamation-triangle text-amber-600 text-2xl"></i>
+                </div>
+                <h3 class="text-lg font-medium text-slate-900 mb-2">Aucune structure de frais trouvée</h3>
+                <p class="text-slate-500 mb-6">Aucune structure de frais ne correspond à vos critères de recherche.</p>
+                <a href="{% url 'finances:fee_structure_create' %}" class="btn-gradient text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200">
+                    <i class="fas fa-plus mr-2"></i>Créer la première structure
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

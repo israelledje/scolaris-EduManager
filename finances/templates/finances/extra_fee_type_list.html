@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}Types de Frais Annexes - Finances{% endblock %}
+{% block page_title %}Types de Frais Annexes{% endblock %}
+{% block breadcrumb_current %}Frais Annexes{% endblock %}
+
+{% block page_actions %}
+<div class="flex items-center gap-3">
+    <a href="{% url 'finances:extra_fee_type_create' %}" class="btn-gradient text-white font-semibold py-2 px-4 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg">
+        <i class="fas fa-plus mr-2"></i>Nouveau Type
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Statistiques -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="card-hover bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-tags text-blue-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-slate-500 text-sm font-medium">Total Types</p>
+                    <p class="text-2xl font-bold text-slate-900">{{ total_types }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card-hover bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-check-circle text-green-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-slate-500 text-sm font-medium">Types Actifs</p>
+                    <p class="text-2xl font-bold text-slate-900">{{ active_types }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card-hover bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-receipt text-purple-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-slate-500 text-sm font-medium">Frais Créés</p>
+                    <p class="text-2xl font-bold text-slate-900">{{ total_fees }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des types -->
+    <div class="card-hover bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-200/60">
+            <h3 class="text-lg font-semibold text-slate-900">
+                <i class="fas fa-list mr-2"></i>Liste des Types
+            </h3>
+        </div>
+        
+        {% if extra_fee_types %}
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-slate-50 border-b border-slate-200">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Nom</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Description</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Statut</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Frais Créés</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-slate-200">
+                    {% for fee_type in extra_fee_types %}
+                    <tr class="hover:bg-slate-50 transition-colors duration-200">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-slate-900">{{ fee_type.name }}</div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm text-slate-500 max-w-xs truncate" title="{{ fee_type.description }}">
+                                {{ fee_type.description|default:"Aucune description" }}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                {% if fee_type.is_active %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                                {% if fee_type.is_active %}Actif{% else %}Inactif{% endif %}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                {{ fee_type.extra_fees.count }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div class="flex items-center gap-2">
+                                <a href="{% url 'finances:extra_fee_type_update' fee_type.id %}" 
+                                   class="text-blue-600 hover:text-blue-900 transition-colors duration-200">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'finances:extra_fee_type_delete' fee_type.id %}" 
+                                   class="text-red-600 hover:text-red-900 transition-colors duration-200">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <div class="px-6 py-4 border-t border-slate-200 bg-slate-50">
+            <div class="flex items-center justify-between">
+                <div class="text-sm text-slate-700">
+                    Affichage de {{ page_obj.start_index }} à {{ page_obj.end_index }} sur {{ page_obj.paginator.count }} résultats
+                </div>
+                <div class="flex items-center gap-2">
+                    {% if page_obj.has_previous %}
+                        <a href="?page=1" class="px-3 py-2 text-sm font-medium text-slate-500 bg-white border border-slate-300 rounded-md hover:bg-slate-50">
+                            <i class="fas fa-angle-double-left"></i>
+                        </a>
+                        <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-2 text-sm font-medium text-slate-500 bg-white border border-slate-300 rounded-md hover:bg-slate-50">
+                            <i class="fas fa-angle-left"></i>
+                        </a>
+                    {% endif %}
+                    
+                    <span class="px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md">
+                        Page {{ page_obj.number }} sur {{ page_obj.paginator.num_pages }}
+                    </span>
+                    
+                    {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-2 text-sm font-medium text-slate-500 bg-white border border-slate-300 rounded-md hover:bg-slate-50">
+                            <i class="fas fa-angle-right"></i>
+                        </a>
+                        <a href="?page={{ page_obj.paginator.num_pages }}" class="px-3 py-2 text-sm font-medium text-slate-500 bg-white border border-slate-300 rounded-md hover:bg-slate-50">
+                            <i class="fas fa-angle-double-right"></i>
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% else %}
+        <div class="px-6 py-12 text-center">
+            <div class="text-slate-400 mb-4">
+                <i class="fas fa-tags text-6xl"></i>
+            </div>
+            <h3 class="text-lg font-medium text-slate-900 mb-2">Aucun type de frais trouvé</h3>
+            <p class="text-slate-500 mb-6">Aucun type de frais annexe n'a encore été créé.</p>
+            <a href="{% url 'finances:extra_fee_type_create' %}" class="btn-gradient text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg">
+                <i class="fas fa-plus mr-2"></i>Créer le premier type
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

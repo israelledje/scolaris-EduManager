@@ -1,0 +1,782 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Tableau de Bord Pédagogique - SCOLARIS{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Professional Color System - 4 colors total */
+    :root {
+        --primary-blue: #2563eb;      /* Professional blue */
+        --secondary-blue: #1e40af;    /* Darker blue */
+        --success-green: #059669;     /* Success green */
+        --neutral-gray: #64748b;      /* Text gray */
+        --light-gray: #f8fafc;        /* Background gray */
+        --white: #ffffff;             /* Pure white */
+        
+        --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.1);
+        --shadow-medium: 0 4px 6px rgba(0, 0, 0, 0.1);
+        --border-radius: 8px;
+        --border-radius-large: 12px;
+    }
+
+    /* Clean header design */
+    .pedagogy-header {
+        background: var(--primary-blue);
+        color: var(--white);
+        border-radius: var(--border-radius-large);
+        padding: 2.5rem 2rem;
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow-medium);
+    }
+    
+    .pedagogy-header h1 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        color: var(--white);
+    }
+    
+    .pedagogy-header p {
+        font-size: 1.1rem;
+        opacity: 0.9;
+        margin-bottom: 0;
+        color: var(--white);
+    }
+
+    /* Clean statistics cards */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+        background: var(--white);
+        border-radius: var(--border-radius);
+        padding: 2rem 1.5rem;
+        box-shadow: var(--shadow-medium);
+        border: 1px solid #e2e8f0;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        text-align: center;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: var(--primary-blue);
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+    
+    .stat-card:nth-child(2) .stat-number { color: var(--success-green); }
+    .stat-card:nth-child(3) .stat-number { color: var(--secondary-blue); }
+    .stat-card:nth-child(4) .stat-number { color: var(--neutral-gray); }
+    
+    .stat-label {
+        color: var(--neutral-gray);
+        font-size: 0.9rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin: 0;
+    }
+
+    /* Clean section styling */
+    .programs-section, .lessons-section, .actions-section {
+        background: var(--white);
+        border-radius: var(--border-radius);
+        padding: 2rem;
+        box-shadow: var(--shadow-medium);
+        border: 1px solid #e2e8f0;
+        margin-bottom: 2rem;
+    }
+    
+    .section-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid var(--light-gray);
+    }
+    
+    .section-header h2 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    
+    .section-header .icon {
+        width: 40px;
+        height: 40px;
+        background: var(--primary-blue);
+        border-radius: var(--border-radius);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--white);
+        font-size: 1.2rem;
+    }
+
+    /* Redesigned program cards to be more compact and elegant */
+    .program-card {
+        background: var(--white);
+        border-radius: var(--border-radius);
+        padding: 1.25rem;
+        margin-bottom: 1rem;
+        border: 1px solid #e2e8f0;
+        transition: all 0.2s ease;
+        border-left: 4px solid var(--success-green);
+        box-shadow: var(--shadow-subtle);
+    }
+    
+    .program-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-medium);
+    }
+    
+    .program-card.inactive {
+        border-left-color: var(--neutral-gray);
+        opacity: 0.7;
+    }
+    
+    .program-header {
+        display: flex;
+        justify-content: between;
+        align-items: flex-start;
+        margin-bottom: 0.75rem;
+        gap: 1rem;
+    }
+    
+    .program-info {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .program-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 0.25rem;
+        line-height: 1.3;
+    }
+    
+    .program-meta {
+        color: var(--neutral-gray);
+        font-size: 0.85rem;
+        line-height: 1.4;
+        margin-bottom: 0.75rem;
+    }
+    
+    .program-meta i {
+        width: 12px;
+        text-align: center;
+        margin-right: 0.25rem;
+    }
+    
+    .program-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+    
+    .program-stats {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        flex: 1;
+    }
+    
+    .program-stat {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        color: var(--neutral-gray);
+        font-size: 0.8rem;
+        font-weight: 500;
+        white-space: nowrap;
+    }
+    
+    .program-stat i {
+        width: 12px;
+        text-align: center;
+        font-size: 0.75rem;
+    }
+    
+    .program-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    /* Clean progress bars */
+    .progress-section {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    
+    .progress-container {
+        flex: 1;
+    }
+    
+    .progress-label {
+        font-size: 0.8rem;
+        color: var(--neutral-gray);
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+    }
+    
+    .progress-bar {
+        height: 8px;
+        border-radius: 4px;
+        background-color: #e2e8f0;
+        overflow: hidden;
+    }
+    
+    .progress-fill {
+        height: 100%;
+        background: var(--success-green);
+        border-radius: 4px;
+        transition: width 0.6s ease;
+    }
+    
+    .progress-percentage {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--success-green);
+        min-width: 60px;
+        text-align: center;
+    }
+
+    /* Compact progress section */
+    .progress-section-compact {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        min-width: 120px;
+    }
+    
+    .progress-container-compact {
+        flex: 1;
+        min-width: 60px;
+    }
+    
+    .progress-bar-compact {
+        height: 6px;
+        border-radius: 3px;
+        background-color: #e2e8f0;
+        overflow: hidden;
+    }
+    
+    .progress-fill-compact {
+        height: 100%;
+        background: var(--success-green);
+        border-radius: 3px;
+        transition: width 0.6s ease;
+    }
+    
+    .progress-percentage-compact {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--success-green);
+        min-width: 35px;
+        text-align: right;
+    }
+
+    /* Clean buttons */
+    .btn-modern {
+        padding: 0.75rem 1.5rem;
+        border-radius: var(--border-radius);
+        font-weight: 600;
+        font-size: 0.9rem;
+        transition: all 0.2s ease;
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        text-decoration: none;
+    }
+    
+    .btn-primary-modern {
+        background: var(--primary-blue);
+        color: var(--white);
+    }
+    
+    .btn-primary-modern:hover {
+        background: var(--secondary-blue);
+        transform: translateY(-1px);
+        color: var(--white);
+    }
+
+    /* Smaller, more elegant buttons */
+    .btn-compact {
+        padding: 0.5rem 1rem;
+        border-radius: var(--border-radius);
+        font-weight: 600;
+        font-size: 0.8rem;
+        transition: all 0.2s ease;
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        text-decoration: none;
+        white-space: nowrap;
+    }
+    
+    .btn-primary-compact {
+        background: var(--primary-blue);
+        color: var(--white);
+    }
+    
+    .btn-primary-compact:hover {
+        background: var(--secondary-blue);
+        transform: translateY(-1px);
+        color: var(--white);
+    }
+
+    /* Clean lesson items */
+    .lesson-item {
+        background: var(--light-gray);
+        border-radius: var(--border-radius);
+        padding: 1.25rem;
+        margin-bottom: 1rem;
+        border: 1px solid #e2e8f0;
+        border-left: 3px solid var(--primary-blue);
+        transition: all 0.2s ease;
+    }
+    
+    .lesson-item:hover {
+        transform: translateX(3px);
+        box-shadow: var(--shadow-subtle);
+    }
+    
+    .lesson-title {
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 0.5rem;
+    }
+    
+    .lesson-meta {
+        color: var(--neutral-gray);
+        font-size: 0.85rem;
+        line-height: 1.4;
+    }
+
+    /* Clean status badges */
+    .status-badge {
+        padding: 0.4rem 0.8rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .status-planned { 
+        background: #fbbf24;
+        color: var(--white);
+    }
+    .status-in-progress { 
+        background: var(--primary-blue);
+        color: var(--white);
+    }
+    .status-completed { 
+        background: var(--success-green);
+        color: var(--white);
+    }
+    .status-cancelled { 
+        background: #ef4444;
+        color: var(--white);
+    }
+    
+    .lesson-date {
+        color: var(--neutral-gray);
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+    
+    .btn-view {
+        padding: 0.5rem 1rem;
+        background: rgba(37, 99, 235, 0.1);
+        color: var(--primary-blue);
+        border-radius: var(--border-radius);
+        font-weight: 600;
+        font-size: 0.85rem;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        border: 1px solid rgba(37, 99, 235, 0.2);
+    }
+    
+    .btn-view:hover {
+        background: rgba(37, 99, 235, 0.15);
+        color: var(--secondary-blue);
+        transform: translateY(-1px);
+    }
+
+    /* Clean action cards */
+    .actions-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+    }
+    
+    .action-card {
+        background: var(--light-gray);
+        border-radius: var(--border-radius);
+        padding: 2rem 1.5rem;
+        text-align: center;
+        border: 1px solid #e2e8f0;
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+    
+    .action-card:hover {
+        transform: translateY(-3px);
+        box-shadow: var(--shadow-medium);
+        background: var(--white);
+    }
+    
+    .action-icon {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+        transition: transform 0.2s ease;
+    }
+    
+    .action-card:nth-child(1) .action-icon { color: var(--success-green); }
+    .action-card:nth-child(2) .action-icon { color: var(--primary-blue); }
+    .action-card:nth-child(3) .action-icon { color: var(--secondary-blue); }
+    .action-card:nth-child(4) .action-icon { color: #f59e0b; }
+    
+    .action-card:hover .action-icon {
+        transform: scale(1.05);
+    }
+    
+    .action-title {
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 0.5rem;
+    }
+
+    /* Empty states */
+    .empty-state {
+        text-align: center;
+        padding: 3rem 2rem;
+        color: var(--neutral-gray);
+    }
+    
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 1.5rem;
+        opacity: 0.5;
+        color: var(--neutral-gray);
+    }
+    
+    .empty-state h4 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #475569;
+        margin-bottom: 1rem;
+    }
+    
+    .empty-state p {
+        font-size: 1rem;
+        line-height: 1.6;
+        margin-bottom: 2rem;
+        max-width: 400px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    /* Responsive design */
+    @media (max-width: 768px) {
+        .pedagogy-header {
+            padding: 2rem 1rem;
+            text-align: center;
+        }
+        
+        .pedagogy-header h1 {
+            font-size: 2rem;
+        }
+        
+        .stats-grid {
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+        
+        .stat-card {
+            padding: 1.5rem 1rem;
+        }
+        
+        .stat-number {
+            font-size: 2rem;
+        }
+        
+        .program-footer {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 0.75rem;
+        }
+        
+        .program-stats {
+            justify-content: space-between;
+        }
+        
+        .program-actions {
+            justify-content: center;
+        }
+        
+        .actions-grid {
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+        }
+        
+        .action-card {
+            padding: 1.5rem 1rem;
+        }
+        
+        .action-icon {
+            font-size: 2rem;
+        }
+    }
+
+    /* Subtle animations */
+    .fade-in-up {
+        animation: fadeInUp 0.4s ease-out;
+    }
+    
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Clean header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="pedagogy-header fade-in-up">
+                <h1>
+                    <i class="fas fa-graduation-cap me-3"></i>
+                    Tableau de Bord Pédagogique
+                </h1>
+                <p>Vue d'ensemble de la progression pédagogique et des programmes d'enseignement</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Clean statistics -->
+    <div class="stats-grid">
+        <div class="stat-card fade-in-up">
+            <div class="stat-number">{{ total_subjects }}</div>
+            <div class="stat-label">Matières</div>
+        </div>
+        <div class="stat-card fade-in-up">
+            <div class="stat-number">{{ total_programs }}</div>
+            <div class="stat-label">Programmes</div>
+        </div>
+        <div class="stat-card fade-in-up">
+            <div class="stat-number">{{ total_units }}</div>
+            <div class="stat-label">Unités d'Apprentissage</div>
+        </div>
+        <div class="stat-card fade-in-up">
+            <div class="stat-number">{{ total_lessons }}</div>
+            <div class="stat-label">Leçons</div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Active programs -->
+        <div class="col-lg-8">
+            <div class="programs-section fade-in-up">
+                <div class="section-header">
+                    <div class="icon">
+                        <i class="fas fa-book-open"></i>
+                    </div>
+                    <h2>Programmes Actifs</h2>
+                </div>
+                
+                {% if active_programs %}
+                    {% for program in active_programs %}
+                        <div class="program-card {% if not program.is_active %}inactive{% endif %}">
+                            <div class="program-header">
+                                <div class="program-info">
+                                    <div class="program-title">{{ program.title }}</div>
+                                    <div class="program-meta">
+                                        <i class="fas fa-book"></i>{{ program.subject.name }} • 
+                                        <i class="fas fa-users"></i>{{ program.school_class.name }} • 
+                                        <i class="fas fa-calendar"></i>{{ program.school_year }}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="program-footer">
+                                <div class="program-stats">
+                                    <div class="program-stat">
+                                        <i class="fas fa-clock"></i>{{ program.total_hours }}h
+                                    </div>
+                                    <div class="program-stat">
+                                        <i class="fas fa-layer-group"></i>{{ program.learning_units.count }} unités
+                                    </div>
+                                    <div class="program-stat">
+                                        <i class="fas fa-signal"></i>{{ program.get_difficulty_level_display }}
+                                    </div>
+                                </div>
+                                
+                                <div class="program-actions">
+                                    <div class="progress-section-compact">
+                                        <div class="progress-container-compact">
+                                            <div class="progress-bar-compact">
+                                                <div class="progress-fill-compact" style="width: {{ program.get_completion_percentage }}%"></div>
+                                            </div>
+                                        </div>
+                                        <div class="progress-percentage-compact">{{ program.get_completion_percentage }}%</div>
+                                    </div>
+                                    
+                                    <a href="{% url 'subjects:program_detail' program.pk %}" class="btn-compact btn-primary-compact">
+                                        <i class="fas fa-eye"></i>Détails
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">
+                        <i class="fas fa-book-open"></i>
+                        <h4>Aucun programme actif</h4>
+                        <p>Aucun programme pédagogique actif pour le moment.</p>
+                        <a href="{% url 'admin:subjects_subjectprogram_add' %}" class="btn-modern btn-primary-modern">
+                            <i class="fas fa-plus"></i>Créer un programme
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Recent lessons -->
+        <div class="col-lg-4">
+            <div class="lessons-section fade-in-up">
+                <div class="section-header">
+                    <div class="icon">
+                        <i class="fas fa-chalkboard-teacher"></i>
+                    </div>
+                    <h2>Leçons Récentes</h2>
+                </div>
+                
+                {% if recent_lessons %}
+                    {% for lesson in recent_lessons %}
+                        <div class="lesson-item">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div class="lesson-title">{{ lesson.title|truncatechars:30 }}</div>
+                                <span class="status-badge status-{{ lesson.status|lower }}">
+                                    {{ lesson.get_status_display }}
+                                </span>
+                            </div>
+                            <div class="lesson-meta mb-2">
+                                <i class="fas fa-user"></i>{{ lesson.teacher.get_full_name }}<br>
+                                <i class="fas fa-book"></i>{{ lesson.learning_unit.subject_program.subject.name }}
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="lesson-date">
+                                    <i class="fas fa-calendar"></i>{{ lesson.planned_date|date:"d/m/Y" }}
+                                </div>
+                                <a href="{% url 'subjects:lesson_detail' lesson.pk %}" class="btn-view">
+                                    <i class="fas fa-eye"></i>Détails
+                                </a>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">
+                        <i class="fas fa-chalkboard-teacher"></i>
+                        <h4>Aucune leçon récente</h4>
+                        <p>Aucune leçon récente à afficher.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick actions -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="actions-section fade-in-up">
+                <div class="section-header">
+                    <div class="icon">
+                        <i class="fas fa-rocket"></i>
+                    </div>
+                    <h2>Actions Rapides</h2>
+                </div>
+                
+                <div class="actions-grid">
+                    <a href="{% url 'admin:subjects_subjectprogram_add' %}" class="action-card">
+                        <div class="action-icon">
+                            <i class="fas fa-plus"></i>
+                        </div>
+                        <div class="action-title">Nouveau Programme</div>
+                    </a>
+                    <a href="{% url 'admin:subjects_learningunit_add' %}" class="action-card">
+                        <div class="action-icon">
+                            <i class="fas fa-layer-group"></i>
+                        </div>
+                        <div class="action-title">Nouvelle Unité</div>
+                    </a>
+                    <a href="{% url 'admin:subjects_lesson_add' %}" class="action-card">
+                        <div class="action-icon">
+                            <i class="fas fa-chalkboard-teacher"></i>
+                        </div>
+                        <div class="action-title">Nouvelle Leçon</div>
+                    </a>
+                    <a href="{% url 'subjects:program_list' %}" class="action-card">
+                        <div class="action-icon">
+                            <i class="fas fa-list"></i>
+                        </div>
+                        <div class="action-title">Tous les Programmes</div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Simple progress bar animation
+    document.addEventListener('DOMContentLoaded', function() {
+        const progressBars = document.querySelectorAll('.progress-fill, .progress-fill-compact');
+        progressBars.forEach(bar => {
+            const width = bar.style.width;
+            bar.style.width = '0%';
+            setTimeout(() => {
+                bar.style.width = width;
+            }, 300);
+        });
+    });
+</script>
+{% endblock %}

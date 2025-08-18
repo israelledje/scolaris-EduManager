@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Supprimer la tranche - {{ tranche }}{% endblock %}
+{% block page_title %}Confirmer la suppression{% endblock %}
+{% block breadcrumb_current %}Supprimer{% endblock %}
+
+{% block page_actions %}
+<div class="flex items-center gap-3">
+    <a href="{% url 'finances:fee_structure_detail' tranche.fee_structure.pk %}" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2 px-4 rounded-xl transition-all duration-200">
+        <i class="fas fa-arrow-left mr-2"></i>Retour
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="card-hover bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-200/60 bg-red-50">
+            <h3 class="text-lg font-semibold text-red-900">
+                <i class="fas fa-exclamation-triangle mr-2"></i>Confirmer la suppression
+            </h3>
+        </div>
+        
+        <div class="p-6 space-y-6">
+            <!-- Avertissement -->
+            <div class="bg-red-50 border border-red-200 rounded-xl p-4">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-exclamation-triangle text-red-600"></i>
+                    </div>
+                    <div class="ml-3">
+                        <h4 class="text-sm font-medium text-red-900">Attention !</h4>
+                        <div class="mt-2 text-sm text-red-700">
+                            <p>Êtes-vous sûr de vouloir supprimer cette tranche ?</p>
+                            <p class="mt-1">Cette action est irréversible et peut affecter les paiements associés.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Informations de la tranche -->
+            <div class="bg-slate-50 rounded-xl p-4">
+                <h4 class="text-sm font-medium text-slate-900 mb-3">Détails de la tranche</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <span class="text-sm font-medium text-slate-600">Structure de frais :</span>
+                        <p class="text-sm text-slate-900">{{ tranche.fee_structure.school_class.name }} - {{ tranche.fee_structure.year.annee }}</p>
+                    </div>
+                    <div>
+                        <span class="text-sm font-medium text-slate-600">Numéro de tranche :</span>
+                        <p class="text-sm text-slate-900">{{ tranche.number }}</p>
+                    </div>
+                    <div>
+                        <span class="text-sm font-medium text-slate-600">Montant :</span>
+                        <p class="text-sm text-slate-900 font-semibold">{{ tranche.amount|floatformat:0 }} FCFA</p>
+                    </div>
+                    <div>
+                        <span class="text-sm font-medium text-slate-600">Date d'échéance :</span>
+                        <p class="text-sm text-slate-900">{{ tranche.due_date|date:"d/m/Y" }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vérifications -->
+            <div class="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-info-circle text-amber-600"></i>
+                    </div>
+                    <div class="ml-3">
+                        <h4 class="text-sm font-medium text-amber-900">Vérifications effectuées</h4>
+                        <div class="mt-2 text-sm text-amber-700 space-y-1">
+                            {% if tranche.payments.exists %}
+                                <p class="text-red-600">
+                                    <i class="fas fa-exclamation-circle mr-1"></i>
+                                    ⚠️ Cette tranche a des paiements associés et ne peut pas être supprimée
+                                </p>
+                            {% else %}
+                                <p class="text-green-600">
+                                    <i class="fas fa-check-circle mr-1"></i>
+                                    ✅ Aucun paiement associé - suppression possible
+                                </p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Formulaire de confirmation -->
+            <form method="post" class="space-y-4">
+                {% csrf_token %}
+                
+                {% if not tranche.payments.exists %}
+                    <div class="flex items-center justify-end gap-4 pt-6 border-t border-slate-200">
+                        <a href="{% url 'finances:fee_structure_detail' tranche.fee_structure.pk %}" 
+                           class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 px-6 rounded-xl transition-all duration-200">
+                            Annuler
+                        </a>
+                        <button type="submit" 
+                                class="bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200">
+                            <i class="fas fa-trash mr-2"></i>Confirmer la suppression
+                        </button>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <a href="{% url 'finances:fee_structure_detail' tranche.fee_structure.pk %}" 
+                           class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200">
+                            <i class="fas fa-arrow-left mr-2"></i>Retour aux détails
+                        </a>
+                    </div>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

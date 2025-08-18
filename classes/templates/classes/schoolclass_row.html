@@ -1,0 +1,12 @@
+<tr id="schoolclass-{{ schoolclass.id }}">
+    <td>{{ schoolclass.name }}</td>
+    <td>{{ schoolclass.level }}</td>
+    <td>{{ schoolclass.year }}</td>
+    <td>{{ schoolclass.main_teacher|default:'Non assigné' }}</td>
+    <td>{{ schoolclass.capacity }}</td>
+    <td>{% if schoolclass.is_active %}<span class="text-green-600">Active</span>{% else %}<span class="text-red-600">Inactive</span>{% endif %}</td>
+    <td>
+        <button hx-get="{% url 'classes:schoolclass_update_htmx' schoolclass.id %}" hx-target="#modal-content" hx-swap="innerHTML" class="btn btn-sm btn-primary">Modifier</button>
+        <button hx-get="{% url 'classes:schoolclass_delete_htmx' schoolclass.id %}" hx-target="#modal-content" hx-swap="innerHTML" class="btn btn-sm btn-danger">Supprimer</button>
+    </td>
+</tr> 

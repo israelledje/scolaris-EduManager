@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Supprimer la remise - Finances{% endblock %}
+{% block page_title %}Supprimer la remise{% endblock %}
+{% block breadcrumb_current %}Supprimer{% endblock %}
+
+{% block page_actions %}
+<div class="flex items-center gap-3">
+    <a href="{% url 'finances:discount_list' %}" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2 px-4 rounded-xl transition-all duration-200">
+        <i class="fas fa-arrow-left mr-2"></i>Retour
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto">
+    <div class="card-hover bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-200/60 bg-red-50">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+                </div>
+                <div class="ml-3">
+                    <h3 class="text-lg font-semibold text-red-900">Confirmer la suppression</h3>
+                </div>
+            </div>
+        </div>
+        
+        <div class="p-6">
+            <div class="mb-6">
+                <p class="text-slate-700 mb-4">
+                    Êtes-vous sûr de vouloir supprimer cette remise ?
+                </p>
+                
+                <div class="bg-slate-50 rounded-xl p-4 space-y-3">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-semibold text-sm">
+                            {{ discount.student.first_name.0 }}{{ discount.student.last_name.0 }}
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium text-slate-900">
+                                {{ discount.student.first_name }} {{ discount.student.last_name }}
+                            </p>
+                            <p class="text-xs text-slate-500">{{ discount.student.matricule }}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-slate-600">Montant :</span>
+                        <span class="text-sm font-semibold text-emerald-600">{{ discount.amount|floatformat:0 }} FCFA</span>
+                    </div>
+                    
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-slate-600">Tranche :</span>
+                        <span class="text-sm">
+                            {% if discount.tranche %}
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                    Tranche {{ discount.tranche.number }}
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                    Année complète
+                                </span>
+                            {% endif %}
+                        </span>
+                    </div>
+                    
+                    <div class="flex items-start justify-between">
+                        <span class="text-sm text-slate-600">Motif :</span>
+                        <span class="text-sm text-slate-900 text-right max-w-xs">{{ discount.reason }}</span>
+                    </div>
+                    
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-slate-600">Date d'attribution :</span>
+                        <span class="text-sm text-slate-900">{{ discount.granted_at|date:"d/m/Y" }}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-exclamation-triangle text-amber-600"></i>
+                    </div>
+                    <div class="ml-3">
+                        <h4 class="text-sm font-medium text-amber-900">Attention</h4>
+                        <div class="mt-2 text-sm text-amber-700">
+                            <p>Cette action est irréversible. La suppression de cette remise affectera le calcul des frais restants de l'étudiant.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <form method="post" class="space-y-4">
+                {% csrf_token %}
+                <div class="flex items-center justify-end gap-4">
+                    <a href="{% url 'finances:discount_list' %}" 
+                       class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 px-6 rounded-xl transition-all duration-200">
+                        Annuler
+                    </a>
+                    <button type="submit" 
+                            class="bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg">
+                        <i class="fas fa-trash mr-2"></i>Supprimer définitivement
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %} 

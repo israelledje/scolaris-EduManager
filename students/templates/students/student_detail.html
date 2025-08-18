@@ -1,0 +1,671 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block page_title %}{{ student.first_name }} {{ student.last_name }}{% endblock %}
+
+{% block page_actions %}
+<div class="flex items-center gap-3">
+    <button onclick="printProfile()" class="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors duration-200">
+        <i class="fas fa-print text-slate-500"></i>
+        <span class="text-slate-700 font-medium">Imprimer</span>
+    </button>
+    <button onclick="exportProfile()" class="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors duration-200">
+        <i class="fas fa-download text-slate-500"></i>
+        <span class="text-slate-700 font-medium">Exporter</span>
+    </button>
+    <button onclick="editStudent()" class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl">
+        <i class="fas fa-edit"></i>
+        <span class="font-medium">Modifier</span>
+    </button>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-6" x-data="{ activeTab: 'overview', modalOpen: false }" x-init="activeTab = 'overview'">
+    
+    <!-- Student Profile Header -->
+    <div class="bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-2xl overflow-hidden shadow-xl">
+        <div class="relative p-8 text-white">
+            <!-- Background Pattern -->
+            <div class="absolute inset-0 bg-black/10"></div>
+            <div class="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent"></div>
+            
+            <div class="relative flex flex-col lg:flex-row items-start lg:items-center gap-6">
+                <!-- Profile Picture -->
+                <div class="relative">
+                    {% if student.photo %}
+                    <img src="{{ student.photo.url }}" alt="Photo de {{ student }}" 
+                         class="w-32 h-32 rounded-2xl object-cover border-4 border-white/20 shadow-2xl">
+                    {% else %}
+                    <div class="w-32 h-32 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center border-4 border-white/20 shadow-2xl">
+                        <i class="fas fa-user text-4xl text-white/80"></i>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Status Badge -->
+                    <div class="absolute -bottom-2 -right-2">
+                        {% if student.is_active %}
+                        <div class="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center border-4 border-white shadow-lg">
+                            <i class="fas fa-check text-white text-sm"></i>
+                        </div>
+                        {% else %}
+                        <div class="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center border-4 border-white shadow-lg">
+                            <i class="fas fa-times text-white text-sm"></i>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Student Info -->
+                <div class="flex-1">
+                    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                        <div>
+                            <h1 class="text-3xl font-bold mb-2">{{ student.first_name }} {{ student.last_name }}</h1>
+                            <div class="flex flex-wrap gap-4 text-white/90">
+                                <div class="flex items-center gap-2">
+                                    <i class="fas fa-id-card"></i>
+                                    <span class="font-mono">{{ student.matricule }}</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <i class="fas fa-door-open"></i>
+                                    <span>{{ student.current_class|default:"Non assigné" }}</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <i class="fas fa-calendar"></i>
+                                    <span>{{ student.year|default:"N/A" }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quick Stats -->
+                        <div class="flex gap-4">
+                            <div class="text-center">
+                                <div class="text-2xl font-bold">85%</div>
+                                <div class="text-sm text-white/80">Présence</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold">14.5</div>
+                                <div class="text-sm text-white/80">Moyenne</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold">3</div>
+                                <div class="text-sm text-white/80">Retards</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Contact Info -->
+                    <div class="mt-4 flex flex-wrap gap-4 text-sm text-white/80">
+                        {% if student.email %}
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-envelope"></i>
+                            <span>{{ student.email }}</span>
+                        </div>
+                        {% endif %}
+                        {% if student.phone %}
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-phone"></i>
+                            <span>{{ student.phone }}</span>
+                        </div>
+                        {% endif %}
+                        {% if student.address %}
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <span>{{ student.address|truncatechars:30 }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">
+        <div class="border-b border-slate-200">
+            <nav class="flex overflow-x-auto">
+                <button @click="activeTab = 'overview'" 
+                        :class="activeTab === 'overview' ? 'border-indigo-500 text-indigo-600 bg-indigo-50' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'"
+                        data-tab="overview"
+                        class="flex items-center gap-2 px-6 py-4 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap">
+                    <i class="fas fa-chart-pie"></i>
+                    Vue d'ensemble
+                </button>
+                <button @click="activeTab = 'academic'" 
+                        :class="activeTab === 'academic' ? 'border-indigo-500 text-indigo-600 bg-indigo-50' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'"
+                        data-tab="academic"
+                        class="flex items-center gap-2 px-6 py-4 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap">
+                    <i class="fas fa-graduation-cap"></i>
+                    Académique
+                </button>
+                <button @click="activeTab = 'financial'" 
+                        :class="activeTab === 'financial' ? 'border-indigo-500 text-indigo-600 bg-indigo-50' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'"
+                        data-tab="financial"
+                        class="flex items-center gap-2 px-6 py-4 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap">
+                    <i class="fas fa-money-bill-wave"></i>
+                    Financier
+                </button>
+                <button @click="activeTab = 'family'" 
+                        :class="activeTab === 'family' ? 'border-indigo-500 text-indigo-600 bg-indigo-50' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'"
+                        data-tab="family"
+                        class="flex items-center gap-2 px-6 py-4 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap">
+                    <i class="fas fa-users"></i>
+                    Famille
+                </button>
+                <button @click="activeTab = 'documents'" 
+                        :class="activeTab === 'documents' ? 'border-indigo-500 text-indigo-600 bg-indigo-50' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'"
+                        data-tab="documents"
+                        class="flex items-center gap-2 px-6 py-4 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap">
+                    <i class="fas fa-folder"></i>
+                    Documents
+                </button>
+                <button @click="activeTab = 'history'" 
+                        :class="activeTab === 'history' ? 'border-indigo-500 text-indigo-600 bg-indigo-50' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'"
+                        data-tab="history"
+                        class="flex items-center gap-2 px-6 py-4 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap">
+                    <i class="fas fa-history"></i>
+                    Historique
+                </button>
+            </nav>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="p-6">
+            <!-- Overview Tab -->
+            <div x-show="activeTab === 'overview'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-y-4" x-transition:enter-end="opacity-100 transform translate-y-0" data-tab-content="overview">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Academic Performance -->
+                    <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200/50">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold text-slate-900">Performance académique</h3>
+                            <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center text-white">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                        </div>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-600">Moyenne générale</span>
+                                <span class="font-bold text-slate-900">14.5/20</span>
+                            </div>
+                            <div class="w-full bg-blue-200 rounded-full h-2">
+                                <div class="bg-gradient-to-r from-blue-500 to-indigo-500 h-2 rounded-full" style="width: 72.5%"></div>
+                            </div>
+                            <div class="text-sm text-blue-700">Rang: 8ème sur 32 élèves</div>
+                        </div>
+                    </div>
+
+                    <!-- Attendance -->
+                    <div class="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-6 border border-emerald-200/50">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold text-slate-900">Assiduité</h3>
+                            <div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center text-white">
+                                <i class="fas fa-user-check"></i>
+                            </div>
+                        </div>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-600">Taux de présence</span>
+                                <span class="font-bold text-slate-900">85%</span>
+                            </div>
+                            <div class="w-full bg-emerald-200 rounded-full h-2">
+                                <div class="bg-gradient-to-r from-emerald-500 to-teal-500 h-2 rounded-full" style="width: 85%"></div>
+                            </div>
+                            <div class="text-sm text-emerald-700">3 retards ce mois</div>
+                        </div>
+                    </div>
+
+                    <!-- Financial Status -->
+                    <div class="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-6 border border-amber-200/50">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold text-slate-900">Situation financière</h3>
+                            <div class="flex items-center space-x-2">
+                                <a href="{% url 'finances:student_report' student.pk %}" class="text-green-600 hover:text-green-700 text-sm font-medium">
+                                    <i class="fas fa-file-alt mr-1"></i>Rapport complet
+                                </a>
+                                <div class="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center text-white">
+                                    <i class="fas fa-wallet"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-600">Frais payés</span>
+                                <span class="font-bold text-slate-900">{{ payment_percentage|floatformat:1 }}%</span>
+                            </div>
+                            <div class="w-full bg-amber-200 rounded-full h-2">
+                                <div class="bg-gradient-to-r from-amber-500 to-orange-500 h-2 rounded-full" style="width: {{ payment_percentage }}%"></div>
+                            </div>
+                            <div class="text-sm text-amber-700">
+                                {% if remaining_amount > 0 %}
+                                    Reste: {{ remaining_amount|floatformat:0 }} FCFA
+                                {% else %}
+                                    Paiement complet
+                                {% endif %}
+                            </div>
+                            <div class="text-xs text-slate-500">
+                                Total payé: {{ total_paid|floatformat:0 }} FCFA / {{ total_due|floatformat:0 }} FCFA
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="mt-8">
+                    <h3 class="text-xl font-bold text-slate-900 mb-4">Activité récente</h3>
+                    <div class="space-y-4">
+                        {% if recent_activities %}
+                            {% for activity in recent_activities %}
+                            <div class="flex items-center gap-4 p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
+                                <div class="w-10 h-10 bg-{{ activity.color }}-100 rounded-full flex items-center justify-center">
+                                    <i class="{{ activity.icon }} text-{{ activity.color }}-600"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="font-semibold text-slate-900">{{ activity.title }}</div>
+                                    <div class="text-sm text-slate-500">{{ activity.description }}</div>
+                                </div>
+                                <div class="text-sm text-slate-400">{{ activity.time_ago }}</div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center py-8">
+                                <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <i class="fas fa-info-circle text-slate-400 text-xl"></i>
+                                </div>
+                                <h3 class="text-lg font-semibold text-slate-900 mb-2">Aucune activité récente</h3>
+                                <p class="text-slate-600">Les activités de l'étudiant apparaîtront ici.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Academic Tab -->
+            <div x-show="activeTab === 'academic'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-y-4" x-transition:enter-end="opacity-100 transform translate-y-0" data-tab-content="academic">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Grades -->
+                    <div class="bg-white rounded-xl border border-slate-200 p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold text-slate-900">Notes récentes</h3>
+                            <button class="text-indigo-600 hover:text-indigo-700 text-sm font-medium">Voir tout</button>
+                        </div>
+                        {% include "students/partials/evaluation_list.html" %}
+                    </div>
+
+                    <!-- Attendance -->
+                    <div class="bg-white rounded-xl border border-slate-200 p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold text-slate-900">Présences</h3>
+                            <button class="text-indigo-600 hover:text-indigo-700 text-sm font-medium">Voir tout</button>
+                        </div>
+                        {% include "students/partials/attendance_list.html" %}
+                    </div>
+                </div>
+
+                <!-- Sanctions -->
+                <div class="mt-6 bg-white rounded-xl border border-slate-200 p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-slate-900">Sanctions disciplinaires</h3>
+                        <button class="text-indigo-600 hover:text-indigo-700 text-sm font-medium">Ajouter</button>
+                    </div>
+                    {% include "students/partials/sanction_list.html" %}
+                </div>
+            </div>
+
+            <!-- Financial Tab -->
+            <div x-show="activeTab === 'financial'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-y-4" x-transition:enter-end="opacity-100 transform translate-y-0" data-tab-content="financial">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Payments -->
+                    <div class="bg-white rounded-xl border border-slate-200 p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold text-slate-900">Historique des paiements</h3>
+                            <button class="text-indigo-600 hover:text-indigo-700 text-sm font-medium">Nouveau paiement</button>
+                        </div>
+                        {% include "students/partials/payment_list.html" %}
+                    </div>
+
+                    <!-- Scholarships -->
+                    <div class="bg-white rounded-xl border border-slate-200 p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold text-slate-900">Bourses et aides</h3>
+                            <a href="{% url 'finances:discount_create' %}?student={{ student.pk }}" class="text-indigo-600 hover:text-indigo-700 text-sm font-medium">Ajouter une remise</a>
+                        </div>
+                        {% include "students/partials/scholarship_list.html" %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Family Tab -->
+            <div x-show="activeTab === 'family'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-y-4" x-transition:enter-end="opacity-100 transform translate-y-0" data-tab-content="family">
+                <div class="bg-white rounded-xl border border-slate-200 p-6">
+                    {% include "students/partials/guardians_list.html" with student=student guardians=guardians %}
+                </div>
+            </div>
+
+            <!-- Documents Tab -->
+            <div x-show="activeTab === 'documents'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-y-4" x-transition:enter-end="opacity-100 transform translate-y-0" data-tab-content="documents">
+                <div class="bg-white rounded-xl border border-slate-200 p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-slate-900">Documents et pièces jointes</h3>
+                        <a href="{% url 'documents:document_create' student.pk %}" class="text-indigo-600 hover:text-indigo-700 text-sm font-medium">Ajouter un document</a>
+                    </div>
+                    {% include "students/partials/document_list.html" %}
+                </div>
+            </div>
+
+            <!-- History Tab -->
+            <div x-show="activeTab === 'history'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-y-4" x-transition:enter-end="opacity-100 transform translate-y-0" data-tab-content="history">
+                <div class="bg-white rounded-xl border border-slate-200 p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-slate-900">Historique complet</h3>
+                        <div class="flex items-center gap-2">
+                            <a href="{% url 'students:student_history_create' student.pk %}" class="text-indigo-600 hover:text-indigo-700 text-sm font-medium">Ajouter un historique</a>
+                            <select class="border border-slate-200 rounded-lg px-3 py-1 text-sm">
+                                <option>Toutes les activités</option>
+                                <option>Notes</option>
+                                <option>Paiements</option>
+                                <option>Présences</option>
+                            </select>
+                        </div>
+                    </div>
+                    {% include "students/partials/history_list.html" %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Enhanced Modal -->
+<div id="studentModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden" onclick="closeStudentModal()">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden" onclick="event.stopPropagation()">
+            <!-- Modal Header avec gradient -->
+            <div class="bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 text-white p-6 rounded-t-3xl">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
+                            <i class="fas fa-user-graduate text-white text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-2xl font-bold">Modifier l'élève</h3>
+                            <p class="text-indigo-100 text-sm mt-1">Modifier les informations de {{ student.first_name }} {{ student.last_name }}</p>
+                        </div>
+                    </div>
+                    <button onclick="closeStudentModal()" 
+                            class="w-10 h-10 bg-white/20 hover:bg-white/30 rounded-xl flex items-center justify-center transition-all duration-200 backdrop-blur-sm">
+                        <i class="fas fa-times text-white"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Modal Content avec scroll personnalisé -->
+            <div class="p-6 overflow-y-auto max-h-[calc(90vh-200px)] custom-scrollbar">
+                <div id="modal-content"></div>
+            </div>
+
+            <!-- Modal Footer avec design moderne -->
+            <div class="bg-gradient-to-r from-slate-50 to-blue-50 p-6 border-t border-slate-200 rounded-b-3xl">
+                <div class="flex items-center justify-between">
+                    <div class="text-sm text-slate-600">
+                        <i class="fas fa-info-circle mr-2 text-blue-500"></i>
+                        Tous les champs marqués d'un * sont obligatoires
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button onclick="closeStudentModal()" 
+                                class="px-6 py-3 text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition-all duration-200 font-medium shadow-sm hover:shadow-md">
+                            <i class="fas fa-times mr-2"></i>Annuler
+                        </button>
+                        <button class="px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl font-medium">
+                            <i class="fas fa-save mr-2"></i>Enregistrer
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Guardian Modal -->
+<div id="guardianModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden" onclick="closeGuardianModal()">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden" onclick="event.stopPropagation()">
+            <!-- Modal Header avec gradient -->
+            <div class="bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white p-6 rounded-t-3xl">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
+                            <i class="fas fa-users text-white text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-2xl font-bold">Gestion des parents</h3>
+                            <p class="text-blue-100 text-sm mt-1">Ajouter ou modifier les informations des parents/tuteurs</p>
+                        </div>
+                    </div>
+                    <button onclick="closeGuardianModal()" 
+                            class="w-10 h-10 bg-white/20 hover:bg-white/30 rounded-xl flex items-center justify-center transition-all duration-200 backdrop-blur-sm">
+                        <i class="fas fa-times text-white"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Modal Content avec scroll personnalisé -->
+            <div class="p-6 overflow-y-auto max-h-[calc(90vh-200px)] custom-scrollbar">
+                <div id="guardian-modal-content"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Modal Functions
+function openStudentModal() {
+    document.getElementById('studentModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeStudentModal() {
+    document.getElementById('studentModal').classList.add('hidden');
+    document.body.style.overflow = 'auto';
+}
+
+function printProfile() {
+    window.print();
+}
+
+function exportProfile() {
+    // Add export logic
+    console.log('Exporting profile...');
+}
+
+function editStudent() {
+    // Ouvrir la modale et charger le formulaire de modification
+    openStudentModal();
+    
+    // Charger le formulaire de modification via AJAX
+    fetch("{% url 'students:student_update_htmx' student.id %}", {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.text())
+    .then(html => {
+        document.getElementById('modal-content').innerHTML = html;
+    })
+    .catch(error => {
+        console.error('Erreur lors du chargement du formulaire:', error);
+        document.getElementById('modal-content').innerHTML = 
+            '<div class="text-red-600 p-6">Erreur lors du chargement du formulaire de modification</div>';
+    });
+}
+
+// Guardian Modal Functions
+function openGuardianModal() {
+    console.log('🔓 Ouverture de la modale guardian...');
+    document.getElementById('guardianModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    
+    // Charger le formulaire d'ajout de guardian
+    const url = "{% url 'students:guardian_create_htmx' student.id %}";
+    console.log('📡 Chargement depuis:', url);
+    
+    fetch(url, {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => {
+        console.log('📥 Réponse reçue:', response.status);
+        return response.text();
+    })
+    .then(html => {
+        console.log('✅ HTML reçu, longueur:', html.length);
+        document.getElementById('guardian-modal-content').innerHTML = html;
+        
+        // Vérifier que HTMX est bien initialisé
+        if (typeof htmx !== 'undefined') {
+            console.log('✅ HTMX est disponible');
+            // Forcer la réinitialisation d'HTMX sur le nouveau contenu
+            htmx.process(document.getElementById('guardian-modal-content'));
+        } else {
+            console.error('❌ HTMX n\'est pas disponible');
+        }
+    })
+    .catch(error => {
+        console.error('❌ Erreur lors du chargement du formulaire:', error);
+        document.getElementById('guardian-modal-content').innerHTML = 
+            '<div class="text-red-600 p-6">Erreur lors du chargement du formulaire</div>';
+    });
+}
+
+function closeGuardianModal() {
+    document.getElementById('guardianModal').classList.add('hidden');
+    document.body.style.overflow = 'auto';
+    document.getElementById('guardian-modal-content').innerHTML = '';
+}
+
+function editGuardian(guardianId) {
+    openGuardianModal();
+    
+    // Charger le formulaire de modification
+    fetch(`{% url 'students:guardian_update_htmx' 0 %}`.replace('0', guardianId), {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.text())
+    .then(html => {
+        document.getElementById('guardian-modal-content').innerHTML = html;
+    })
+    .catch(error => {
+        console.error('Erreur lors du chargement du formulaire:', error);
+        document.getElementById('guardian-modal-content').innerHTML = 
+            '<div class="text-red-600 p-6">Erreur lors du chargement du formulaire</div>';
+    });
+}
+
+function deleteGuardian(guardianId) {
+    openGuardianModal();
+    
+    // Charger la confirmation de suppression
+    fetch(`{% url 'students:guardian_delete_htmx' 0 %}`.replace('0', guardianId), {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.text())
+    .then(html => {
+        document.getElementById('guardian-modal-content').innerHTML = html;
+    })
+    .catch(error => {
+        console.error('Erreur lors du chargement de la confirmation:', error);
+        document.getElementById('guardian-modal-content').innerHTML = 
+            '<div class="text-red-600 p-6">Erreur lors du chargement de la confirmation</div>';
+    });
+}
+
+// Debug Alpine.js
+document.addEventListener('alpine:init', () => {
+    console.log('Alpine.js is loaded and working!');
+});
+
+// Fallback for tabs if Alpine.js doesn't work
+document.addEventListener('DOMContentLoaded', function() {
+    const tabButtons = document.querySelectorAll('[data-tab]');
+    const tabContents = document.querySelectorAll('[data-tab-content]');
+    
+    function showTab(tabName) {
+        // Hide all tab contents
+        tabContents.forEach(content => {
+            content.style.display = 'none';
+        });
+        
+        // Remove active class from all buttons
+        tabButtons.forEach(button => {
+            button.classList.remove('border-indigo-500', 'text-indigo-600', 'bg-indigo-50');
+            button.classList.add('border-transparent', 'text-slate-500');
+        });
+        
+        // Show selected tab content
+        const selectedContent = document.querySelector(`[data-tab-content="${tabName}"]`);
+        if (selectedContent) {
+            selectedContent.style.display = 'block';
+        }
+        
+        // Add active class to selected button
+        const selectedButton = document.querySelector(`[data-tab="${tabName}"]`);
+        if (selectedButton) {
+            selectedButton.classList.remove('border-transparent', 'text-slate-500');
+            selectedButton.classList.add('border-indigo-500', 'text-indigo-600', 'bg-indigo-50');
+        }
+    }
+    
+    // Add click handlers
+    tabButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const tabName = this.getAttribute('data-tab');
+            showTab(tabName);
+        });
+    });
+    
+    // Show default tab
+    showTab('overview');
+});
+</script>
+
+<style>
+/* Scroll personnalisé pour la modale */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: linear-gradient(to bottom, #6366f1, #8b5cf6);
+    border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(to bottom, #4f46e5, #7c3aed);
+}
+
+/* Animation d'entrée pour la modale */
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+#studentModal > div > div {
+    animation: modalSlideIn 0.3s ease-out;
+}
+</style>
+
+{% endblock %}

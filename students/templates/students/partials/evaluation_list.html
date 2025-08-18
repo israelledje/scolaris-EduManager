@@ -1,0 +1,25 @@
+<div class="bg-white rounded-xl shadow p-4">
+  <h3 class="font-semibold text-lg text-gray-800 mb-2">Notes / Évaluations</h3>
+  <table class="min-w-full divide-y divide-gray-200">
+    <thead class="bg-gray-50">
+      <tr>
+        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Matière</th>
+        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Séquence</th>
+        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Note</th>
+        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">/</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for e in evaluations %}
+      <tr class="hover:bg-gray-50 transition">
+        <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-800">{{ e.subject }}</td>
+        <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{{ e.get_sequence_display }}</td>
+        <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{{ e.score }}</td>
+        <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{{ e.max_score }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" class="px-4 py-6 text-center text-gray-400 text-sm">Aucune note.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div> 

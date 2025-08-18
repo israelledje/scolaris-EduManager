@@ -1,0 +1,784 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+    {% if trimester %}Modifier le Trimestre{% else %}Créer un Trimestre{% endif %}
+{% endblock %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item"><a href="{% url 'notes:dashboard' %}">Notes</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'notes:trimester_list' %}">Trimestres</a></li>
+    <li class="breadcrumb-item active">{% if trimester %}Modifier{% else %}Créer{% endif %}</li>
+{% endblock %}
+
+{% block breadcrumb_current %}
+    {% if trimester %}Modifier le Trimestre{% else %}Créer un Trimestre{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Animations personnalisées pour interface solennelle */
+    @keyframes slideInDown {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes scaleIn {
+        from {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    @keyframes pulse-success {
+        0%, 100% {
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+        }
+        50% {
+            box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+        }
+    }
+
+    .animate-slide-in-down {
+        animation: slideInDown 0.6s ease-out;
+    }
+
+    .animate-fade-in-up {
+        animation: fadeInUp 0.5s ease-out;
+    }
+
+    .animate-scale-in {
+        animation: scaleIn 0.4s ease-out;
+    }
+
+    .animate-pulse-success {
+        animation: pulse-success 2s infinite;
+    }
+
+    .animation-delay-100 { animation-delay: 0.1s; }
+    .animation-delay-200 { animation-delay: 0.2s; }
+    .animation-delay-300 { animation-delay: 0.3s; }
+    .animation-delay-400 { animation-delay: 0.4s; }
+    .animation-delay-500 { animation-delay: 0.5s; }
+
+    /* Gradients professionnels */
+    .bg-gradient-header {
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    }
+
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #1e40af 0%, #1d4ed8 100%);
+    }
+
+    .bg-gradient-success {
+        background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+    }
+
+    .bg-gradient-section {
+        background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+    }
+
+    .bg-gradient-card {
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    }
+
+    /* Focus ring professionnel */
+    .focus-ring:focus {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+        border-color: #1e40af;
+    }
+
+    /* Hover effects subtils */
+    .hover-lift {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .hover-lift:hover {
+        transform: translateY(-2px);
+    }
+
+    .hover-shadow:hover {
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    /* États de validation */
+    .field-valid {
+        border-color: #059669;
+        background-color: #f0fdf4;
+    }
+
+    .field-invalid {
+        border-color: #dc2626;
+        background-color: #fef2f2;
+    }
+
+    .field-invalid:focus {
+        box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+    }
+
+    /* Switch personnalisé */
+    .custom-switch {
+        position: relative;
+        display: inline-block;
+        width: 60px;
+        height: 34px;
+    }
+
+    .custom-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .switch-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #cbd5e1;
+        transition: .4s;
+        border-radius: 34px;
+    }
+
+    .switch-slider:before {
+        position: absolute;
+        content: "";
+        height: 26px;
+        width: 26px;
+        left: 4px;
+        bottom: 4px;
+        background-color: white;
+        transition: .4s;
+        border-radius: 50%;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    input:checked + .switch-slider {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    }
+
+    input:checked + .switch-slider:before {
+        transform: translateX(26px);
+    }
+
+    /* Séparateurs élégants */
+    .section-divider {
+        background: linear-gradient(90deg, transparent, #e5e7eb, transparent);
+        height: 1px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-header">
+    <!-- En-tête principal -->
+    <div class="bg-white border-b border-gray-200 shadow-sm">
+        <div class="max-w-7xl mx-auto px-6 py-8">
+            <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 animate-slide-in-down">
+                <div class="flex items-center gap-4">
+                    <div class="w-16 h-16 bg-gradient-primary rounded-2xl flex items-center justify-center text-white shadow-lg">
+                        {% if trimester %}
+                            <i class="fas fa-edit text-2xl" aria-hidden="true"></i>
+                        {% else %}
+                            <i class="fas fa-calendar-plus text-2xl" aria-hidden="true"></i>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <h1 class="text-4xl font-black text-gray-900 mb-2">
+                            {% if trimester %}
+                                Modification de Trimestre
+                            {% else %}
+                                Création de Trimestre
+                            {% endif %}
+                        </h1>
+                        <p class="text-lg text-gray-600 font-medium">
+                            {% if trimester %}
+                                Modifier les paramètres du trimestre existant
+                            {% else %}
+                                Définir une nouvelle période d'évaluation
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <a href="{% url 'notes:trimester_list' %}" 
+                       class="inline-flex items-center px-6 py-3 bg-gray-100 border border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 hover:border-gray-400 hover-lift transition-all duration-300">
+                        <i class="fas fa-arrow-left mr-3" aria-hidden="true"></i>
+                        Retour à la Liste
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulaire principal -->
+    <div class="max-w-5xl mx-auto px-6 py-12">
+        <div class="bg-white rounded-3xl shadow-2xl border border-gray-200 overflow-hidden animate-scale-in">
+            <form method="post" id="trimesterForm" class="needs-validation" novalidate>
+                {% csrf_token %}
+                
+                <!-- Section 1: Identification du trimestre -->
+                <div class="px-12 py-10 border-b border-gray-100 animate-fade-in-up animation-delay-100">
+                    <div class="mb-8">
+                        <div class="flex items-center gap-4 mb-6">
+                            <div class="w-12 h-12 bg-gradient-primary rounded-xl flex items-center justify-center text-white shadow-md">
+                                <i class="fas fa-id-card text-lg" aria-hidden="true"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-2xl font-bold text-gray-900">Identification du Trimestre</h2>
+                                <p class="text-gray-600 mt-1">Définissez le nom et l'année scolaire</p>
+                            </div>
+                        </div>
+                        <div class="section-divider mb-8"></div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                                <!-- Type de trimestre -->
+                        <div class="form-group">
+                            <label for="id_trimester" class="block text-sm font-bold text-gray-800 mb-3 uppercase tracking-wide">
+                                <i class="fas fa-tag mr-2 text-blue-500" aria-hidden="true"></i>
+                                Type de Trimestre <span class="text-red-600">*</span>
+                            </label>
+                            <select class="w-full px-5 py-4 border-2 border-gray-300 rounded-xl focus-ring transition-all duration-300 bg-white hover:border-gray-400 text-lg font-medium {% if form.trimester.errors %}field-invalid{% endif %}"
+                                    id="id_trimester"
+                                    name="trimester"
+                                    required>
+                                <option value="">Sélectionner un type de trimestre</option>
+                                <option value="1ER" {% if form_data.trimester == '1ER' %}selected{% endif %}>1er Trimestre</option>
+                                <option value="2EME" {% if form_data.trimester == '2EME' %}selected{% endif %}>2ème Trimestre</option>
+                                <option value="3EME" {% if form_data.trimester == '3EME' %}selected{% endif %}>3ème Trimestre</option>
+                            </select>
+                            {% if form.trimester.errors %}
+                                <div class="text-red-600 text-sm mt-2 font-medium">
+                                    {% for error in form.trimester.errors %}
+                                        <div class="flex items-center gap-2">
+                                            <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+                                            {{ error }}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <p class="text-sm text-gray-500 mt-2 font-medium">
+                                Type de trimestre (1er, 2ème ou 3ème)
+                            </p>
+                        </div>
+
+                        <!-- Année scolaire -->
+                        <div class="form-group">
+                            <label for="id_school_year" class="block text-sm font-bold text-gray-800 mb-3 uppercase tracking-wide">
+                                <i class="fas fa-graduation-cap mr-2 text-blue-500" aria-hidden="true"></i>
+                                Année Scolaire <span class="text-red-600">*</span>
+                            </label>
+                            <select class="w-full px-5 py-4 border-2 border-gray-300 rounded-xl focus-ring transition-all duration-300 bg-white hover:border-gray-400 text-lg font-medium {% if form.school_year.errors %}field-invalid{% endif %}"
+                                    id="id_school_year"
+                                    name="school_year"
+                                    required>
+                                <option value="">Sélectionner une année scolaire</option>
+                                {% for year in school_years %}
+                                    <option value="{{ year.id }}"
+                                            {% if form.school_year.value == year.id or form_data.school_year == year.id|stringformat:"s" or year.statut == 'EN_COURS' %}selected{% endif %}>
+                                        {{ year.annee }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            {% if form.school_year.errors %}
+                                <div class="text-red-600 text-sm mt-2 font-medium">
+                                    {% for error in form.school_year.errors %}
+                                        <div class="flex items-center gap-2">
+                                            <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+                                            {{ error }}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <p class="text-sm text-gray-500 mt-2 font-medium">
+                                Année scolaire à laquelle appartient ce trimestre
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 2: Période temporelle -->
+                <div class="px-12 py-10 border-b border-gray-100 bg-gradient-section animate-fade-in-up animation-delay-200">
+                    <div class="mb-8">
+                        <div class="flex items-center gap-4 mb-6">
+                            <div class="w-12 h-12 bg-gradient-primary rounded-xl flex items-center justify-center text-white shadow-md">
+                                <i class="fas fa-calendar text-lg" aria-hidden="true"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-2xl font-bold text-gray-900">Période Temporelle</h2>
+                                <p class="text-gray-600 mt-1">Définissez les dates de début et de fin</p>
+                            </div>
+                        </div>
+                        <div class="section-divider mb-8"></div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <!-- Date de début -->
+                        <div class="form-group">
+                            <label for="id_start_date" class="block text-sm font-bold text-gray-800 mb-3 uppercase tracking-wide">
+                                <i class="fas fa-calendar-plus mr-2 text-green-500" aria-hidden="true"></i>
+                                Date de Début <span class="text-red-600">*</span>
+                            </label>
+                            <input type="date"
+                                   class="w-full px-5 py-4 border-2 border-gray-300 rounded-xl focus-ring transition-all duration-300 hover:border-gray-400 text-lg font-medium {% if form.start_date.errors %}field-invalid{% endif %}"
+                                   id="id_start_date"
+                                   name="start_date"
+                                   value="{% if form.start_date.value %}{{ form.start_date.value|date:'Y-m-d' }}{% elif form_data.start_date %}{{ form_data.start_date }}{% endif %}"
+                                   required>
+                            {% if form.start_date.errors %}
+                                <div class="text-red-600 text-sm mt-2 font-medium">
+                                    {% for error in form.start_date.errors %}
+                                        <div class="flex items-center gap-2">
+                                            <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+                                            {{ error }}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <p class="text-sm text-gray-500 mt-2 font-medium">
+                                Date de commencement du trimestre
+                            </p>
+                        </div>
+
+                        <!-- Date de fin -->
+                        <div class="form-group">
+                            <label for="id_end_date" class="block text-sm font-bold text-gray-800 mb-3 uppercase tracking-wide">
+                                <i class="fas fa-calendar-minus mr-2 text-red-500" aria-hidden="true"></i>
+                                Date de Fin <span class="text-red-600">*</span>
+                            </label>
+                            <input type="date"
+                                   class="w-full px-5 py-4 border-2 border-gray-300 rounded-xl focus-ring transition-all duration-300 hover:border-gray-400 text-lg font-medium {% if form.end_date.errors %}field-invalid{% endif %}"
+                                   id="id_end_date"
+                                   name="end_date"
+                                   value="{% if form.end_date.value %}{{ form.end_date.value|date:'Y-m-d' }}{% elif form_data.end_date %}{{ form_data.end_date }}{% endif %}"
+                                   required>
+                            {% if form.end_date.errors %}
+                                <div class="text-red-600 text-sm mt-2 font-medium">
+                                    {% for error in form.end_date.errors %}
+                                        <div class="flex items-center gap-2">
+                                            <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+                                            {{ error }}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <p class="text-sm text-gray-500 mt-2 font-medium">
+                                Date de clôture du trimestre
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                
+
+                <!-- Actions finales -->
+                <div class="px-12 py-10 bg-gray-50 border-t border-gray-200 animate-fade-in-up animation-delay-500">
+                    <div class="flex flex-col lg:flex-row justify-between items-center gap-6">
+                        <div class="flex items-center gap-4 text-gray-600">
+                            <i class="fas fa-info-circle text-lg" aria-hidden="true"></i>
+                            <span class="font-medium">
+                                Les champs marqués d'un astérisque (<span class="text-red-600">*</span>) sont obligatoires
+                            </span>
+                        </div>
+                        
+                        <div class="flex items-center gap-4">
+                            <a href="{% url 'notes:trimester_list' %}" 
+                               class="inline-flex items-center px-8 py-4 bg-white border-2 border-gray-300 text-gray-700 rounded-xl font-bold hover:bg-gray-50 hover:border-gray-400 hover-lift transition-all duration-300 shadow-sm">
+                                <i class="fas fa-times mr-3" aria-hidden="true"></i>
+                                Annuler
+                            </a>
+                            
+                            <button type="submit" 
+                                    class="inline-flex items-center px-10 py-4 bg-gradient-primary text-white rounded-xl font-bold hover-lift hover-shadow transition-all duration-300 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                                    id="submitBtn">
+                                <i class="fas fa-save mr-3" aria-hidden="true"></i>
+                                <span class="submit-text">
+                                    {% if trimester %}Mettre à Jour le Trimestre{% else %}Créer le Trimestre{% endif %}
+                                </span>
+                                <div class="loading-spinner hidden ml-3">
+                                    <div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Panneau d'informations -->
+        <div class="mt-12 grid grid-cols-1 lg:grid-cols-3 gap-8 animate-fade-in-up animation-delay-500">
+            <!-- Conseils -->
+            <div class="bg-blue-50 border-2 border-blue-200 rounded-2xl p-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center text-white">
+                        <i class="fas fa-lightbulb" aria-hidden="true"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-blue-900">Conseils de Configuration</h3>
+                </div>
+                <ul class="text-blue-800 space-y-2 text-sm">
+                    <li class="flex items-start gap-2">
+                        <i class="fas fa-check-circle text-blue-600 mt-0.5 flex-shrink-0" aria-hidden="true"></i>
+                        <span>Vérifiez que les dates ne se chevauchent pas</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <i class="fas fa-check-circle text-blue-600 mt-0.5 flex-shrink-0" aria-hidden="true"></i>
+                        <span>L'ordre détermine l'affichage dans les listes</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <i class="fas fa-check-circle text-blue-600 mt-0.5 flex-shrink-0" aria-hidden="true"></i>
+                        <span>Un seul trimestre peut être actuel</span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Rappels -->
+            <div class="bg-amber-50 border-2 border-amber-200 rounded-2xl p-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center text-white">
+                        <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-amber-900">Points d'Attention</h3>
+                </div>
+                <ul class="text-amber-800 space-y-2 text-sm">
+                    <li class="flex items-start gap-2">
+                        <i class="fas fa-info-circle text-amber-600 mt-0.5 flex-shrink-0" aria-hidden="true"></i>
+                        <span>La modification affecte les évaluations existantes</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <i class="fas fa-info-circle text-amber-600 mt-0.5 flex-shrink-0" aria-hidden="true"></i>
+                        <span>Coordonnez avec l'équipe pédagogique</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <i class="fas fa-info-circle text-amber-600 mt-0.5 flex-shrink-0" aria-hidden="true"></i>
+                        <span>Sauvegardez avant les modifications</span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Support -->
+            <div class="bg-green-50 border-2 border-green-200 rounded-2xl p-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center text-white">
+                        <i class="fas fa-question-circle" aria-hidden="true"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-green-900">Besoin d'Aide ?</h3>
+                </div>
+                <ul class="text-green-800 space-y-2 text-sm">
+                    <li class="flex items-start gap-2">
+                        <i class="fas fa-phone text-green-600 mt-0.5 flex-shrink-0" aria-hidden="true"></i>
+                        <span>Support technique : ext. 1234</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <i class="fas fa-envelope text-green-600 mt-0.5 flex-shrink-0" aria-hidden="true"></i>
+                        <span>Email : support@ecole.fr</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <i class="fas fa-book text-green-600 mt-0.5 flex-shrink-0" aria-hidden="true"></i>
+                        <span>Guide utilisateur disponible</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Gestionnaire de formulaire professionnel pour trimestres
+    class TrimesterFormManager {
+        constructor() {
+            this.form = document.getElementById('trimesterForm');
+            this.submitBtn = document.getElementById('submitBtn');
+            this.submitText = this.submitBtn.querySelector('.submit-text');
+            this.loadingSpinner = this.submitBtn.querySelector('.loading-spinner');
+            this.isSubmitting = false;
+            
+            this.init();
+        }
+
+        init() {
+            this.setupSidebarActivation();
+            this.setupValidation();
+            this.setupFormSubmission();
+            this.setupDateValidation();
+            this.setupCurrentTrimesterToggle();
+            this.setupFieldInteractions();
+            this.setupAccessibility();
+        }
+
+        setupSidebarActivation() {
+            // Forcer l'activation du lien Notes dans la sidebar
+            const notesLink = document.querySelector('[data-page="notes"]');
+            if (notesLink) {
+                notesLink.classList.add('active');
+            }
+            
+            // Désactiver les autres liens actifs
+            document.querySelectorAll('.sidebar-link.active').forEach(link => {
+                if (link !== notesLink) {
+                    link.classList.remove('active');
+                }
+            });
+        }
+
+        setupValidation() {
+            const requiredFields = this.form.querySelectorAll('[required]');
+            
+            requiredFields.forEach(field => {
+                field.addEventListener('blur', () => this.validateField(field));
+                field.addEventListener('input', () => this.clearFieldError(field));
+                field.addEventListener('change', () => this.validateField(field));
+            });
+        }
+
+        validateField(field) {
+            const value = field.value.trim();
+            const fieldGroup = field.closest('.form-group');
+            
+            let isValid = true;
+            let errorMessage = '';
+
+            if (field.hasAttribute('required') && !value) {
+                isValid = false;
+                errorMessage = 'Ce champ est obligatoire pour valider le formulaire';
+            }
+
+            if (value && field.type === 'number') {
+                const numValue = parseFloat(value);
+                const min = parseFloat(field.getAttribute('min'));
+                const max = parseFloat(field.getAttribute('max'));
+                
+                if (min !== null && numValue < min) {
+                    isValid = false;
+                    errorMessage = `La valeur doit être supérieure ou égale à ${min}`;
+                }
+                
+                if (max !== null && numValue > max) {
+                    isValid = false;
+                    errorMessage = `La valeur doit être inférieure ou égale à ${max}`;
+                }
+            }
+
+            this.updateFieldState(field, isValid, errorMessage);
+            return isValid;
+        }
+
+        updateFieldState(field, isValid, errorMessage) {
+            field.classList.remove('field-valid', 'field-invalid');
+            
+            if (isValid && field.value.trim()) {
+                field.classList.add('field-valid');
+            } else if (!isValid) {
+                field.classList.add('field-invalid');
+            }
+        }
+
+        clearFieldError(field) {
+            field.classList.remove('field-invalid');
+        }
+
+        setupFormSubmission() {
+            this.form.addEventListener('submit', (e) => {
+                if (this.isSubmitting) {
+                    e.preventDefault();
+                    return;
+                }
+                
+                if (!this.validateForm()) {
+                    e.preventDefault();
+                    this.showValidationErrors();
+                }
+            });
+        }
+
+        validateForm() {
+            const requiredFields = this.form.querySelectorAll('[required]');
+            let isValid = true;
+            
+            requiredFields.forEach(field => {
+                if (!this.validateField(field)) {
+                    isValid = false;
+                }
+            });
+            
+            return isValid;
+        }
+
+        showValidationErrors() {
+            const firstInvalidField = this.form.querySelector('.field-invalid');
+            if (firstInvalidField) {
+                firstInvalidField.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'center' 
+                });
+                firstInvalidField.focus();
+            }
+            
+            this.showNotification('Veuillez corriger les erreurs dans le formulaire', 'error');
+        }
+
+        submitForm() {
+            this.isSubmitting = true;
+            this.updateSubmitButton(true);
+            this.form.submit();
+        }
+
+        updateSubmitButton(loading) {
+            if (loading) {
+                this.submitBtn.disabled = true;
+                this.submitText.classList.add('hidden');
+                this.loadingSpinner.classList.remove('hidden');
+                this.submitBtn.classList.add('opacity-75');
+            } else {
+                this.submitBtn.disabled = false;
+                this.submitText.classList.remove('hidden');
+                this.loadingSpinner.classList.add('hidden');
+                this.submitBtn.classList.remove('opacity-75');
+            }
+        }
+
+        setupDateValidation() {
+            const startDate = document.getElementById('id_start_date');
+            const endDate = document.getElementById('id_end_date');
+            
+            if (startDate && endDate) {
+                const validateDates = () => {
+                    if (startDate.value && endDate.value && startDate.value > endDate.value) {
+                        endDate.setCustomValidity('La date de fin doit être postérieure à la date de début');
+                        endDate.classList.add('field-invalid');
+                        this.showNotification('La date de fin doit être postérieure à la date de début', 'error');
+                    } else {
+                        endDate.setCustomValidity('');
+                        endDate.classList.remove('field-invalid');
+                    }
+                };
+                
+                startDate.addEventListener('change', validateDates);
+                endDate.addEventListener('change', validateDates);
+            }
+        }
+
+        setupCurrentTrimesterToggle() {
+            const isCurrentCheckbox = document.getElementById('id_is_current');
+            const currentIndicator = document.getElementById('currentIndicator');
+            
+            if (isCurrentCheckbox && currentIndicator) {
+                isCurrentCheckbox.addEventListener('change', (e) => {
+                    if (e.target.checked) {
+                        if (confirm('Êtes-vous sûr de vouloir définir ce trimestre comme trimestre actuel ? Cela désactivera automatiquement les autres trimestres.')) {
+                            currentIndicator.style.display = 'block';
+                            this.showNotification('Ce trimestre sera défini comme trimestre actuel', 'success');
+                        } else {
+                            e.target.checked = false;
+                            currentIndicator.style.display = 'none';
+                        }
+                    } else {
+                        currentIndicator.style.display = 'none';
+                    }
+                });
+            }
+        }
+
+        setupFieldInteractions() {
+            const fields = this.form.querySelectorAll('input, select, textarea');
+            
+            fields.forEach(field => {
+                field.addEventListener('focus', () => {
+                    field.closest('.form-group').classList.add('focused');
+                });
+                
+                field.addEventListener('blur', () => {
+                    field.closest('.form-group').classList.remove('focused');
+                });
+            });
+        }
+
+        setupAccessibility() {
+            // Navigation au clavier améliorée
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    document.activeElement.blur();
+                }
+            });
+        }
+
+        showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 z-50 p-6 rounded-xl shadow-2xl max-w-sm transform transition-all duration-300 translate-x-full border-l-4`;
+            
+            if (type === 'error') {
+                notification.classList.add('bg-red-50', 'text-red-800', 'border-red-500');
+            } else if (type === 'success') {
+                notification.classList.add('bg-green-50', 'text-green-800', 'border-green-500');
+            } else {
+                notification.classList.add('bg-blue-50', 'text-blue-800', 'border-blue-500');
+            }
+            
+            notification.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-${type === 'error' ? 'exclamation-circle' : type === 'success' ? 'check-circle' : 'info-circle'} text-lg"></i>
+                    <span class="font-medium">${message}</span>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => notification.classList.remove('translate-x-full'), 100);
+            setTimeout(() => {
+                notification.classList.add('translate-x-full');
+                setTimeout(() => document.body.removeChild(notification), 300);
+            }, 5000);
+        }
+    }
+
+    // Initialisation
+    document.addEventListener('DOMContentLoaded', () => {
+        new TrimesterFormManager();
+    });
+
+    // Protection contre la perte de données
+    window.addEventListener('beforeunload', (e) => {
+        const form = document.getElementById('trimesterForm');
+        const formData = new FormData(form);
+        let hasData = false;
+        
+        for (let [key, value] of formData.entries()) {
+            if (value && key !== 'csrfmiddlewaretoken') {
+                hasData = true;
+                break;
+            }
+        }
+        
+        if (hasData && !form.submitted) {
+            e.preventDefault();
+            e.returnValue = 'Vous avez des modifications non sauvegardées. Êtes-vous sûr de vouloir quitter cette page ?';
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,311 @@
+{% load widget_tweaks %}
+
+<div class="space-y-6">
+  <!-- Header avec icône et titre -->
+  <div class="text-center mb-8">
+    <div class="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+      <i class="fas fa-user-graduate text-white text-2xl"></i>
+    </div>
+    <h3 class="text-2xl font-bold text-slate-900">
+      {% if student %}Modifier l'élève{% else %}Nouvel élève{% endif %}
+    </h3>
+    <p class="text-slate-600 mt-2">
+      {% if student %}Modifiez les informations de {{ student.first_name }} {{ student.last_name }}{% else %}Remplissez les informations pour créer un nouvel élève{% endif %}
+    </p>
+  </div>
+
+  <form id="student-form" method="post" enctype="multipart/form-data"
+    hx-post="{% if student %}{% url 'students:student_update_htmx' student.id %}{% else %}{% url 'students:student_create_htmx' %}{% endif %}"
+    hx-target="body" hx-swap="outerHTML"
+    class="space-y-6"
+  >
+    {% csrf_token %}
+    
+    {% if form.non_field_errors %}
+    <div class="bg-red-50 border border-red-200 rounded-xl p-4">
+      <div class="flex">
+        <div class="flex-shrink-0">
+          <i class="fas fa-exclamation-circle text-red-400"></i>
+        </div>
+        <div class="ml-3">
+          <h3 class="text-sm font-medium text-red-800">Erreurs de validation</h3>
+          <div class="mt-2 text-sm text-red-700">
+            {{ form.non_field_errors }}
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Section 1: Informations d'identification -->
+    <div class="bg-gradient-to-r from-slate-50 to-blue-50 rounded-2xl p-6 border border-slate-200">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+          <i class="fas fa-id-card text-white text-sm"></i>
+        </div>
+        <h4 class="text-lg font-semibold text-slate-900">Informations d'identification</h4>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-2">
+            <i class="fas fa-hashtag text-blue-500 mr-2"></i>Matricule
+          </label>
+          {{ form.matricule|add_class:"w-full px-4 py-3 border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm"|attr:"placeholder:Ex: ETU2024001" }}
+          {% if form.matricule.errors %}
+          <div class="text-red-600 text-xs mt-2 flex items-center gap-1">
+            <i class="fas fa-exclamation-circle"></i>
+            {{ form.matricule.errors.0 }}
+          </div>
+          {% endif %}
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-2">
+            <i class="fas fa-toggle-on text-green-500 mr-2"></i>Statut
+          </label>
+          <div class="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-xl">
+            {{ form.is_active|add_class:"w-5 h-5 text-blue-600 focus:ring-blue-500 border-slate-300 rounded" }}
+            <span class="text-slate-700 font-medium">Élève actif</span>
+            <div class="ml-auto">
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                <i class="fas fa-check-circle mr-1"></i>Actif
+              </span>
+            </div>
+          </div>
+          {% if form.is_active.errors %}
+          <div class="text-red-600 text-xs mt-2 flex items-center gap-1">
+            <i class="fas fa-exclamation-circle"></i>
+            {{ form.is_active.errors.0 }}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 2: Informations personnelles -->
+    <div class="bg-gradient-to-r from-slate-50 to-emerald-50 rounded-2xl p-6 border border-slate-200">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center">
+          <i class="fas fa-user text-white text-sm"></i>
+        </div>
+        <h4 class="text-lg font-semibold text-slate-900">Informations personnelles</h4>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-2">
+            <i class="fas fa-user text-emerald-500 mr-2"></i>Nom de famille
+          </label>
+          {{ form.last_name|add_class:"w-full px-4 py-3 border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 shadow-sm"|attr:"placeholder:Nom de famille" }}
+          {% if form.last_name.errors %}
+          <div class="text-red-600 text-xs mt-2 flex items-center gap-1">
+            <i class="fas fa-exclamation-circle"></i>
+            {{ form.last_name.errors.0 }}
+          </div>
+          {% endif %}
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-2">
+            <i class="fas fa-user text-emerald-500 mr-2"></i>Prénom
+          </label>
+          {{ form.first_name|add_class:"w-full px-4 py-3 border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 shadow-sm"|attr:"placeholder:Prénom" }}
+          {% if form.first_name.errors %}
+          <div class="text-red-600 text-xs mt-2 flex items-center gap-1">
+            <i class="fas fa-exclamation-circle"></i>
+            {{ form.first_name.errors.0 }}
+          </div>
+          {% endif %}
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-2">
+            <i class="fas fa-calendar text-emerald-500 mr-2"></i>Date de naissance
+          </label>
+          {{ form.birth_date|add_class:"w-full px-4 py-3 border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 shadow-sm"|attr:"type:date" }}
+          {% if form.birth_date.errors %}
+          <div class="text-red-600 text-xs mt-2 flex items-center gap-1">
+            <i class="fas fa-exclamation-circle"></i>
+            {{ form.birth_date.errors.0 }}
+          </div>
+          {% endif %}
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-2">
+            <i class="fas fa-map-marker-alt text-emerald-500 mr-2"></i>Lieu de naissance
+          </label>
+          {{ form.birth_place|add_class:"w-full px-4 py-3 border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 shadow-sm"|attr:"placeholder:Lieu de naissance" }}
+          {% if form.birth_place.errors %}
+          <div class="text-red-600 text-xs mt-2 flex items-center gap-1">
+            <i class="fas fa-exclamation-circle"></i>
+            {{ form.birth_place.errors.0 }}
+          </div>
+          {% endif %}
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-2">
+            <i class="fas fa-venus-mars text-emerald-500 mr-2"></i>Genre
+          </label>
+          {{ form.gender|add_class:"w-full px-4 py-3 border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 shadow-sm" }}
+          {% if form.gender.errors %}
+          <div class="text-red-600 text-xs mt-2 flex items-center gap-1">
+            <i class="fas fa-exclamation-circle"></i>
+            {{ form.gender.errors.0 }}
+          </div>
+          {% endif %}
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-2">
+            <i class="fas fa-flag text-emerald-500 mr-2"></i>Nationalité
+          </label>
+          {{ form.nationality|add_class:"w-full px-4 py-3 border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 shadow-sm"|attr:"placeholder:Nationalité" }}
+          {% if form.nationality.errors %}
+          <div class="text-red-600 text-xs mt-2 flex items-center gap-1">
+            <i class="fas fa-exclamation-circle"></i>
+            {{ form.nationality.errors.0 }}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 3: Contact et localisation -->
+    <div class="bg-gradient-to-r from-slate-50 to-orange-50 rounded-2xl p-6 border border-slate-200">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
+          <i class="fas fa-address-book text-white text-sm"></i>
+        </div>
+        <h4 class="text-lg font-semibold text-slate-900">Contact et localisation</h4>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-2">
+            <i class="fas fa-phone text-orange-500 mr-2"></i>Téléphone
+          </label>
+          {{ form.phone|add_class:"w-full px-4 py-3 border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200 shadow-sm"|attr:"placeholder:Numéro de téléphone" }}
+          {% if form.phone.errors %}
+          <div class="text-red-600 text-xs mt-2 flex items-center gap-1">
+            <i class="fas fa-exclamation-circle"></i>
+            {{ form.phone.errors.0 }}
+          </div>
+          {% endif %}
+        </div>
+        
+        <div class="md:col-span-2">
+          <label class="block text-sm font-medium text-slate-700 mb-2">
+            <i class="fas fa-home text-orange-500 mr-2"></i>Adresse complète
+          </label>
+          {{ form.address|add_class:"w-full px-4 py-3 border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200 shadow-sm"|attr:"placeholder:Adresse complète de l'élève" }}
+          {% if form.address.errors %}
+          <div class="text-red-600 text-xs mt-2 flex items-center gap-1">
+            <i class="fas fa-exclamation-circle"></i>
+            {{ form.address.errors.0 }}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 4: Scolarité -->
+    <div class="bg-gradient-to-r from-slate-50 to-purple-50 rounded-2xl p-6 border border-slate-200">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center">
+          <i class="fas fa-graduation-cap text-white text-sm"></i>
+        </div>
+        <h4 class="text-lg font-semibold text-slate-900">Informations scolaires</h4>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-2">
+            <i class="fas fa-chalkboard text-purple-500 mr-2"></i>Classe actuelle
+          </label>
+          {{ form.current_class|add_class:"w-full px-4 py-3 border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 shadow-sm" }}
+          {% if form.current_class.errors %}
+          <div class="text-red-600 text-xs mt-2 flex items-center gap-1">
+            <i class="fas fa-exclamation-circle"></i>
+            {{ form.current_class.errors.0 }}
+          </div>
+          {% endif %}
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-2">
+            <i class="fas fa-calendar-alt text-purple-500 mr-2"></i>Année scolaire
+          </label>
+          {{ form.year|add_class:"w-full px-4 py-3 border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 shadow-sm" }}
+          {% if form.year.errors %}
+          <div class="text-red-600 text-xs mt-2 flex items-center gap-1">
+            <i class="fas fa-exclamation-circle"></i>
+            {{ form.year.errors.0 }}
+          </div>
+          {% endif %}
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-2">
+            <i class="fas fa-school text-purple-500 mr-2"></i>École
+          </label>
+          {{ form.school|add_class:"w-full px-4 py-3 border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 shadow-sm" }}
+          {% if form.school.errors %}
+          <div class="text-red-600 text-xs mt-2 flex items-center gap-1">
+            <i class="fas fa-exclamation-circle"></i>
+            {{ form.school.errors.0 }}
+          </div>
+          {% endif %}
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-2">
+            <i class="fas fa-image text-purple-500 mr-2"></i>Photo de profil
+          </label>
+          <div class="relative">
+            {{ form.photo|add_class:"w-full px-4 py-3 border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 shadow-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100" }}
+          </div>
+          {% if form.photo.errors %}
+          <div class="text-red-600 text-xs mt-2 flex items-center gap-1">
+            <i class="fas fa-exclamation-circle"></i>
+            {{ form.photo.errors.0 }}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      
+      <!-- Redoublant -->
+      <div class="mt-4 p-4 bg-white rounded-xl border border-slate-200">
+        <div class="flex items-center gap-3">
+          {{ form.is_repeating|add_class:"w-5 h-5 text-purple-600 focus:ring-purple-500 border-slate-300 rounded" }}
+          <div>
+            <label class="text-sm font-medium text-slate-700">Élève redoublant</label>
+            <p class="text-xs text-slate-500 mt-1">Cochez si l'élève redouble sa classe actuelle</p>
+          </div>
+          {% if form.is_repeating.errors %}
+          <div class="text-red-600 text-xs ml-auto flex items-center gap-1">
+            <i class="fas fa-exclamation-circle"></i>
+            {{ form.is_repeating.errors.0 }}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Boutons d'action -->
+    <div class="flex flex-col sm:flex-row justify-end gap-3 pt-6 border-t border-slate-200">
+      <button type="button" 
+              onclick="closeStudentModal()" 
+              class="px-6 py-3 text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition-all duration-200 font-medium shadow-sm">
+        <i class="fas fa-times mr-2"></i>Annuler
+      </button>
+      <button type="submit" 
+              class="px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl font-medium">
+        <i class="fas fa-save mr-2"></i>
+        {% if student %}Mettre à jour{% else %}Créer l'élève{% endif %}
+      </button>
+    </div>
+  </form>
+</div> 

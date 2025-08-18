@@ -1,0 +1,325 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Rapport Étudiant - {{ student.last_name }} {{ student.first_name }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- En-tête -->
+    <div class="mb-8">
+        <div class="flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">Rapport Financier - {{ student.last_name.upper }} {{ student.first_name }}</h1>
+                <p class="text-gray-600">Matricule: {{ student.matricule }} | Classe: {{ student.current_class.name }}</p>
+            </div>
+            <div class="flex space-x-3">
+                <a href="{% url 'students:student_detail' student.pk %}" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition-colors">
+                    <i class="fas fa-arrow-left mr-2"></i>Retour
+                </a>
+                <a href="{% url 'finances:export_student_report' student.pk %}" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors">
+                    <i class="fas fa-download mr-2"></i>Exporter PDF
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Informations de l'étudiant -->
+    <div class="bg-white rounded-lg shadow mb-8">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900">Informations de l'Étudiant</h3>
+        </div>
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Nom complet</p>
+                    <p class="text-lg font-semibold text-gray-900">{{ student.last_name.upper }} {{ student.first_name }}</p>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Matricule</p>
+                    <p class="text-lg font-semibold text-gray-900">{{ student.matricule }}</p>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Classe actuelle</p>
+                    <p class="text-lg font-semibold text-gray-900">{{ student.current_class.name }}</p>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Année scolaire</p>
+                    <p class="text-lg font-semibold text-gray-900">{{ current_year.annee }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Résumé financier -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+                    <i class="fas fa-money-bill text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Total Dû</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ total_due|floatformat:0 }} FCFA</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-green-100 text-green-600">
+                    <i class="fas fa-check-circle text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Total Payé</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ total_paid|floatformat:0 }} FCFA</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-red-100 text-red-600">
+                    <i class="fas fa-exclamation-triangle text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Reste à Payer</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ remaining|floatformat:0 }} FCFA</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-purple-100 text-purple-600">
+                    <i class="fas fa-percentage text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Taux Paiement</p>
+                    <p class="text-2xl font-bold text-gray-900">
+                        {% if total_due > 0 %}
+                            {% widthratio total_paid total_due 100 %}%
+                        {% else %}
+                            0%
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Détail des paiements -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <!-- Paiements d'inscription -->
+        <div class="bg-white rounded-lg shadow">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900">Paiements d'Inscription</h3>
+                <p class="text-sm text-gray-600">Total: {{ total_inscription_paid|floatformat:0 }} FCFA</p>
+            </div>
+            <div class="p-6">
+                {% if inscription_payments %}
+                    <div class="space-y-3">
+                        {% for payment in inscription_payments %}
+                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded">
+                            <div>
+                                <p class="font-medium text-gray-900">{{ payment.payment_date|date:"d/m/Y" }}</p>
+                                <p class="text-sm text-gray-600">
+                                    {% if payment.mode == 'CASH' %}Espèces
+                                    {% elif payment.mode == 'CHECK' %}Chèque
+                                    {% elif payment.mode == 'TRANSFER' %}Virement
+                                    {% elif payment.mode == 'MOBILE_MONEY' %}Mobile Money
+                                    {% else %}{{ payment.mode }}{% endif %}
+                                </p>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-semibold text-green-600">{{ payment.amount|floatformat:0 }} FCFA</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-gray-500 text-center py-4">Aucun paiement d'inscription</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Paiements de scolarité -->
+        <div class="bg-white rounded-lg shadow">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900">Paiements de Scolarité</h3>
+                <p class="text-sm text-gray-600">Total: {{ total_tuition_paid|floatformat:0 }} FCFA</p>
+            </div>
+            <div class="p-6">
+                {% if tuition_payments %}
+                    <div class="space-y-3">
+                        {% for payment in tuition_payments %}
+                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded">
+                            <div>
+                                <p class="font-medium text-gray-900">Tranche {{ payment.tranche.number }}</p>
+                                <p class="text-sm text-gray-600">{{ payment.payment_date|date:"d/m/Y" }}</p>
+                                <p class="text-xs text-gray-500">
+                                    {% if payment.mode == 'CASH' %}Espèces
+                                    {% elif payment.mode == 'CHECK' %}Chèque
+                                    {% elif payment.mode == 'TRANSFER' %}Virement
+                                    {% elif payment.mode == 'MOBILE_MONEY' %}Mobile Money
+                                    {% else %}{{ payment.mode }}{% endif %}
+                                </p>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-semibold text-green-600">{{ payment.amount|floatformat:0 }} FCFA</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-gray-500 text-center py-4">Aucun paiement de scolarité</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Remises accordées -->
+    {% if discounts %}
+    <div class="bg-white rounded-lg shadow mb-8">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900">Remises Accordées</h3>
+            <p class="text-sm text-gray-600">Total: {{ total_discounts|floatformat:0 }} FCFA</p>
+        </div>
+        <div class="p-6">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tranche</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Motif</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Montant</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for discount in discounts %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900">{{ discount.granted_at|date:"d/m/Y" }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900">Tranche {{ discount.tranche.number }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900">{{ discount.reason }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-red-600">{{ discount.amount|floatformat:0 }} FCFA</div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Prochaines échéances -->
+    {% if upcoming_tranches %}
+    <div class="bg-white rounded-lg shadow mb-8">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900">Prochaines Échéances</h3>
+        </div>
+        <div class="p-6">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tranche</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Échéance</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Montant</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for tranche in upcoming_tranches %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900">Tranche {{ tranche.number }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900">{{ tranche.due_date|date:"d/m/Y" }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900">{{ tranche.amount|floatformat:0 }} FCFA</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {% if tranche.due_date < today %}
+                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                                        En retard
+                                    </span>
+                                {% else %}
+                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                        À venir
+                                    </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Structure des frais -->
+    {% if fee_structure %}
+    <div class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900">Structure des Frais</h3>
+        </div>
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h4 class="text-md font-semibold text-gray-900 mb-2">Frais d'Inscription</h4>
+                    <p class="text-2xl font-bold text-blue-600">{{ fee_structure.inscription_fee|floatformat:0 }} FCFA</p>
+                </div>
+                
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h4 class="text-md font-semibold text-gray-900 mb-2">Scolarité Totale</h4>
+                    <p class="text-2xl font-bold text-green-600">{{ fee_structure.tuition_total|floatformat:0 }} FCFA</p>
+                </div>
+            </div>
+            
+            {% if fee_structure.tranches.all %}
+            <div class="mt-6">
+                <h4 class="text-md font-semibold text-gray-900 mb-4">Répartition par Tranches</h4>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tranche</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Montant</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Échéance</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for tranche in fee_structure.tranches.all %}
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-gray-900">Tranche {{ tranche.number }}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">{{ tranche.amount|floatformat:0 }} FCFA</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">{{ tranche.due_date|date:"d/m/Y" }}</div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %} 

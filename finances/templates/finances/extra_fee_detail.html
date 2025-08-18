@@ -1,0 +1,228 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ extra_fee.name }} - Détails{% endblock %}
+{% block page_title %}{{ extra_fee.name }}{% endblock %}
+{% block breadcrumb_current %}Détails du frais{% endblock %}
+
+{% block page_actions %}
+<div class="flex items-center gap-3">
+    <a href="{% url 'finances:extra_fee_list' %}" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2 px-4 rounded-xl transition-all duration-200">
+        <i class="fas fa-arrow-left mr-2"></i>Retour
+    </a>
+    <a href="{% url 'finances:extra_fee_update' extra_fee.id %}" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-xl transition-all duration-200">
+        <i class="fas fa-edit mr-2"></i>Modifier
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+    <!-- Informations principales -->
+    <div class="card-hover bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-200/60">
+            <h3 class="text-lg font-semibold text-slate-900">Informations du frais annexe</h3>
+        </div>
+        
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h4 class="text-sm font-medium text-slate-500 mb-2">Nom</h4>
+                    <p class="text-lg font-semibold text-slate-900">{{ extra_fee.name }}</p>
+                </div>
+                
+                <div>
+                    <h4 class="text-sm font-medium text-slate-500 mb-2">Type</h4>
+                    <p class="text-lg text-slate-900">{{ extra_fee.fee_type.name|default:"Aucun type" }}</p>
+                </div>
+                
+                <div>
+                    <h4 class="text-sm font-medium text-slate-500 mb-2">Montant</h4>
+                    <p class="text-2xl font-bold text-green-600">{{ extra_fee.amount|floatformat:0 }} FCFA</p>
+                </div>
+                
+                <div>
+                    <h4 class="text-sm font-medium text-slate-500 mb-2">Année scolaire</h4>
+                    <p class="text-lg text-slate-900">{{ extra_fee.year.annee }}</p>
+                </div>
+                
+                <div>
+                    <h4 class="text-sm font-medium text-slate-500 mb-2">Statut</h4>
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium 
+                        {% if extra_fee.is_active %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                        {% if extra_fee.is_active %}Actif{% else %}Inactif{% endif %}
+                    </span>
+                </div>
+                
+                <div>
+                    <h4 class="text-sm font-medium text-slate-500 mb-2">Facultatif</h4>
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium 
+                        {% if extra_fee.is_optional %}bg-yellow-100 text-yellow-800{% else %}bg-blue-100 text-blue-800{% endif %}">
+                        {% if extra_fee.is_optional %}Oui{% else %}Non{% endif %}
+                    </span>
+                </div>
+            </div>
+            
+            {% if extra_fee.description %}
+            <div class="mt-6">
+                <h4 class="text-sm font-medium text-slate-500 mb-2">Description</h4>
+                <p class="text-slate-700">{{ extra_fee.description }}</p>
+            </div>
+            {% endif %}
+            
+            <!-- Gestion des classes -->
+            <div class="mt-6">
+                <h4 class="text-sm font-medium text-slate-500 mb-2">Application aux classes</h4>
+                {% if extra_fee.apply_to_all_classes %}
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                        Toutes les classes
+                    </span>
+                {% else %}
+                    <div class="flex flex-wrap gap-2">
+                        {% for class in extra_fee.classes.all %}
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                            {{ class.name }}
+                        </span>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- Gestion des examens -->
+            {% if extra_fee.is_exam_fee %}
+            <div class="mt-6">
+                <h4 class="text-sm font-medium text-slate-500 mb-2">Types d'examens concernés</h4>
+                <div class="flex flex-wrap gap-2">
+                    {% for exam_type in extra_fee.exam_types %}
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800">
+                        {{ exam_type }}
+                    </span>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Statistiques des paiements -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="card-hover bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-users text-blue-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-slate-500 text-sm font-medium">Étudiants concernés</p>
+                    <p class="text-2xl font-bold text-slate-900">{{ total_students }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card-hover bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-check-circle text-green-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-slate-500 text-sm font-medium">Paiements effectués</p>
+                    <p class="text-2xl font-bold text-slate-900">{{ paid_students }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card-hover bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-clock text-yellow-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-slate-500 text-sm font-medium">En attente</p>
+                    <p class="text-2xl font-bold text-slate-900">{{ unpaid_students }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card-hover bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-money-bill-wave text-purple-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-slate-500 text-sm font-medium">Montant perçu</p>
+                    <p class="text-2xl font-bold text-slate-900">{{ total_paid|floatformat:0 }} FCFA</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Liste des paiements -->
+    {% if payments %}
+    <div class="card-hover bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-200/60">
+            <h3 class="text-lg font-semibold text-slate-900">Historique des paiements</h3>
+        </div>
+        
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-slate-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Étudiant</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Classe</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Montant</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Mode</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-slate-200">
+                    {% for payment in payments %}
+                    <tr class="hover:bg-slate-50 transition-colors duration-200">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                                    {{ payment.student.first_name|first }}{{ payment.student.last_name|first }}
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm font-medium text-slate-900">{{ payment.student.first_name }} {{ payment.student.last_name }}</p>
+                                    <p class="text-xs text-slate-500">{{ payment.student.matricule|default:"N/A" }}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
+                            {{ payment.student.current_class.name }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-slate-900">
+                            {{ payment.amount|floatformat:0 }} FCFA
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                {{ payment.get_mode_display }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
+                            {{ payment.payment_date|date:"d/m/Y" }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <a href="{% url 'finances:extra_fee_payment_detail' payment.id %}" 
+                               class="text-blue-600 hover:text-blue-900 transition-colors duration-200"
+                               title="Voir les détails">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="card-hover bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6 text-center">
+        <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <i class="fas fa-receipt text-slate-400 text-2xl"></i>
+        </div>
+        <h3 class="text-lg font-medium text-slate-900 mb-2">Aucun paiement enregistré</h3>
+        <p class="text-slate-500">Aucun étudiant n'a encore payé ce frais annexe.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

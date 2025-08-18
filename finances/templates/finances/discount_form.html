@@ -1,0 +1,176 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}{{ title }} - Finances{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block breadcrumb_current %}Remises{% endblock %}
+
+{% block page_actions %}
+<div class="flex items-center gap-3">
+    <a href="{% url 'finances:discount_list' %}" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2 px-4 rounded-xl transition-all duration-200">
+        <i class="fas fa-arrow-left mr-2"></i>Retour
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="card-hover bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-200/60">
+            <h3 class="text-lg font-semibold text-slate-900">{{ title }}</h3>
+        </div>
+        
+        <form method="post" class="p-6 space-y-6">
+            {% csrf_token %}
+            
+            <!-- Étudiant -->
+            <div>
+                <label for="{{ form.student.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                    Étudiant <span class="text-red-500">*</span>
+                </label>
+                {% render_field form.student class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="Sélectionner un étudiant" %}
+                {% if form.student.errors %}
+                    <div class="mt-2 text-sm text-red-600">
+                        {% for error in form.student.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- Tranche (optionnel) -->
+            <div>
+                <label for="{{ form.tranche.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                    Tranche (optionnel)
+                </label>
+                {% render_field form.tranche class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="Sélectionner une tranche (laisser vide pour l'année complète)" %}
+                <p class="mt-1 text-xs text-slate-500">Laissez vide pour appliquer la remise à l'année complète</p>
+                {% if form.tranche.errors %}
+                    <div class="mt-2 text-sm text-red-600">
+                        {% for error in form.tranche.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- Montant -->
+            <div>
+                <label for="{{ form.amount.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                    Montant de la remise (FCFA) <span class="text-red-500">*</span>
+                </label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
+                        <i class="fas fa-money-bill-wave"></i>
+                    </span>
+                    {% render_field form.amount class="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="0.00" %}
+                </div>
+                {% if form.amount.errors %}
+                    <div class="mt-2 text-sm text-red-600">
+                        {% for error in form.amount.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- Motif -->
+            <div>
+                <label for="{{ form.reason.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                    Motif de la remise <span class="text-red-500">*</span>
+                </label>
+                {% render_field form.reason class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="Ex: Bourse d'excellence, Situation familiale difficile, etc." rows="3" %}
+                {% if form.reason.errors %}
+                    <div class="mt-2 text-sm text-red-600">
+                        {% for error in form.reason.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- Boutons d'action -->
+            <div class="flex items-center justify-end gap-4 pt-6 border-t border-slate-200">
+                <a href="{% url 'finances:discount_list' %}" 
+                   class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 px-6 rounded-xl transition-all duration-200">
+                    Annuler
+                </a>
+                <button type="submit" 
+                        class="btn-gradient text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg">
+                    <i class="fas fa-save mr-2"></i>
+                    {% if discount %}Modifier{% else %}Créer{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Informations supplémentaires -->
+    <div class="mt-6 card-hover bg-blue-50 rounded-2xl border border-blue-200 p-6">
+        <div class="flex items-start">
+            <div class="flex-shrink-0">
+                <i class="fas fa-info-circle text-blue-600 text-xl"></i>
+            </div>
+            <div class="ml-3">
+                <h4 class="text-sm font-medium text-blue-900">Informations importantes</h4>
+                <div class="mt-2 text-sm text-blue-700 space-y-1">
+                    <p>• Les remises sont appliquées automatiquement lors du calcul des frais restants</p>
+                    <p>• Une remise peut être appliquée à une tranche spécifique ou à l'année complète</p>
+                    <p>• Les remises ne peuvent pas dépasser le montant total des frais</p>
+                    <p>• Toutes les remises sont tracées avec l'utilisateur qui les a accordées</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-sélection de la tranche basée sur l'étudiant
+    const studentSelect = document.getElementById('{{ form.student.id_for_label }}');
+    const trancheSelect = document.getElementById('{{ form.tranche.id_for_label }}');
+    
+    if (studentSelect && trancheSelect) {
+        studentSelect.addEventListener('change', function() {
+            const studentId = this.value;
+            if (studentId) {
+                // Vider les options existantes
+                trancheSelect.innerHTML = '<option value="">Chargement...</option>';
+                
+                // Récupérer les tranches de l'étudiant via AJAX
+                fetch(`/finances/ajax/tranches-for-student/?student_id=${studentId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        trancheSelect.innerHTML = '<option value="">Sélectionner une tranche (optionnel)</option>';
+                        data.tranches.forEach(tranche => {
+                            const option = document.createElement('option');
+                            option.value = tranche.id;
+                            option.textContent = `${tranche.fee_structure.year} - Tranche ${tranche.number} (${tranche.amount} FCFA)`;
+                            trancheSelect.appendChild(option);
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Erreur lors du chargement des tranches:', error);
+                        trancheSelect.innerHTML = '<option value="">Erreur de chargement</option>';
+                    });
+            } else {
+                trancheSelect.innerHTML = '<option value="">Sélectionner une tranche (optionnel)</option>';
+            }
+        });
+    }
+    
+    // Validation du montant
+    const amountField = document.getElementById('{{ form.amount.id_for_label }}');
+    if (amountField) {
+        amountField.addEventListener('input', function() {
+            const value = parseFloat(this.value);
+            if (value < 0) {
+                this.setCustomValidity('Le montant ne peut pas être négatif');
+            } else {
+                this.setCustomValidity('');
+            }
+        });
+    }
+});
+</script>
+{% endblock %} 

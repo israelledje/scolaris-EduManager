@@ -1,0 +1,681 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Gestion des Trimestres{% endblock %}
+
+{% block breadcrumb_current %}Notes{% endblock %}
+{% block breadcrumb %}
+    <span class="text-slate-400">/</span>
+    <span class="text-slate-700 font-medium">Trimestres</span>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Animations personnalisées pour interface solennelle */
+    @keyframes slideInDown {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes scaleIn {
+        from {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    @keyframes pulse-glow {
+        0%, 100% {
+            box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+        }
+        50% {
+            box-shadow: 0 0 0 10px rgba(34, 197, 94, 0);
+        }
+    }
+
+    .animate-slide-in-down {
+        animation: slideInDown 0.6s ease-out;
+    }
+
+    .animate-fade-in-up {
+        animation: fadeInUp 0.5s ease-out;
+    }
+
+    .animate-scale-in {
+        animation: scaleIn 0.4s ease-out;
+    }
+
+    .animate-pulse-glow {
+        animation: pulse-glow 2s infinite;
+    }
+
+    .animation-delay-100 { animation-delay: 0.1s; }
+    .animation-delay-200 { animation-delay: 0.2s; }
+    .animation-delay-300 { animation-delay: 0.3s; }
+    .animation-delay-400 { animation-delay: 0.4s; }
+    .animation-delay-500 { animation-delay: 0.5s; }
+
+    /* Gradients professionnels */
+    .bg-gradient-header {
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    }
+
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #1e40af 0%, #1d4ed8 100%);
+    }
+
+    .bg-gradient-success {
+        background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+    }
+
+    .bg-gradient-current {
+        background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    }
+
+    .bg-gradient-card {
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    }
+
+    .bg-gradient-info {
+        background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    }
+
+    /* Hover effects élégants */
+    .hover-lift {
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .hover-lift:hover {
+        transform: translateY(-8px) scale(1.02);
+    }
+
+    .hover-glow:hover {
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    }
+
+    .hover-border:hover {
+        border-color: #1e40af;
+    }
+
+    /* États spéciaux */
+    .current-trimester {
+        border: 3px solid #10b981;
+        background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+        position: relative;
+    }
+
+    .current-trimester::before {
+        content: '';
+        position: absolute;
+        top: -3px;
+        left: -3px;
+        right: -3px;
+        bottom: -3px;
+        background: linear-gradient(45deg, #10b981, #34d399);
+        border-radius: 24px;
+        z-index: -1;
+        animation: pulse-glow 3s infinite;
+    }
+
+    /* Badges de statut */
+    .status-badge {
+        position: relative;
+        overflow: hidden;
+    }
+
+    .status-badge::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+        transition: left 0.5s;
+    }
+
+    .status-badge:hover::before {
+        left: 100%;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-header">
+    <!-- En-tête principal -->
+    <div class="bg-white border-b border-gray-200 shadow-sm">
+        <div class="max-w-7xl mx-auto px-6 py-8">
+            <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 animate-slide-in-down">
+                <div class="flex items-center gap-4">
+                    <div class="w-16 h-16 bg-gradient-primary rounded-2xl flex items-center justify-center text-white shadow-lg">
+                        <i class="fas fa-calendar-alt text-2xl" aria-hidden="true"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-4xl font-black text-gray-900 mb-2">
+                            Gestion des Trimestres
+                        </h1>
+                        <p class="text-lg text-gray-600 font-medium">
+                            Configuration et supervision des périodes d'évaluation
+                        </p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <a href="{% url 'notes:trimester_create' %}" 
+                       class="inline-flex items-center px-6 py-3 bg-gradient-primary text-white rounded-xl font-bold hover-lift hover-glow transition-all duration-300 shadow-lg">
+                        <i class="fas fa-plus mr-3" aria-hidden="true"></i>
+                        Nouveau Trimestre
+                    </a>
+                    <a href="{% url 'notes:dashboard' %}" 
+                       class="inline-flex items-center px-6 py-3 bg-gray-100 border border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 hover:border-gray-400 hover-lift transition-all duration-300">
+                        <i class="fas fa-arrow-left mr-3" aria-hidden="true"></i>
+                        Retour au Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contenu principal -->
+    <div class="max-w-7xl mx-auto px-6 py-12">
+        <!-- Informations sur l'année scolaire -->
+        {% if year %}
+        <div class="mb-12 animate-fade-in-up animation-delay-100">
+            <div class="bg-gradient-info border-2 border-blue-300 rounded-2xl p-6 shadow-lg">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center text-white shadow-md">
+                        <i class="fas fa-graduation-cap text-lg" aria-hidden="true"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-blue-900 mb-1">Année Scolaire en Cours</h2>
+                        <p class="text-2xl font-black text-blue-800">{{ year.annee }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Liste des trimestres -->
+        {% if trimesters %}
+        <div class="mb-8">
+            <div class="flex items-center gap-3 mb-8">
+                <div class="w-10 h-10 bg-gradient-primary rounded-xl flex items-center justify-center text-white">
+                    <i class="fas fa-list text-lg" aria-hidden="true"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-gray-900">Trimestres Configurés</h2>
+                <div class="flex-1 h-px bg-gradient-to-r from-gray-300 to-transparent"></div>
+                <span class="text-sm font-semibold text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                    {{ trimesters|length }} trimestre{{ trimesters|length|pluralize }}
+                </span>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
+                {% for trimester in trimesters %}
+                <div class="group animate-scale-in animation-delay-{{ forloop.counter }}00">
+                    <div class="bg-white rounded-3xl shadow-lg border-2 border-gray-100 hover-lift hover-glow hover-border transition-all duration-400 overflow-hidden {% if trimester.is_current %}current-trimester{% endif %}">
+                        <!-- En-tête de la carte -->
+                        <div class="p-6 border-b border-gray-100 {% if trimester.is_current %}bg-gradient-current{% else %}bg-gradient-card{% endif %}">
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <h3 class="text-xl font-bold text-gray-900 mb-2">
+                                        {{ trimester.get_trimester_display }}
+                                    </h3>
+                                    {% if trimester.is_current %}
+                                    <div class="inline-flex items-center px-3 py-1 bg-green-500 text-white rounded-full text-sm font-bold status-badge">
+                                        <i class="fas fa-star mr-2" aria-hidden="true"></i>
+                                        Trimestre Actuel
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="text-right">
+                                    <div class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold status-badge
+                                        {% if trimester.is_active %}bg-green-100 text-green-800{% else %}bg-gray-100 text-gray-600{% endif %}">
+                                        <div class="w-2 h-2 rounded-full mr-2 
+                                            {% if trimester.is_active %}bg-green-500{% else %}bg-gray-400{% endif %}"></div>
+                                        {% if trimester.is_active %}Actif{% else %}Inactif{% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Dates -->
+                            <div class="flex items-center gap-2 text-gray-600 font-medium">
+                                <i class="fas fa-calendar-check text-blue-500" aria-hidden="true"></i>
+                                <span>Du {{ trimester.start_date|date:"d/m/Y" }} au {{ trimester.end_date|date:"d/m/Y" }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Statistiques -->
+                        <div class="p-6">
+                            <div class="grid grid-cols-2 gap-4 mb-6">
+                                <div class="text-center p-4 bg-blue-50 rounded-xl border border-blue-200">
+                                    <div class="text-2xl font-black text-blue-600 mb-1">
+                                        {{ trimester.evaluations.count }}
+                                    </div>
+                                    <div class="text-xs font-semibold text-blue-700 uppercase tracking-wider">
+                                        Évaluations
+                                    </div>
+                                </div>
+                                <div class="text-center p-4 bg-purple-50 rounded-xl border border-purple-200">
+                                    <div class="text-2xl font-black text-purple-600 mb-1">
+                                        {{ trimester.bulletins.count }}
+                                    </div>
+                                    <div class="text-xs font-semibold text-purple-700 uppercase tracking-wider">
+                                        Bulletins
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Barre de progression (simulation) -->
+                            <div class="mb-6">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-sm font-semibold text-gray-700">Progression</span>
+                                    <span class="text-sm font-bold text-gray-900">
+                                        {% widthratio trimester.evaluations.count 6 100 %}%
+                                    </span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div class="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-500" 
+                                         style="width: {% widthratio trimester.evaluations.count 6 100 %}%"></div>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1">
+                                    Basé sur le nombre d'évaluations créées
+                                </p>
+                            </div>
+
+                            <!-- Actions -->
+                            <div class="flex flex-wrap gap-2">
+                                <a href="{% url 'notes:trimester_detail' trimester.pk %}" 
+                                   class="flex-1 inline-flex items-center justify-center px-4 py-2 bg-blue-100 text-blue-700 rounded-lg font-semibold hover:bg-blue-200 hover:-translate-y-1 transition-all duration-300 text-sm">
+                                    <i class="fas fa-eye mr-2" aria-hidden="true"></i>
+                                    Consulter
+                                </a>
+                                <a href="{% url 'notes:trimester_update' trimester.pk %}" 
+                                   class="flex-1 inline-flex items-center justify-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 hover:-translate-y-1 transition-all duration-300 text-sm">
+                                    <i class="fas fa-edit mr-2" aria-hidden="true"></i>
+                                    Modifier
+                                </a>
+                                {% if not trimester.is_current %}
+                                <button onclick="confirmDelete('{{ trimester.pk }}', '{{ trimester.get_trimester_display }}')"
+                                        class="inline-flex items-center justify-center px-3 py-2 bg-red-100 text-red-700 rounded-lg font-semibold hover:bg-red-200 hover:-translate-y-1 transition-all duration-300 text-sm">
+                                    <i class="fas fa-trash" aria-hidden="true"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Indicateur de trimestre actuel -->
+                        {% if trimester.is_current %}
+                        <div class="absolute top-4 right-4">
+                            <div class="w-4 h-4 bg-green-500 rounded-full animate-pulse"></div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Panneau de résumé -->
+        <div class="mt-12 animate-fade-in-up animation-delay-500">
+            <div class="bg-white rounded-3xl shadow-xl border border-gray-200 p-8">
+                <div class="flex items-center gap-4 mb-6">
+                    <div class="w-12 h-12 bg-gradient-primary rounded-xl flex items-center justify-center text-white">
+                        <i class="fas fa-chart-bar text-lg" aria-hidden="true"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-900">Résumé de l'Année Scolaire</h2>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div class="text-center p-6 bg-blue-50 rounded-2xl border border-blue-200">
+                        <div class="text-3xl font-black text-blue-600 mb-2">
+                            {{ trimesters|length }}
+                        </div>
+                        <div class="text-sm font-semibold text-blue-700 uppercase tracking-wider">
+                            Trimestres Configurés
+                        </div>
+                    </div>
+                    <div class="text-center p-6 bg-green-50 rounded-2xl border border-green-200">
+                        <div class="text-3xl font-black text-green-600 mb-2">
+                            {% for trimester in trimesters %}{{ trimester.evaluations.count }}{% if not forloop.last %}+{% endif %}{% endfor %}
+                        </div>
+                        <div class="text-sm font-semibold text-green-700 uppercase tracking-wider">
+                            Total Évaluations
+                        </div>
+                    </div>
+                    <div class="text-center p-6 bg-purple-50 rounded-2xl border border-purple-200">
+                        <div class="text-3xl font-black text-purple-600 mb-2">
+                            {% for trimester in trimesters %}{{ trimester.bulletins.count }}{% if not forloop.last %}+{% endif %}{% endfor %}
+                        </div>
+                        <div class="text-sm font-semibold text-purple-700 uppercase tracking-wider">
+                            Total Bulletins
+                        </div>
+                    </div>
+                    <div class="text-center p-6 bg-amber-50 rounded-2xl border border-amber-200">
+                        <div class="text-3xl font-black text-amber-600 mb-2">
+                            {% now "Y" %}
+                        </div>
+                        <div class="text-sm font-semibold text-amber-700 uppercase tracking-wider">
+                            Année en Cours
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% else %}
+        <!-- État vide -->
+        <div class="text-center py-20 animate-fade-in-up">
+            <div class="max-w-md mx-auto">
+                <div class="w-32 h-32 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-8">
+                    <i class="fas fa-calendar-plus text-6xl text-gray-400" aria-hidden="true"></i>
+                </div>
+                <h2 class="text-3xl font-bold text-gray-900 mb-4">
+                    Aucun Trimestre Configuré
+                </h2>
+                <p class="text-lg text-gray-600 mb-8 leading-relaxed">
+                    Commencez par créer votre premier trimestre pour organiser et structurer 
+                    les évaluations de l'année scolaire.
+                </p>
+                <div class="space-y-4">
+                    <a href="{% url 'notes:trimester_create' %}" 
+                       class="inline-flex items-center px-8 py-4 bg-gradient-primary text-white rounded-xl font-bold hover-lift hover-glow transition-all duration-300 shadow-lg">
+                        <i class="fas fa-plus mr-3" aria-hidden="true"></i>
+                        Créer le Premier Trimestre
+                    </a>
+                    <div class="text-sm text-gray-500">
+                        <i class="fas fa-info-circle mr-2" aria-hidden="true"></i>
+                        Un trimestre est nécessaire pour créer des évaluations
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Conseils et informations -->
+        <div class="mt-12 grid grid-cols-1 lg:grid-cols-3 gap-8 animate-fade-in-up animation-delay-500">
+            <!-- Conseils -->
+            <div class="bg-blue-50 border-2 border-blue-200 rounded-2xl p-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center text-white">
+                        <i class="fas fa-lightbulb" aria-hidden="true"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-blue-900">Conseils de Gestion</h3>
+                </div>
+                <ul class="text-blue-800 space-y-2 text-sm">
+                    <li class="flex items-start gap-2">
+                        <i class="fas fa-check-circle text-blue-600 mt-0.5 flex-shrink-0" aria-hidden="true"></i>
+                        <span>Configurez tous les trimestres en début d'année</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <i class="fas fa-check-circle text-blue-600 mt-0.5 flex-shrink-0" aria-hidden="true"></i>
+                        <span>Vérifiez que les dates ne se chevauchent pas</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <i class="fas fa-check-circle text-blue-600 mt-0.5 flex-shrink-0" aria-hidden="true"></i>
+                        <span>Un seul trimestre peut être actuel à la fois</span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Rappels -->
+            <div class="bg-amber-50 border-2 border-amber-200 rounded-2xl p-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center text-white">
+                        <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-amber-900">Points d'Attention</h3>
+                </div>
+                <ul class="text-amber-800 space-y-2 text-sm">
+                    <li class="flex items-start gap-2">
+                        <i class="fas fa-info-circle text-amber-600 mt-0.5 flex-shrink-0" aria-hidden="true"></i>
+                        <span>La suppression d'un trimestre supprime ses évaluations</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <i class="fas fa-info-circle text-amber-600 mt-0.5 flex-shrink-0" aria-hidden="true"></i>
+                        <span>Le trimestre actuel ne peut pas être supprimé</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <i class="fas fa-info-circle text-amber-600 mt-0.5 flex-shrink-0" aria-hidden="true"></i>
+                        <span>Sauvegardez avant toute modification importante</span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Support -->
+            <div class="bg-green-50 border-2 border-green-200 rounded-2xl p-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center text-white">
+                        <i class="fas fa-question-circle" aria-hidden="true"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-green-900">Besoin d'Aide ?</h3>
+                </div>
+                <ul class="text-green-800 space-y-2 text-sm">
+                    <li class="flex items-start gap-2">
+                        <i class="fas fa-phone text-green-600 mt-0.5 flex-shrink-0" aria-hidden="true"></i>
+                        <span>Support technique : ext. 1234</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <i class="fas fa-envelope text-green-600 mt-0.5 flex-shrink-0" aria-hidden="true"></i>
+                        <span>Email : support@ecole.fr</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <i class="fas fa-book text-green-600 mt-0.5 flex-shrink-0" aria-hidden="true"></i>
+                        <span>Documentation complète disponible</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmation de suppression -->
+<div id="deleteModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-2xl p-8 max-w-md mx-4 shadow-2xl">
+        <div class="text-center">
+            <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-exclamation-triangle text-2xl text-red-600" aria-hidden="true"></i>
+            </div>
+            <h3 class="text-xl font-bold text-gray-900 mb-2">Confirmer la Suppression</h3>
+            <p class="text-gray-600 mb-6">
+                Êtes-vous sûr de vouloir supprimer le trimestre <strong id="trimesterName"></strong> ?
+                Cette action est irréversible et supprimera toutes les évaluations associées.
+            </p>
+            <div class="flex gap-4">
+                <button onclick="closeDeleteModal()" 
+                        class="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition-colors duration-200">
+                    Annuler
+                </button>
+                <a id="confirmDeleteBtn" href="#" 
+                   class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors duration-200">
+                    Supprimer
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Gestionnaire de la page des trimestres
+    class TrimesterManager {
+        constructor() {
+            this.deleteModal = document.getElementById('deleteModal');
+            this.trimesterName = document.getElementById('trimesterName');
+            this.confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+            
+            this.init();
+        }
+
+        init() {
+            this.setupAnimations();
+            this.setupInteractions();
+            this.setupKeyboardNavigation();
+        }
+
+        setupAnimations() {
+            // Observer pour les animations au scroll
+            if ('IntersectionObserver' in window) {
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            entry.target.classList.add('animate-fade-in-up');
+                        }
+                    });
+                }, { threshold: 0.1 });
+
+                document.querySelectorAll('.hover-lift').forEach(element => {
+                    observer.observe(element);
+                });
+            }
+        }
+
+        setupInteractions() {
+            // Améliorer les interactions des cartes
+            const cards = document.querySelectorAll('.hover-lift');
+            
+            cards.forEach(card => {
+                card.addEventListener('mouseenter', () => {
+                    card.style.transform = 'translateY(-8px) scale(1.02)';
+                });
+                
+                card.addEventListener('mouseleave', () => {
+                    card.style.transform = '';
+                });
+            });
+
+            // Gestion des clics sur les statistiques
+            const statItems = document.querySelectorAll('.text-center.p-4');
+            statItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    item.style.transform = 'scale(0.95)';
+                    setTimeout(() => {
+                        item.style.transform = '';
+                    }, 150);
+                });
+            });
+        }
+
+        setupKeyboardNavigation() {
+            // Navigation au clavier pour l'accessibilité
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && !this.deleteModal.classList.contains('hidden')) {
+                    this.closeDeleteModal();
+                }
+            });
+        }
+
+        showDeleteModal(trimesterId, trimesterName) {
+            this.trimesterName.textContent = trimesterName;
+            this.confirmDeleteBtn.href = `/notes/trimester/${trimesterId}/delete/`;
+            this.deleteModal.classList.remove('hidden');
+            this.deleteModal.classList.add('flex');
+            
+            // Animation d'entrée
+            const modalContent = this.deleteModal.querySelector('.bg-white');
+            modalContent.style.transform = 'scale(0.9)';
+            modalContent.style.opacity = '0';
+            
+            setTimeout(() => {
+                modalContent.style.transform = 'scale(1)';
+                modalContent.style.opacity = '1';
+                modalContent.style.transition = 'all 0.3s ease';
+            }, 10);
+        }
+
+        closeDeleteModal() {
+            const modalContent = this.deleteModal.querySelector('.bg-white');
+            modalContent.style.transform = 'scale(0.9)';
+            modalContent.style.opacity = '0';
+            
+            setTimeout(() => {
+                this.deleteModal.classList.add('hidden');
+                this.deleteModal.classList.remove('flex');
+            }, 300);
+        }
+
+        // Méthode pour afficher des notifications
+        showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 z-50 p-6 rounded-xl shadow-2xl max-w-sm transform transition-all duration-300 translate-x-full border-l-4`;
+            
+            if (type === 'success') {
+                notification.classList.add('bg-green-50', 'text-green-800', 'border-green-500');
+            } else if (type === 'error') {
+                notification.classList.add('bg-red-50', 'text-red-800', 'border-red-500');
+            } else {
+                notification.classList.add('bg-blue-50', 'text-blue-800', 'border-blue-500');
+            }
+            
+            notification.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'} text-lg"></i>
+                    <span class="font-medium">${message}</span>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => notification.classList.remove('translate-x-full'), 100);
+            setTimeout(() => {
+                notification.classList.add('translate-x-full');
+                setTimeout(() => document.body.removeChild(notification), 300);
+            }, 5000);
+        }
+    }
+
+    // Fonctions globales pour la compatibilité
+    function confirmDelete(trimesterId, trimesterName) {
+        window.trimesterManager.showDeleteModal(trimesterId, trimesterName);
+    }
+
+    function closeDeleteModal() {
+        window.trimesterManager.closeDeleteModal();
+    }
+
+    // Initialisation
+    document.addEventListener('DOMContentLoaded', () => {
+        window.trimesterManager = new TrimesterManager();
+    });
+
+    // Gestion des erreurs
+    window.addEventListener('error', (event) => {
+        console.error('Erreur dans la gestion des trimestres:', event.error);
+    });
+    
+    // Forcer l'activation du lien Notes dans la sidebar
+    document.addEventListener('DOMContentLoaded', function() {
+        const notesLink = document.querySelector('[data-page="notes"]');
+        if (notesLink) {
+            notesLink.classList.add('active');
+        }
+        
+        // Désactiver les autres liens actifs
+        document.querySelectorAll('.sidebar-link.active').forEach(link => {
+            if (link !== notesLink) {
+                link.classList.remove('active');
+            }
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,8 @@
+<form method="post" hx-post="{% url 'classes:timetable_delete_htmx' timetable.id %}" hx-target="#modal-content" hx-swap="innerHTML">
+    {% csrf_token %}
+    <p>Voulez-vous vraiment supprimer cet emploi du temps pour <strong>{{ timetable.school_class }}</strong> ?</p>
+    <div class="flex justify-end gap-2 mt-4">
+        <button type="button" class="btn btn-secondary" onclick="closeModal()">Annuler</button>
+        <button type="submit" class="btn btn-danger">Supprimer</button>
+    </div>
+</form> 

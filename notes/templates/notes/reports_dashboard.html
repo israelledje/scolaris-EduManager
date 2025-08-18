@@ -1,0 +1,288 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Rapports et Statistiques{% endblock %}
+
+{% block breadcrumb_current %}Notes{% endblock %}
+{% block breadcrumb %}
+    <span class="text-slate-400">/</span>
+    <span class="text-slate-700 font-medium">Rapports</span>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .report-card {
+        background: white;
+        border-radius: 16px;
+        padding: 2rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        border: 2px solid transparent;
+        transition: all 0.3s ease;
+        height: 100%;
+        text-decoration: none;
+        color: inherit;
+    }
+    
+    .report-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+        border-color: var(--primary-color);
+        text-decoration: none;
+        color: inherit;
+    }
+    
+    .report-icon {
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, var(--primary-color), #1d4ed8);
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1.5rem;
+        color: white;
+        font-size: 2rem;
+    }
+    
+    .report-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--gray-800);
+        margin-bottom: 1rem;
+    }
+    
+    .report-description {
+        color: var(--gray-600);
+        font-size: 1rem;
+        line-height: 1.6;
+        margin-bottom: 1.5rem;
+    }
+    
+    .report-features {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .report-features li {
+        padding: 0.5rem 0;
+        color: var(--gray-700);
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .report-features li i {
+        color: var(--success-color);
+        width: 16px;
+    }
+    
+    .stats-overview {
+        background: linear-gradient(135deg, var(--primary-color), #1d4ed8);
+        color: white;
+        border-radius: 16px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 2rem;
+        margin-top: 1.5rem;
+    }
+    
+    .stat-item {
+        text-align: center;
+    }
+    
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: 800;
+        display: block;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Rapports et Statistiques</h1>
+            <p class="text-muted mb-0">Analyses de performance et rapports détaillés</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'notes:dashboard' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i> Retour
+            </a>
+        </div>
+    </div>
+
+    <!-- Vue d'ensemble des statistiques -->
+    <div class="stats-overview">
+        <h2 class="h4 mb-3">
+            <i class="fas fa-chart-line me-2"></i>
+            Vue d'ensemble de l'année scolaire
+        </h2>
+        <div class="stats-grid">
+            <div class="stat-item">
+                <span class="stat-number">{{ total_students|default:0 }}</span>
+                <span class="stat-label">Étudiants</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number">{{ total_evaluations|default:0 }}</span>
+                <span class="stat-label">Évaluations</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number">{{ total_grades|default:0 }}</span>
+                <span class="stat-label">Notes saisies</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number">{{ avg_score|default:0|floatformat:1 }}</span>
+                <span class="stat-label">Moyenne générale</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rapports disponibles -->
+    <div class="row">
+        <div class="col-lg-6 col-xl-4 mb-4">
+            <a href="{% url 'notes:class_performance_report' class_id=1 %}" class="report-card">
+                <div class="report-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="report-title">Performance par Classe</div>
+                <div class="report-description">
+                    Analysez les performances de chaque classe avec des statistiques détaillées, 
+                    des moyennes par matière et des tendances d'évolution.
+                </div>
+                <ul class="report-features">
+                    <li><i class="fas fa-check"></i> Moyennes par matière</li>
+                    <li><i class="fas fa-check"></i> Taux de réussite</li>
+                    <li><i class="fas fa-check"></i> Évolution trimestrielle</li>
+                    <li><i class="fas fa-check"></i> Comparaisons inter-classes</li>
+                </ul>
+            </a>
+        </div>
+
+        <div class="col-lg-6 col-xl-4 mb-4">
+            <a href="{% url 'notes:student_progress_report' student_id=1 %}" class="report-card">
+                <div class="report-icon">
+                    <i class="fas fa-user-graduate"></i>
+                </div>
+                <div class="report-title">Progression des Étudiants</div>
+                <div class="report-description">
+                    Suivez la progression individuelle de chaque étudiant avec des graphiques 
+                    d'évolution et des analyses de performance personnalisées.
+                </div>
+                <ul class="report-features">
+                    <li><i class="fas fa-check"></i> Évolution des notes</li>
+                    <li><i class="fas fa-check"></i> Points forts/faibles</li>
+                    <li><i class="fas fa-check"></i> Recommandations</li>
+                    <li><i class="fas fa-check"></i> Historique complet</li>
+                </ul>
+            </a>
+        </div>
+
+        <div class="col-lg-6 col-xl-4 mb-4">
+            <a href="{% url 'notes:subject_analysis_report' subject_id=1 %}" class="report-card">
+                <div class="report-icon">
+                    <i class="fas fa-book"></i>
+                </div>
+                <div class="report-title">Analyse par Matière</div>
+                <div class="report-description">
+                    Explorez les performances par matière avec des analyses approfondies, 
+                    des distributions de notes et des comparaisons temporelles.
+                </div>
+                <ul class="report-features">
+                    <li><i class="fas fa-check"></i> Distribution des notes</li>
+                    <li><i class="fas fa-check"></i> Difficulté des évaluations</li>
+                    <li><i class="fas fa-check"></i> Tendances par classe</li>
+                    <li><i class="fas fa-check"></i> Statistiques avancées</li>
+                </ul>
+            </a>
+        </div>
+
+        <div class="col-lg-6 col-xl-4 mb-4">
+            <a href="#" class="report-card">
+                <div class="report-icon">
+                    <i class="fas fa-chart-pie"></i>
+                </div>
+                <div class="report-title">Rapport de Réussite</div>
+                <div class="report-description">
+                    Visualisez les taux de réussite globaux et par matière avec des graphiques 
+                    interactifs et des analyses comparatives.
+                </div>
+                <ul class="report-features">
+                    <li><i class="fas fa-check"></i> Taux de réussite global</li>
+                    <li><i class="fas fa-check"></i> Répartition par niveau</li>
+                    <li><i class="fas fa-check"></i> Évolution temporelle</li>
+                    <li><i class="fas fa-check"></i> Graphiques interactifs</li>
+                </ul>
+            </a>
+        </div>
+
+        <div class="col-lg-6 col-xl-4 mb-4">
+            <a href="#" class="report-card">
+                <div class="report-icon">
+                    <i class="fas fa-calendar-alt"></i>
+                </div>
+                <div class="report-title">Rapport Trimestriel</div>
+                <div class="report-description">
+                    Consultez les rapports détaillés par trimestre avec des comparaisons 
+                    inter-trimestres et des analyses de progression.
+                </div>
+                <ul class="report-features">
+                    <li><i class="fas fa-check"></i> Comparaisons trimestrielles</li>
+                    <li><i class="fas fa-check"></i> Progression des moyennes</li>
+                    <li><i class="fas fa-check"></i> Évaluations par période</li>
+                    <li><i class="fas fa-check"></i> Tendances d'évolution</li>
+                </ul>
+            </a>
+        </div>
+
+        <div class="col-lg-6 col-xl-4 mb-4">
+            <a href="#" class="report-card">
+                <div class="report-icon">
+                    <i class="fas fa-file-export"></i>
+                </div>
+                <div class="report-title">Export de Données</div>
+                <div class="report-description">
+                    Exportez vos données et rapports dans différents formats pour 
+                    une utilisation externe ou des analyses complémentaires.
+                </div>
+                <ul class="report-features">
+                    <li><i class="fas fa-check"></i> Export Excel/CSV</li>
+                    <li><i class="fas fa-check"></i> Rapports PDF</li>
+                    <li><i class="fas fa-check"></i> Données personnalisées</li>
+                    <li><i class="fas fa-check"></i> Programmation d'exports</li>
+                </ul>
+            </a>
+        </div>
+    </div>
+
+    <!-- Informations supplémentaires -->
+    <div class="alert alert-info mt-4">
+        <div class="d-flex align-items-center">
+            <i class="fas fa-info-circle fa-2x me-3"></i>
+            <div>
+                <h5 class="alert-heading mb-2">Utilisation des rapports</h5>
+                <p class="mb-0">
+                    Les rapports vous permettent d'analyser les performances de vos étudiants et de prendre des décisions éclairées. 
+                    Utilisez les filtres pour personnaliser vos analyses selon vos besoins.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,618 @@
+{% extends "base.html" %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block page_title %}Liste des élèves{% endblock %}
+
+{% block page_actions %}
+<div class="flex items-center gap-3">
+    <button class="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors duration-200">
+        <i class="fas fa-download text-slate-500"></i>
+        <span class="text-slate-700 font-medium">Exporter</span>
+    </button>
+    <button class="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors duration-200">
+        <i class="fas fa-upload text-slate-500"></i>
+        <span class="text-slate-700 font-medium">Importer</span>
+    </button>
+    <button 
+        class="flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 text-white rounded-2xl hover:from-indigo-700 hover:via-purple-700 hover:to-indigo-800 transition-all duration-300 shadow-lg hover:shadow-2xl transform hover:-translate-y-1 font-semibold btn-hover-effect"
+        hx-get="{% url 'students:student_create_htmx' %}"
+        hx-target="#modal-content"
+        hx-trigger="click"
+        onclick="openStudentModal()"
+        type="button"
+    >
+        <div class="w-8 h-8 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+            <i class="fas fa-plus text-white"></i>
+        </div>
+        <span class="font-medium">Ajouter un élève</span>
+        <div class="w-2 h-2 bg-white/60 rounded-full animate-pulse"></div>
+    </button>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Statistics Cards -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6">
+        <div class="flex items-center">
+            <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center">
+                <i class="fas fa-users text-white text-xl"></i>
+            </div>
+            <div class="ml-4">
+                <p class="text-sm font-medium text-slate-600">Total élèves</p>
+                <p class="text-2xl font-bold text-slate-900">{{ stats.total }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6">
+        <div class="flex items-center">
+            <div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center">
+                <i class="fas fa-check-circle text-white text-xl"></i>
+            </div>
+            <div class="ml-4">
+                <p class="text-sm font-medium text-slate-600">Élèves actifs</p>
+                <p class="text-2xl font-bold text-slate-900">{{ stats.active }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6">
+        <div class="flex items-center">
+            <div class="w-12 h-12 bg-gradient-to-br from-red-500 to-pink-500 rounded-xl flex items-center justify-center">
+                <i class="fas fa-times-circle text-white text-xl"></i>
+            </div>
+            <div class="ml-4">
+                <p class="text-sm font-medium text-slate-600">Élèves inactifs</p>
+                <p class="text-2xl font-bold text-slate-900">{{ stats.inactive }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters and Search -->
+<div class="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6 mb-6">
+    <form method="get" id="filterForm">
+        <div class="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+            <!-- Search Bar -->
+            <div class="flex-1 max-w-md">
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <i class="fas fa-search text-slate-400"></i>
+                    </div>
+                    <input
+                        type="text"
+                        name="search"
+                        value="{{ current_filters.search }}"
+                        class="w-full pl-11 pr-4 py-3 border border-slate-200 rounded-xl bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 placeholder-slate-400"
+                        placeholder="Rechercher par nom, prénom ou matricule..."
+                    />
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="flex flex-wrap gap-3">
+                <!-- Class Filter -->
+                <div class="relative">
+                    <select name="class" class="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors duration-200 min-w-32 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="">Toutes les classes</option>
+                        {% for class in classes %}
+                        <option value="{{ class.id }}" {% if current_filters.class == class.id|stringformat:"s" %}selected{% endif %}>
+                            {{ class.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Year Filter -->
+                <div class="relative">
+                    <select name="year" class="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors duration-200 min-w-32 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="">Toutes les années</option>
+                        {% for year in years %}
+                        <option value="{{ year.id }}" {% if current_filters.year == year.id|stringformat:"s" %}selected{% endif %}>
+                            {{ year.annee }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Status Filter -->
+                <div class="relative">
+                    <select name="status" class="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors duration-200 min-w-32 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="">Tous les statuts</option>
+                        <option value="active" {% if current_filters.status == 'active' %}selected{% endif %}>Actifs</option>
+                        <option value="inactive" {% if current_filters.status == 'inactive' %}selected{% endif %}>Inactifs</option>
+                    </select>
+                </div>
+
+                <!-- Order By -->
+                <div class="relative">
+                    <select name="order_by" class="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors duration-200 min-w-32 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="last_name" {% if current_filters.order_by == 'last_name' %}selected{% endif %}>Nom</option>
+                        <option value="first_name" {% if current_filters.order_by == 'first_name' %}selected{% endif %}>Prénom</option>
+                        <option value="matricule" {% if current_filters.order_by == 'matricule' %}selected{% endif %}>Matricule</option>
+                        <option value="current_class__name" {% if current_filters.order_by == 'current_class__name' %}selected{% endif %}>Classe</option>
+                    </select>
+                </div>
+
+                <!-- Direction -->
+                <div class="relative">
+                    <select name="direction" class="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors duration-200 min-w-32 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="asc" {% if current_filters.direction == 'asc' %}selected{% endif %}>Croissant</option>
+                        <option value="desc" {% if current_filters.direction == 'desc' %}selected{% endif %}>Décroissant</option>
+                    </select>
+                </div>
+
+                <!-- Apply Filters -->
+                <button type="submit" class="flex items-center gap-2 px-4 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors duration-200">
+                    <i class="fas fa-filter"></i>
+                    <span class="font-medium">Appliquer</span>
+                </button>
+
+                <!-- Reset Filters -->
+                <a href="{% url 'students:student_list' %}" class="flex items-center gap-2 px-4 py-3 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors duration-200">
+                    <i class="fas fa-undo text-slate-500"></i>
+                    <span class="text-slate-700 font-medium">Reset</span>
+                </a>
+            </div>
+        </div>
+    </form>
+
+    <!-- Active Filters Display -->
+    {% if current_filters.search or current_filters.class or current_filters.year or current_filters.status %}
+    <div class="mt-4 flex flex-wrap gap-2">
+        <span class="text-sm text-slate-600">Filtres actifs :</span>
+        {% if current_filters.search %}
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+            Recherche: "{{ current_filters.search }}"
+            <a href="?{% for key, value in current_filters.items %}{% if key != 'search' %}{{ key }}={{ value }}&{% endif %}{% endfor %}" class="ml-2 text-blue-600 hover:text-blue-800">×</a>
+        </span>
+        {% endif %}
+        {% if current_filters.class %}
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+            Classe: {{ current_filters.class }}
+            <a href="?{% for key, value in current_filters.items %}{% if key != 'class' %}{{ key }}={{ value }}&{% endif %}{% endfor %}" class="ml-2 text-green-600 hover:text-green-800">×</a>
+        </span>
+        {% endif %}
+        {% if current_filters.year %}
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+            Année: {{ current_filters.year }}
+            <a href="?{% for key, value in current_filters.items %}{% if key != 'year' %}{{ key }}={{ value }}&{% endif %}{% endfor %}" class="ml-2 text-purple-600 hover:text-purple-800">×</a>
+        </span>
+        {% endif %}
+        {% if current_filters.status %}
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+            Statut: {{ current_filters.status|title }}
+            <a href="?{% for key, value in current_filters.items %}{% if key != 'status' %}{{ key }}={{ value }}&{% endif %}{% endfor %}" class="ml-2 text-orange-600 hover:text-orange-800">×</a>
+        </span>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<!-- Students Table -->
+<div class="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">
+    <!-- Table Header -->
+    <div class="px-6 py-4 border-b border-slate-200 bg-slate-50">
+        <div class="flex items-center justify-between">
+            <div>
+                <h3 class="text-lg font-semibold text-slate-900">Élèves inscrits</h3>
+                <p class="text-sm text-slate-500">
+                    {% if page_obj %}
+                        Affichage de <span class="font-semibold">{{ page_obj.start_index }}</span> à <span class="font-semibold">{{ page_obj.end_index }}</span> 
+                        sur <span class="font-semibold">{{ page_obj.paginator.count }}</span> résultat{{ page_obj.paginator.count|pluralize }}
+                    {% else %}
+                        Aucun résultat trouvé
+                    {% endif %}
+                </p>
+            </div>
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 text-sm text-slate-600">
+                    <span>Par page:</span>
+                    <select onchange="changePageSize(this.value)" class="border border-slate-200 rounded-lg px-3 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="10" {% if current_filters.page_size == '10' %}selected{% endif %}>10</option>
+                        <option value="25" {% if current_filters.page_size == '25' %}selected{% endif %}>25</option>
+                        <option value="50" {% if current_filters.page_size == '50' %}selected{% endif %}>50</option>
+                        <option value="100" {% if current_filters.page_size == '100' %}selected{% endif %}>100</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table Content -->
+    <div class="overflow-x-auto">
+        <table class="min-w-full" id="studentsTable">
+            <thead class="bg-slate-50 border-b border-slate-200">
+                <tr>
+                    <th class="px-6 py-4 text-left">
+                        <input type="checkbox" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" onchange="toggleAllStudents(this)">
+                    </th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                        <a href="?{% for key, value in current_filters.items %}{% if key != 'order_by' and key != 'direction' %}{{ key }}={{ value }}&{% endif %}{% endfor %}order_by=matricule&direction={% if current_filters.order_by == 'matricule' and current_filters.direction == 'asc' %}desc{% else %}asc{% endif %}" class="flex items-center gap-2 hover:text-slate-900 transition-colors duration-200">
+                            Matricule
+                            {% if current_filters.order_by == 'matricule' %}
+                                <i class="fas fa-sort-{% if current_filters.direction == 'asc' %}up{% else %}down{% endif %} text-indigo-500"></i>
+                            {% else %}
+                                <i class="fas fa-sort text-slate-400"></i>
+                            {% endif %}
+                        </a>
+                    </th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                        <a href="?{% for key, value in current_filters.items %}{% if key != 'order_by' and key != 'direction' %}{{ key }}={{ value }}&{% endif %}{% endfor %}order_by=last_name&direction={% if current_filters.order_by == 'last_name' and current_filters.direction == 'asc' %}desc{% else %}asc{% endif %}" class="flex items-center gap-2 hover:text-slate-900 transition-colors duration-200">
+                            Élève
+                            {% if current_filters.order_by == 'last_name' %}
+                                <i class="fas fa-sort-{% if current_filters.direction == 'asc' %}up{% else %}down{% endif %} text-indigo-500"></i>
+                            {% else %}
+                                <i class="fas fa-sort text-slate-400"></i>
+                            {% endif %}
+                        </a>
+                    </th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                        <a href="?{% for key, value in current_filters.items %}{% if key != 'order_by' and key != 'direction' %}{{ key }}={{ value }}&{% endif %}{% endfor %}order_by=current_class__name&direction={% if current_filters.order_by == 'current_class__name' and current_filters.direction == 'asc' %}desc{% else %}asc{% endif %}" class="flex items-center gap-2 hover:text-slate-900 transition-colors duration-200">
+                            Classe
+                            {% if current_filters.order_by == 'current_class__name' %}
+                                <i class="fas fa-sort-{% if current_filters.direction == 'asc' %}up{% else %}down{% endif %} text-indigo-500"></i>
+                            {% else %}
+                                <i class="fas fa-sort text-slate-400"></i>
+                            {% endif %}
+                        </a>
+                    </th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                        Statut
+                    </th>
+                    <th class="px-6 py-4 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                        Actions
+                    </th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-slate-200" id="studentsTableBody">
+                {% for student in page_obj %}
+                <tr class="hover:bg-slate-50 transition-colors duration-200 student-row" data-student-id="{{ student.id }}">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <input type="checkbox" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 student-checkbox" value="{{ student.id }}">
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-mono text-slate-900">{{ student.matricule }}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold text-sm mr-3">
+                                {{ student.first_name.0 }}{{ student.last_name.0 }}
+                            </div>
+                            <div>
+                                <div class="text-sm font-semibold text-slate-900">{{ student.last_name }} {{ student.first_name }}</div>
+                                <div class="text-xs text-slate-500">{{ student.email|default:"Pas d'email" }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        {% if student.current_class %}
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            <i class="fas fa-door-open mr-1"></i>
+                            {{ student.current_class.name }}
+                        </span>
+                        {% else %}
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                            Non assigné
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        {% if student.is_active %}
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+                            <div class="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-2"></div>
+                            Actif
+                        </span>
+                        {% else %}
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                            <div class="w-1.5 h-1.5 bg-red-500 rounded-full mr-2"></div>
+                            Inactif
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right">
+                        <div class="flex items-center justify-end gap-2">
+                            <a href="{% url 'students:student_detail' student.id %}"
+                               class="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all duration-200"
+                               title="Voir la fiche">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <button 
+                                hx-get="{% url 'students:student_update_htmx' student.id %}"
+                                hx-target="#modal-content"
+                                onclick="openStudentModal()"
+                                class="p-2 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all duration-200" 
+                                title="Modifier">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button 
+                                hx-get="{% url 'students:student_delete_htmx' student.id %}"
+                                hx-target="#modal-content"
+                                onclick="openStudentModal()"
+                                class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200" 
+                                title="Supprimer">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="px-6 py-12 text-center">
+                        <div class="flex flex-col items-center">
+                            <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+                                <i class="fas fa-user-graduate text-2xl text-slate-400"></i>
+                            </div>
+                            <h3 class="text-lg font-semibold text-slate-900 mb-2">Aucun élève trouvé</h3>
+                            <p class="text-slate-500 text-sm mb-4">
+                                {% if current_filters.search or current_filters.class or current_filters.year or current_filters.status %}
+                                    Aucun élève ne correspond aux critères de recherche
+                                {% else %}
+                                    Commencez par ajouter votre premier élève
+                                {% endif %}
+                            </p>
+                            {% if not current_filters.search and not current_filters.class and not current_filters.year and not current_filters.status %}
+                            <button onclick="openStudentModal()" class="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors duration-200">
+                                <i class="fas fa-plus mr-2"></i>
+                                Ajouter un élève
+                            </button>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Table Footer with Pagination -->
+    {% if page_obj and page_obj.paginator.num_pages > 1 %}
+    <div class="px-6 py-4 border-t border-slate-200 bg-slate-50">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <div class="text-sm text-slate-600">
+                    Affichage de <span class="font-semibold">{{ page_obj.start_index }}</span> à <span class="font-semibold">{{ page_obj.end_index }}</span> sur <span class="font-semibold">{{ page_obj.paginator.count }}</span> résultats
+                </div>
+                <div id="bulkActions" class="hidden">
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm text-slate-600">Actions groupées:</span>
+                        <button class="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-lg hover:bg-emerald-200 transition-colors duration-200 text-sm">
+                            Activer
+                        </button>
+                        <button class="px-3 py-1 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors duration-200 text-sm">
+                            Désactiver
+                        </button>
+                        <button class="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors duration-200 text-sm">
+                            Exporter
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Pagination -->
+            <div class="flex items-center gap-2">
+                {% if page_obj.has_previous %}
+                    <a href="?{% for key, value in current_filters.items %}{{ key }}={{ value }}&{% endfor %}page=1" class="px-3 py-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors duration-200">
+                        <i class="fas fa-angle-double-left"></i>
+                    </a>
+                    <a href="?{% for key, value in current_filters.items %}{{ key }}={{ value }}&{% endfor %}page={{ page_obj.previous_page_number }}" class="px-3 py-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors duration-200">
+                        <i class="fas fa-angle-left"></i>
+                    </a>
+                {% else %}
+                    <button class="px-3 py-2 border border-slate-200 rounded-lg opacity-50 cursor-not-allowed">
+                        <i class="fas fa-angle-double-left"></i>
+                    </button>
+                    <button class="px-3 py-2 border border-slate-200 rounded-lg opacity-50 cursor-not-allowed">
+                        <i class="fas fa-angle-left"></i>
+                    </button>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                    {% if num == page_obj.number %}
+                        <span class="px-3 py-2 bg-indigo-600 text-white rounded-lg">{{ num }}</span>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <a href="?{% for key, value in current_filters.items %}{{ key }}={{ value }}&{% endfor %}page={{ num }}" class="px-3 py-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors duration-200">{{ num }}</a>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                    <a href="?{% for key, value in current_filters.items %}{{ key }}={{ value }}&{% endfor %}page={{ page_obj.next_page_number }}" class="px-3 py-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors duration-200">
+                        <i class="fas fa-angle-right"></i>
+                    </a>
+                    <a href="?{% for key, value in current_filters.items %}{{ key }}={{ value }}&{% endfor %}page={{ page_obj.paginator.num_pages }}" class="px-3 py-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors duration-200">
+                        <i class="fas fa-angle-double-right"></i>
+                    </a>
+                {% else %}
+                    <button class="px-3 py-2 border border-slate-200 rounded-lg opacity-50 cursor-not-allowed">
+                        <i class="fas fa-angle-right"></i>
+                    </button>
+                    <button class="px-3 py-2 border border-slate-200 rounded-lg opacity-50 cursor-not-allowed">
+                        <i class="fas fa-angle-double-right"></i>
+                    </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Student Modal -->
+<div id="studentModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden" onclick="closeStudentModal()">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden" onclick="event.stopPropagation()">
+            <!-- Modal Header avec gradient -->
+            <div class="bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 text-white p-6 rounded-t-3xl">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
+                            <i class="fas fa-user-graduate text-white text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-2xl font-bold">Gestion des élèves</h3>
+                            <p class="text-indigo-100 text-sm mt-1">Ajouter ou modifier les informations d'un élève</p>
+                        </div>
+                    </div>
+                    <button onclick="closeStudentModal()" 
+                            class="w-10 h-10 bg-white/20 hover:bg-white/30 rounded-xl flex items-center justify-center transition-all duration-200 backdrop-blur-sm">
+                        <i class="fas fa-times text-white"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Modal Content avec scroll personnalisé -->
+            <div class="p-6 overflow-y-auto max-h-[calc(90vh-200px)] custom-scrollbar">
+                <div id="modal-content"></div>
+            </div>
+
+            <!-- Modal Footer avec design moderne -->
+            <div class="bg-gradient-to-r from-slate-50 to-blue-50 p-6 border-t border-slate-200 rounded-b-3xl">
+                <div class="flex items-center justify-between">
+                    <div class="text-sm text-slate-600">
+                        <i class="fas fa-info-circle mr-2 text-blue-500"></i>
+                        Tous les champs marqués d'un * sont obligatoires
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button onclick="closeStudentModal()" 
+                                class="px-6 py-3 text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition-all duration-200 font-medium shadow-sm hover:shadow-md">
+                            <i class="fas fa-times mr-2"></i>Annuler
+                        </button>
+                        <button class="px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl font-medium">
+                            <i class="fas fa-save mr-2"></i>Enregistrer
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Modal Functions
+function openStudentModal() {
+    document.getElementById('studentModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeStudentModal() {
+    document.getElementById('studentModal').classList.add('hidden');
+    document.body.style.overflow = 'auto';
+}
+
+// Change page size
+function changePageSize(size) {
+    const url = new URL(window.location);
+    url.searchParams.set('page_size', size);
+    url.searchParams.delete('page'); // Reset to first page
+    window.location.href = url.toString();
+}
+
+// Table Functions
+function toggleAllStudents(checkbox) {
+    const checkboxes = document.querySelectorAll('.student-checkbox');
+    const bulkActions = document.getElementById('bulkActions');
+    
+    checkboxes.forEach(cb => {
+        cb.checked = checkbox.checked;
+    });
+    
+    if (checkbox.checked) {
+        bulkActions.classList.remove('hidden');
+    } else {
+        bulkActions.classList.add('hidden');
+    }
+}
+
+// Check for selected students to show bulk actions
+document.addEventListener('change', function(e) {
+    if (e.target.classList.contains('student-checkbox')) {
+        const checkedBoxes = document.querySelectorAll('.student-checkbox:checked');
+        const bulkActions = document.getElementById('bulkActions');
+        
+        if (checkedBoxes.length > 0) {
+            bulkActions.classList.remove('hidden');
+        } else {
+            bulkActions.classList.add('hidden');
+        }
+    }
+});
+
+// Auto-submit form when filters change
+document.addEventListener('DOMContentLoaded', function() {
+    const filterForm = document.getElementById('filterForm');
+    const filterInputs = filterForm.querySelectorAll('select, input[type="text"]');
+    
+    filterInputs.forEach(input => {
+        if (input.type === 'text') {
+            input.addEventListener('input', function() {
+                // Add delay for search input
+                clearTimeout(this.searchTimeout);
+                this.searchTimeout = setTimeout(() => {
+                    filterForm.submit();
+                }, 500);
+            });
+        } else {
+            input.addEventListener('change', function() {
+                filterForm.submit();
+            });
+        }
+    });
+});
+</script>
+
+{% endblock %}
+
+<style>
+/* Scroll personnalisé pour la modale */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: linear-gradient(to bottom, #6366f1, #8b5cf6);
+    border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(to bottom, #4f46e5, #7c3aed);
+}
+
+/* Animation d'entrée pour la modale */
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+#studentModal > div > div {
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+/* Hover effects pour les boutons */
+.btn-hover-effect {
+    transition: all 0.2s ease-in-out;
+}
+
+.btn-hover-effect:hover {
+    transform: translateY(-1px);
+}
+
+/* Focus states améliorés */
+.focus-ring:focus {
+    outline: none;
+    ring: 2px;
+    ring-color: #6366f1;
+    ring-offset: 2px;
+}
+</style>

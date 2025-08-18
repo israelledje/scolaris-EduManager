@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rapport Financier - {{ period_name }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 20mm;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Times New Roman', serif;
+            font-size: 11px;
+            line-height: 1.3;
+            color: #000;
+            background: white;
+        }
+        
+        /* En-tête officiel */
+        .header {
+            text-align: center;
+            margin-bottom: 15mm;
+            border-bottom: 2px solid #000;
+            padding-bottom: 5mm;
+        }
+        
+        .school-name {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 2mm;
+            text-transform: uppercase;
+        }
+        
+        .school-details {
+            font-size: 10px;
+            margin-bottom: 3mm;
+        }
+        
+        .report-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 2mm;
+            text-transform: uppercase;
+        }
+        
+        .period-info {
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 2mm;
+        }
+        
+        .generated-at {
+            font-size: 9px;
+            font-style: italic;
+        }
+        
+        /* Résumé financier */
+        .financial-summary {
+            margin-bottom: 10mm;
+        }
+        
+        .summary-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 3mm;
+            text-decoration: underline;
+        }
+        
+        .summary-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 5mm;
+            margin-bottom: 5mm;
+        }
+        
+        .summary-item {
+            border: 1px solid #000;
+            padding: 3mm;
+            text-align: center;
+        }
+        
+        .summary-value {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 1mm;
+        }
+        
+        .summary-label {
+            font-size: 9px;
+            text-transform: uppercase;
+        }
+        
+        /* Tableaux */
+        .table-section {
+            margin-bottom: 8mm;
+        }
+        
+        .section-title {
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 3mm;
+            text-decoration: underline;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 4mm;
+        }
+        
+        th, td {
+            border: 1px solid #000;
+            padding: 2mm;
+            text-align: left;
+            vertical-align: top;
+        }
+        
+        th {
+            background: #f0f0f0;
+            font-weight: bold;
+            font-size: 10px;
+            text-align: center;
+        }
+        
+        td {
+            font-size: 9px;
+        }
+        
+        .amount {
+            text-align: right;
+            font-weight: bold;
+        }
+        
+        .center {
+            text-align: center;
+        }
+        
+        .positive {
+            color: #008000;
+        }
+        
+        .negative {
+            color: #ff0000;
+        }
+        
+        /* Statistiques par classe */
+        .class-stats {
+            margin-bottom: 8mm;
+        }
+        
+        .class-row {
+            background: #f9f9f9;
+        }
+        
+        /* Pied de page */
+        .footer {
+            margin-top: 10mm;
+            padding-top: 3mm;
+            border-top: 1px solid #000;
+            text-align: center;
+            font-size: 9px;
+        }
+        
+        .signature-section {
+            margin-top: 8mm;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10mm;
+        }
+        
+        .signature-box {
+            text-align: center;
+        }
+        
+        .signature-line {
+            width: 60%;
+            height: 15mm;
+            border-bottom: 1px solid #000;
+            margin: 0 auto 2mm auto;
+        }
+        
+        .signature-label {
+            font-size: 9px;
+            font-weight: bold;
+        }
+        
+        /* Responsive pour l'aperçu */
+        @media screen {
+            body {
+                max-width: 210mm;
+                margin: 20px auto;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- En-tête officiel -->
+    <div class="header">
+        <div class="school-name">
+            {% if school %}{{ school.nom|upper }}{% else %}ÉTABLISSEMENT SCOLAIRE{% endif %}
+        </div>
+        <div class="school-details">
+            {% if school %}
+                Autorisation N° {{ school.autorisation_ouverture }} | 
+                {{ school.get_type_etablissement_display }} | 
+                {{ school.adresse }}
+            {% endif %}
+        </div>
+        <div class="report-title">RAPPORT FINANCIER</div>
+        <div class="period-info">{{ period_name|upper }}</div>
+        <div class="generated-at">
+            Généré le {{ generated_at|date:"d/m/Y à H:i" }} | 
+            Année scolaire: {{ current_year.annee }}
+        </div>
+    </div>
+    
+    <!-- Résumé financier -->
+    <div class="financial-summary">
+        <div class="summary-title">RÉSUMÉ FINANCIER DE LA PÉRIODE</div>
+        <div class="summary-grid">
+            <div class="summary-item">
+                <div class="summary-value positive">{{ total_all_payments|floatformat:0 }} FCFA</div>
+                <div class="summary-label">Total Paiements Reçus</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-value">{{ total_discounts|floatformat:0 }} FCFA</div>
+                <div class="summary-label">Total Remises Accordées</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-value negative">{{ total_remaining|floatformat:0 }} FCFA</div>
+                <div class="summary-label">Reste à Payer</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Statistiques par classe -->
+    <div class="class-stats">
+        <div class="section-title">STATISTIQUES PAR CLASSE</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Classe</th>
+                    <th>Effectif Inscrit</th>
+                    <th>Paiements Inscription</th>
+                    <th>Paiements Scolarité</th>
+                    <th>Total Paiements</th>
+                    <th>Remises</th>
+                    <th>Taux Recouvrement</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for class_stat in class_statistics %}
+                <tr class="class-row">
+                    <td class="center">{{ class_stat.class_name }}</td>
+                    <td class="center">{{ class_stat.enrolled_students }}</td>
+                    <td class="amount positive">{{ class_stat.inscription_payments|floatformat:0 }} FCFA</td>
+                    <td class="amount positive">{{ class_stat.tuition_payments|floatformat:0 }} FCFA</td>
+                    <td class="amount positive">{{ class_stat.total_payments|floatformat:0 }} FCFA</td>
+                    <td class="amount negative">{{ class_stat.discounts|floatformat:0 }} FCFA</td>
+                    <td class="center">{{ class_stat.recovery_rate|floatformat:1 }}%</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="center">Aucune donnée disponible</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Paiements par type -->
+    <div class="table-section">
+        <div class="section-title">RÉPARTITION ET TAUX DE PAIEMENT PAR TYPE</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Type de Paiement</th>
+                    <th>Nombre</th>
+                    <th>Montant Reçu</th>
+                    <th>Montant Dû</th>
+                    <th>Taux Paiement</th>
+                    <th>Répartition</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Frais d'Inscription</td>
+                    <td class="center">{{ inscription_payments|length }}</td>
+                    <td class="amount positive">{{ total_inscription_payments|floatformat:0 }} FCFA</td>
+                    <td class="amount">{{ total_inscription_due|floatformat:0 }} FCFA</td>
+                    <td class="center">{{ inscription_payment_rate|floatformat:1 }}%</td>
+                    <td class="center">{{ inscription_percentage|floatformat:1 }}%</td>
+                </tr>
+                <tr>
+                    <td>Tranches de Scolarité</td>
+                    <td class="center">{{ payments|length }}</td>
+                    <td class="amount positive">{{ total_payments|floatformat:0 }} FCFA</td>
+                    <td class="amount">{{ total_tuition_due|floatformat:0 }} FCFA</td>
+                    <td class="center">{{ tuition_payment_rate|floatformat:1 }}%</td>
+                    <td class="center">{{ tuition_percentage|floatformat:1 }}%</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Paiements par mode -->
+    <div class="table-section">
+        <div class="section-title">PAIEMENTS PAR MODE DE PAIEMENT</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Mode de Paiement</th>
+                    <th>Nombre</th>
+                    <th>Montant Total</th>
+                    <th>Pourcentage</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for payment in payments_by_mode %}
+                <tr>
+                    <td>
+                        {% if payment.mode == 'CASH' %}
+                            Espèces
+                        {% elif payment.mode == 'BANK_TRANSFER' %}
+                            Virement Bancaire
+                        {% elif payment.mode == 'CHECK' %}
+                            Chèque
+                        {% elif payment.mode == 'MOBILE_MONEY' %}
+                            Mobile Money
+                        {% else %}
+                            {{ payment.mode|title }}
+                        {% endif %}
+                    </td>
+                    <td class="center">{{ payment.count }}</td>
+                    <td class="amount positive">{{ payment.total|floatformat:0 }} FCFA</td>
+                    <td class="center">{{ payment.percentage|floatformat:1 }}%</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="center">Aucun paiement pour cette période</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Détail des paiements -->
+    <div class="table-section">
+        <div class="section-title">DÉTAIL DES PAIEMENTS ({{ all_payments|length }} premiers)</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Étudiant</th>
+                    <th>Classe</th>
+                    <th>Type</th>
+                    <th>Mode</th>
+                    <th>Montant</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for payment_data in all_payments %}
+                <tr>
+                    <td>{{ payment_data.date|date:"d/m/Y" }}</td>
+                    <td>{{ payment_data.student.get_full_name }}</td>
+                    <td>{{ payment_data.student.current_class.name|default:"-" }}</td>
+                    <td>{{ payment_data.description }}</td>
+                    <td>{{ payment_data.payment.get_mode_display }}</td>
+                    <td class="amount positive">{{ payment_data.amount|floatformat:0 }} FCFA</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="center">Aucun paiement pour cette période</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Remises accordées -->
+    {% if discounts %}
+    <div class="table-section">
+        <div class="section-title">REMISES ACCORDÉES</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Étudiant</th>
+                    <th>Classe</th>
+                    <th>Motif</th>
+                    <th>Montant</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for discount in discounts %}
+                <tr>
+                    <td>{{ discount.granted_at|date:"d/m/Y" }}</td>
+                    <td>{{ discount.student.get_full_name }}</td>
+                    <td>{{ discount.student.current_class.name|default:"-" }}</td>
+                    <td>{{ discount.reason|truncatechars:40 }}</td>
+                    <td class="amount negative">{{ discount.amount|floatformat:0 }} FCFA</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+    
+    <!-- Signatures -->
+    <div class="signature-section">
+        <div class="signature-box">
+            <div class="signature-line"></div>
+            <div class="signature-label">Signature du Responsable Financier</div>
+        </div>
+        <div class="signature-box">
+            <div class="signature-line"></div>
+            <div class="signature-label">Signature du Directeur</div>
+        </div>
+    </div>
+    
+    <!-- Pied de page -->
+    <div class="footer">
+        <p>Document officiel de l'établissement - {{ current_year.annee }}</p>
+        <p>Période couverte: {{ start_date|date:"d/m/Y" }} - {{ end_date|date:"d/m/Y" }}</p>
+    </div>
+</body>
+</html> 

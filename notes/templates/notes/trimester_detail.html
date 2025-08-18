@@ -1,0 +1,290 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Détails du Trimestre{% endblock %}
+
+{% block breadcrumb_current %}Notes{% endblock %}
+{% block breadcrumb %}
+    <span class="text-slate-400">/</span>
+    <a href="{% url 'notes:trimester_list' %}" class="text-slate-600 hover:text-slate-800">Trimestres</a>
+    <span class="text-slate-400">/</span>
+    <span class="text-slate-700 font-medium">{{ trimester.get_trimester_display }}</span>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- En-tête du trimestre -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-8">
+        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+            <div class="flex items-center gap-6">
+                <div class="w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-2xl flex items-center justify-center text-white shadow-lg">
+                    <i class="fas fa-calendar-alt text-3xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-4xl font-black text-slate-900 mb-2">
+                        {{ trimester.get_trimester_display }}
+                    </h1>
+                    <p class="text-lg text-slate-600 font-medium">
+                        {{ trimester.year.annee }} • {{ trimester.school.name }}
+                    </p>
+                    <div class="flex items-center gap-4 mt-3">
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium {% if trimester.is_active %}bg-emerald-100 text-emerald-800{% else %}bg-red-100 text-red-800{% endif %}">
+                            <span class="w-2 h-2 {% if trimester.is_active %}bg-emerald-500{% else %}bg-red-500{% endif %} rounded-full mr-2"></span>
+                            {% if trimester.is_active %}Actif{% else %}Inactif{% endif %}
+                        </span>
+                        {% if trimester.is_current %}
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                            <i class="fas fa-star mr-2"></i>
+                            Trimestre en cours
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <a href="{% url 'notes:trimester_update' trimester.pk %}" 
+                   class="inline-flex items-center px-6 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl">
+                    <i class="fas fa-edit mr-3"></i>
+                    Modifier
+                </a>
+                <a href="{% url 'notes:trimester_list' %}" 
+                   class="inline-flex items-center px-6 py-3 bg-slate-100 text-slate-700 rounded-xl font-semibold hover:bg-slate-200 transition-all duration-200">
+                    <i class="fas fa-arrow-left mr-3"></i>
+                    Retour
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200/50">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="text-2xl font-bold text-slate-900">
+                        {{ evaluations_count|default:0 }}
+                    </div>
+                    <div class="text-blue-700 font-medium">Évaluations</div>
+                </div>
+                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center text-white">
+                    <i class="fas fa-clipboard-list text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-6 border border-emerald-200/50">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="text-2xl font-bold text-slate-900">
+                        {{ open_evaluations_count|default:0 }}
+                    </div>
+                    <div class="text-emerald-700 font-medium">Évaluations ouvertes</div>
+                </div>
+                <div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center text-white">
+                    <i class="fas fa-unlock text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-6 border border-amber-200/50">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="text-2xl font-bold text-slate-900">
+                        {{ grades_count|default:0 }}
+                    </div>
+                    <div class="text-amber-700 font-medium">Notes saisies</div>
+                </div>
+                <div class="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center text-white">
+                    <i class="fas fa-star text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-6 border border-purple-200/50">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="text-2xl font-bold text-slate-900">
+                        {{ average_score|default:0|floatformat:1 }}
+                    </div>
+                    <div class="text-purple-700 font-medium">Moyenne générale</div>
+                </div>
+                <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center text-white">
+                    <i class="fas fa-chart-line text-xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Informations du trimestre -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Période -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center text-white">
+                    <i class="fas fa-calendar"></i>
+                </div>
+                <h3 class="text-lg font-bold text-slate-900">Période</h3>
+            </div>
+            <div class="space-y-3">
+                <div class="flex items-center justify-between py-2 border-b border-slate-100">
+                    <span class="text-slate-600">Date de début</span>
+                    <span class="font-medium text-slate-900">{{ trimester.start_date|date:"d/m/Y" }}</span>
+                </div>
+                <div class="flex items-center justify-between py-2 border-b border-slate-100">
+                    <span class="text-slate-600">Date de fin</span>
+                    <span class="font-medium text-slate-900">{{ trimester.end_date|date:"d/m/Y" }}</span>
+                </div>
+                <div class="flex items-center justify-between py-2">
+                    <span class="text-slate-600">Durée</span>
+                    <span class="font-medium text-slate-900">{{ trimester.start_date|timesince:trimester.end_date }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- École et année -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center text-white">
+                    <i class="fas fa-school"></i>
+                </div>
+                <h3 class="text-lg font-bold text-slate-900">Établissement</h3>
+            </div>
+            <div class="space-y-3">
+                <div class="flex items-center justify-between py-2 border-b border-slate-100">
+                    <span class="text-slate-600">École</span>
+                    <span class="font-medium text-slate-900">{{ trimester.school.name }}</span>
+                </div>
+                <div class="flex items-center justify-between py-2 border-b border-slate-100">
+                    <span class="text-slate-600">Année scolaire</span>
+                    <span class="font-medium text-slate-900">{{ trimester.year.annee }}</span>
+                </div>
+                <div class="flex items-center justify-between py-2">
+                    <span class="text-slate-600">Statut année</span>
+                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium {% if trimester.year.statut == 'EN_COURS' %}bg-emerald-100 text-emerald-800{% else %}bg-slate-100 text-slate-800{% endif %}">
+                        {{ trimester.year.get_statut_display }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Évaluations du trimestre -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-200 bg-slate-50">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-lg font-semibold text-slate-900">
+                        Évaluations du trimestre
+                    </h3>
+                    <p class="text-sm text-slate-500">
+                        {{ evaluations|length }} évaluation{{ evaluations|length|pluralize }} trouvée{{ evaluations|length|pluralize }}
+                    </p>
+                </div>
+                <a href="{% url 'notes:evaluation_create' %}" 
+                   class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl">
+                    <i class="fas fa-plus mr-2"></i>
+                    Nouvelle évaluation
+                </a>
+            </div>
+        </div>
+
+        {% if evaluations %}
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for evaluation in evaluations %}
+                <div class="group bg-white border border-slate-200 rounded-xl p-6 hover:shadow-lg hover:border-indigo-200 transition-all duration-300 hover:-translate-y-1">
+                    <!-- Evaluation Header -->
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center text-white font-bold text-lg">
+                                <span>{{ evaluation.get_eval_type_display|slice:":2" }}</span>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-slate-900">{{ evaluation.get_eval_type_display }}</h3>
+                                <p class="text-sm text-slate-500">{{ evaluation.subject.name }}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            {% if evaluation.is_open %}
+                                <span class="w-3 h-3 bg-emerald-500 rounded-full"></span>
+                            {% else %}
+                                <span class="w-3 h-3 bg-red-500 rounded-full"></span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Evaluation Info -->
+                    <div class="space-y-3 mb-4">
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-slate-600">Classe</span>
+                            <span class="font-medium text-slate-900">{{ evaluation.school_class.name }}</span>
+                        </div>
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-slate-600">Date</span>
+                            <span class="font-medium text-slate-900">{{ evaluation.eval_date|date:"d/m/Y" }}</span>
+                        </div>
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-slate-600">Coefficient</span>
+                            <span class="font-medium text-slate-900">{{ evaluation.coefficient }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex items-center gap-2">
+                        <a href="{% url 'notes:evaluation_detail' evaluation.pk %}"
+                            class="flex-1 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors duration-200 text-sm font-medium">
+                            <i class="fas fa-eye mr-1"></i>
+                            Voir
+                        </a>
+                        {% if evaluation.is_open %}
+                        <a href="{% url 'notes:grade_entry' evaluation.pk %}"
+                            class="flex-1 px-3 py-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-lg transition-colors duration-200 text-sm font-medium">
+                            <i class="fas fa-edit mr-1"></i>
+                            Saisir
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% else %}
+        <div class="text-center py-12">
+            <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-clipboard-list text-2xl text-slate-400"></i>
+            </div>
+            <h3 class="text-lg font-semibold text-slate-900 mb-2">
+                Aucune évaluation
+            </h3>
+            <p class="text-slate-500 text-sm mb-4">
+                Aucune évaluation n'a été créée pour ce trimestre
+            </p>
+            <a href="{% url 'notes:evaluation_create' %}" 
+               class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all duration-200">
+                <i class="fas fa-plus mr-2"></i>
+                Créer une évaluation
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Forcer l'activation du lien Notes dans la sidebar
+    const notesLink = document.querySelector('[data-page="notes"]');
+    if (notesLink) {
+        notesLink.classList.add('active');
+    }
+    
+    // Désactiver les autres liens actifs
+    document.querySelectorAll('.sidebar-link.active').forEach(link => {
+        if (link !== notesLink) {
+            link.classList.remove('active');
+        }
+    });
+});
+</script>
+{% endblock %} 

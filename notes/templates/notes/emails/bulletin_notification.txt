@@ -1,0 +1,28 @@
+NOTIFICATION DE BULLETIN - SCOLARIS
+
+Bonjour {{ guardian.relation }} {{ guardian.name }},
+
+Nous vous informons que le bulletin de {{ data.student_name }} pour le {{ data.trimester_name }} a été généré et est maintenant disponible.
+
+INFORMATIONS DU BULLETIN :
+- Élève : {{ data.student_name }}
+- Matricule : {{ data.student_matricule }}
+- Classe : {{ data.class_name }}
+- Trimestre : {{ data.trimester_name }}
+- Année scolaire : {{ data.school_year }}
+- Date de fin : {{ data.trimester_date }}
+- Nombre de matières : {{ data.subjects_count }}
+
+PERFORMANCE DE L'ÉLÈVE :
+- Moyenne de l'élève : {{ data.student_average }}/20
+- Moyenne de classe : {{ data.class_average }}/20
+- Rang dans la classe : {{ data.student_rank }}/{{ data.class_size }}
+- Effectif de la classe : {{ data.class_size }}
+
+Le bulletin complet est maintenant disponible sur la plateforme SCOLARIS.
+Connectez-vous à votre compte pour consulter tous les détails, notes par matière et appréciations des enseignants.
+
+---
+Cette notification a été envoyée automatiquement. Merci de ne pas y répondre.
+Pour toute question concernant ce bulletin, veuillez contacter l'administration de l'établissement.
+© 2025 SCOLARIS - Tous droits réservés

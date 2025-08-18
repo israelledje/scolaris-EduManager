@@ -1,0 +1,311 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Reçu de Paiement - {{ payment.receipt }}{% endblock %}
+{% block page_title %}Reçu de Paiement{% endblock %}
+{% block breadcrumb_current %}Paiements{% endblock %}
+
+{% block page_actions %}
+<div class="flex items-center gap-3">
+    <a href="{% url 'finances:payment_receipt_pdf_typed' payment_type payment.pk %}" target="_blank" class="btn-gradient text-white font-semibold py-2 px-4 rounded-xl transition-all duration-200">
+        <i class="fas fa-file-pdf mr-2"></i>Générer PDF
+    </a>
+    <a href="{% url 'finances:payment_detail_typed' payment_type payment.pk %}" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2 px-4 rounded-xl transition-all duration-200">
+        <i class="fas fa-arrow-left mr-2"></i>Retour
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="flex justify-center">
+    <!-- Reçu A5 pour impression -->
+    <div class="receipt-container bg-white shadow-lg border-2 border-slate-300" id="receipt">
+        <!-- En-tête de l'établissement -->
+        <div class="receipt-header p-4 border-b-2 border-slate-300">
+            <div class="flex items-center justify-between">
+                <!-- Logo et nom de l'établissement -->
+                <div class="flex items-center">
+                    {% if school.logo %}
+                        <img src="{{ school.logo.url }}" alt="Logo" class="w-12 h-12 object-contain mr-3">
+                    {% else %}
+                        <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center text-white font-bold text-lg mr-3">
+                            <i class="fas fa-graduation-cap"></i>
+                        </div>
+                    {% endif %}
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900">{{ school.nom }}</h2>
+                        <p class="text-xs text-slate-600">Autorisation: {{ school.autorisation_ouverture }}</p>
+                    </div>
+                </div>
+                
+                <!-- Titre et numéro du reçu -->
+                <div class="text-right">
+                    <h1 class="text-xl font-bold text-slate-900">REÇU DE PAIEMENT</h1>
+                    <p class="text-sm font-semibold text-blue-600">N° {{ payment.receipt }}</p>
+                    <p class="text-xs text-slate-600">{{ payment.payment_date|date:"d/m/Y" }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Informations de l'élève -->
+        <div class="p-4 border-b border-slate-200">
+            <h3 class="text-sm font-semibold text-slate-900 mb-2 flex items-center">
+                <i class="fas fa-user mr-1 text-blue-600"></i>Informations de l'élève
+            </h3>
+            <div class="grid grid-cols-2 gap-2 text-xs">
+                <div class="flex justify-between">
+                    <span class="font-medium text-slate-600">Nom:</span>
+                    <span class="font-semibold text-slate-900">{{ payment.student.last_name.upper }} {{ payment.student.first_name }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="font-medium text-slate-600">Matricule:</span>
+                    <span class="font-semibold text-slate-900">{{ payment.student.matricule }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="font-medium text-slate-600">Classe:</span>
+                    <span class="font-semibold text-slate-900">{{ payment.student.current_class.name }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="font-medium text-slate-600">Année:</span>
+                    <span class="font-semibold text-slate-900">
+                        {% if payment_type == 'inscription' %}
+                            {{ payment.fee_structure.year.annee }}
+                        {% else %}
+                            {{ payment.tranche.fee_structure.year.annee }}
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Détails du paiement -->
+        <div class="p-4 border-b border-slate-200">
+            <h3 class="text-sm font-semibold text-slate-900 mb-2 flex items-center">
+                <i class="fas fa-money-bill-wave mr-1 text-green-600"></i>Détails du paiement
+            </h3>
+            <div class="space-y-2 text-xs">
+                <div class="flex justify-between">
+                    <span class="font-medium text-slate-600">Type de paiement:</span>
+                    <span class="font-semibold text-slate-900">
+                        {% if payment_type == 'inscription' %}
+                            Frais d'inscription
+                        {% else %}
+                            Tranche {{ payment.tranche.number }}
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="font-medium text-slate-600">Montant payé:</span>
+                    <span class="text-lg font-bold text-green-600">{{ payment.amount|floatformat:0 }} FCFA</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="font-medium text-slate-600">Mode de paiement:</span>
+                    <span class="font-semibold text-slate-900">{{ payment.get_mode_display }}</span>
+                </div>
+                {% if payment_type == 'tranche' %}
+                <div class="flex justify-between">
+                    <span class="font-medium text-slate-600">Date d'échéance:</span>
+                    <span class="font-semibold text-slate-900">{{ payment.tranche.due_date|date:"d/m/Y" }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Signatures -->
+        <div class="p-4">
+            <div class="flex justify-between items-end">
+                <!-- Signature du client -->
+                <div class="text-center">
+                    <div class="w-20 h-12 border-2 border-dashed border-slate-400 rounded mb-2 flex items-center justify-center">
+                        <i class="fas fa-signature text-slate-400 text-xs"></i>
+                    </div>
+                    <p class="text-xs font-semibold text-slate-700">Signature du client</p>
+                </div>
+                
+                <!-- Signature du caissier et cachet -->
+                <div class="text-center">
+                    <div class="flex items-center justify-center mb-2">
+                        {% if school.signature %}
+                            <img src="{{ school.signature.url }}" alt="Signature" class="w-16 h-10 object-contain">
+                        {% else %}
+                            <div class="w-16 h-10 border-2 border-dashed border-slate-400 rounded flex items-center justify-center">
+                                <i class="fas fa-signature text-slate-400 text-xs"></i>
+                            </div>
+                        {% endif %}
+                        <div class="w-8 h-8 border-2 border-slate-400 rounded-full ml-2 flex items-center justify-center">
+                            <i class="fas fa-stamp text-slate-400 text-xs"></i>
+                        </div>
+                    </div>
+                    <p class="text-xs font-semibold text-slate-700">{{ payment.created_by.get_full_name|default:payment.created_by.username }}</p>
+                    <p class="text-xs text-slate-500">Caissier</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Styles pour l'impression A5 Paysage */
+@media print {
+    /* Masquer tout sauf le reçu */
+    body * {
+        visibility: hidden !important;
+    }
+    
+    /* Afficher seulement le reçu */
+    #receipt, #receipt * {
+        visibility: visible !important;
+    }
+    
+    /* Positionnement du reçu pour l'impression */
+    #receipt {
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        max-width: none !important;
+        max-height: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+        border: 2px solid #000 !important;
+        page-break-after: always !important;
+        page-break-inside: avoid !important;
+    }
+    
+    /* Masquer les éléments de navigation */
+    .btn-group, .page-actions, nav, header, footer, .breadcrumb {
+        display: none !important;
+    }
+    
+    /* Styles spécifiques pour l'impression du reçu */
+    .receipt-container {
+        width: 100% !important;
+        height: 100% !important;
+        max-width: none !important;
+        max-height: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: 2px solid #000 !important;
+        box-shadow: none !important;
+        background: white !important;
+        font-size: 10px !important;
+        line-height: 1.2 !important;
+    }
+    
+    /* Ajuster les marges pour A5 paysage */
+    @page {
+        size: A5 landscape;
+        margin: 10mm;
+    }
+    
+    /* Assurer que le contenu s'adapte à la page */
+    .receipt-header, .receipt-body, .receipt-footer {
+        page-break-inside: avoid !important;
+    }
+}
+
+/* Styles spécifiques pour le reçu A5 Paysage */
+.receipt-container {
+    width: 297mm; /* A5 paysage largeur */
+    height: 210mm; /* A5 paysage hauteur */
+    max-width: 297mm;
+    max-height: 210mm;
+    margin: 0 auto;
+    font-size: 10px;
+    line-height: 1.2;
+    background: white;
+    border: 2px solid #333;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive pour écran */
+@media (max-width: 768px) {
+    .receipt-container {
+        width: 100%;
+        height: auto;
+        max-width: 100%;
+        max-height: none;
+        margin: 1rem;
+    }
+    
+    .receipt-header .flex {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .receipt-header .flex > div:first-child {
+        margin-bottom: 0.5rem;
+    }
+}
+
+/* Styles pour l'aperçu d'impression */
+@media screen and (max-width: 1200px) {
+    .receipt-container {
+        transform: scale(0.8);
+        transform-origin: top center;
+    }
+}
+
+@media screen and (max-width: 900px) {
+    .receipt-container {
+        transform: scale(0.6);
+        transform-origin: top center;
+    }
+}
+</style>
+
+<script>
+function printReceipt() {
+    // Sauvegarder les styles originaux
+    const originalStyles = {};
+    const elementsToHide = document.querySelectorAll('body > *:not(#receipt)');
+    
+    // Masquer tous les éléments sauf le reçu
+    elementsToHide.forEach(element => {
+        originalStyles[element] = element.style.display;
+        element.style.display = 'none';
+    });
+    
+    // Ajuster le style du reçu pour l'impression
+    const receipt = document.getElementById('receipt');
+    const originalReceiptStyle = receipt.style.cssText;
+    
+    receipt.style.position = 'absolute';
+    receipt.style.left = '0';
+    receipt.style.top = '0';
+    receipt.style.width = '100%';
+    receipt.style.height = '100%';
+    receipt.style.margin = '0';
+    receipt.style.padding = '0';
+    receipt.style.border = '2px solid #000';
+    receipt.style.boxShadow = 'none';
+    receipt.style.background = 'white';
+    
+    // Imprimer
+    window.print();
+    
+    // Restaurer les styles originaux après l'impression
+    setTimeout(() => {
+        elementsToHide.forEach(element => {
+            if (originalStyles[element] !== undefined) {
+                element.style.display = originalStyles[element];
+            } else {
+                element.style.display = '';
+            }
+        });
+        
+        receipt.style.cssText = originalReceiptStyle;
+    }, 1000);
+}
+
+// Empêcher l'impression avec Ctrl+P
+document.addEventListener('keydown', function(e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+        e.preventDefault();
+        printReceipt();
+    }
+});
+</script>
+{% endblock %} 

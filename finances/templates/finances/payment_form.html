@@ -1,0 +1,558 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}{{ title }} - Finances{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block breadcrumb_current %}Paiements{% endblock %}
+
+{% block page_actions %}
+<div class="flex items-center gap-3">
+    <a href="{% url 'finances:payment_list' %}" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2 px-4 rounded-xl transition-all duration-200">
+        <i class="fas fa-arrow-left mr-2"></i>Retour
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="card-hover bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-200/60">
+            <h3 class="text-lg font-semibold text-slate-900">
+                <i class="fas fa-money-bill-wave mr-2"></i>{{ title }}
+            </h3>
+        </div>
+        
+        <form method="post" enctype="multipart/form-data" id="paymentForm" class="p-6 space-y-6">
+            {% csrf_token %}
+            
+            <!-- Informations de base -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="class_select" class="block text-sm font-medium text-slate-700 mb-2">
+                        Sélectionner une classe <span class="text-red-500">*</span>
+                    </label>
+                    <select id="class_select" 
+                            class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200">
+                        <option value="">Choisir une classe...</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label for="student_select" class="block text-sm font-medium text-slate-700 mb-2">
+                        Sélectionner un étudiant <span class="text-red-500">*</span>
+                    </label>
+                    <div class="relative">
+                        <select id="student_select" name="student" 
+                                class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" disabled>
+                            <option value="">Choisir un étudiant...</option>
+                        </select>
+                        
+                        <!-- Barre de recherche d'étudiant -->
+                        <div class="mt-2">
+                            <input type="text" id="student_search" 
+                                   class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" 
+                                   placeholder="Rechercher un étudiant par nom, prénom ou matricule..." disabled>
+                            <div id="student_search_results" class="absolute z-50 w-full mt-1 bg-white border border-slate-300 rounded-xl shadow-lg max-h-60 overflow-y-auto hidden"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Informations de l'étudiant sélectionné -->
+                    <div id="selected_student_info" class="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-xl hidden">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                                <span id="student_initials"></span>
+                            </div>
+                            <div class="ml-3">
+                                <div class="text-sm font-medium text-blue-900" id="student_display_name"></div>
+                                <div class="text-sm text-blue-700" id="student_class_info"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if form.student.errors %}
+                        <div class="mt-2 text-sm text-red-600">
+                            {% for error in form.student.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Tranche -->
+            <div>
+                <label for="{{ form.tranche.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                    Tranche <span class="text-red-500">*</span>
+                </label>
+                {% render_field form.tranche class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="Sélectionner une tranche" disabled="disabled" %}
+                {% if form.tranche.errors %}
+                    <div class="mt-2 text-sm text-red-600">
+                        {% for error in form.tranche.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                {% if form.tranche.help_text %}
+                    <p class="mt-1 text-xs text-slate-500">{{ form.tranche.help_text }}</p>
+                {% endif %}
+            </div>
+
+            <!-- Détails du paiement -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                    <label for="{{ form.amount.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                        Montant <span class="text-red-500">*</span>
+                    </label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
+                            <i class="fas fa-money-bill-wave"></i>
+                        </span>
+                        {% render_field form.amount class="w-full pl-10 pr-12 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="0.00" %}
+                        <span class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-500 text-sm">
+                            FCFA
+                        </span>
+                    </div>
+                    {% if form.amount.errors %}
+                        <div class="mt-2 text-sm text-red-600">
+                            {% for error in form.amount.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    {% if form.amount.help_text %}
+                        <p class="mt-1 text-xs text-slate-500">{{ form.amount.help_text }}</p>
+                    {% endif %}
+                </div>
+                
+                <div>
+                    <label for="{{ form.mode.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                        Mode de paiement <span class="text-red-500">*</span>
+                    </label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
+                            <i class="fas fa-credit-card"></i>
+                        </span>
+                        {% render_field form.mode class="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="Sélectionner un mode" %}
+                    </div>
+                    {% if form.mode.errors %}
+                        <div class="mt-2 text-sm text-red-600">
+                            {% for error in form.mode.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    {% if form.mode.help_text %}
+                        <p class="mt-1 text-xs text-slate-500">{{ form.mode.help_text }}</p>
+                    {% endif %}
+                </div>
+                
+                <div>
+                    <label for="{{ form.receipt.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                        Numéro de reçu
+                    </label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
+                            <i class="fas fa-receipt"></i>
+                        </span>
+                        {% render_field form.receipt class="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="Généré automatiquement" %}
+                    </div>
+                    {% if form.receipt.errors %}
+                        <div class="mt-2 text-sm text-red-600">
+                            {% for error in form.receipt.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    {% if form.receipt.help_text %}
+                        <p class="mt-1 text-xs text-slate-500">{{ form.receipt.help_text }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Document -->
+            <div>
+                <label for="{{ form.document.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                    Document justificatif
+                </label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
+                        <i class="fas fa-file-upload"></i>
+                    </span>
+                    {% render_field form.document class="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" %}
+                </div>
+                {% if form.document.errors %}
+                    <div class="mt-2 text-sm text-red-600">
+                        {% for error in form.document.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                {% if form.document.help_text %}
+                    <p class="mt-1 text-xs text-slate-500">{{ form.document.help_text }}</p>
+                {% endif %}
+            </div>
+
+            <!-- Informations sur la tranche sélectionnée -->
+            <div id="trancheInfo" class="bg-blue-50 border border-blue-200 rounded-xl p-6" style="display: none;">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-info-circle text-blue-600 text-xl"></i>
+                    </div>
+                    <div class="ml-3">
+                        <h4 class="text-sm font-medium text-blue-900">Informations sur la tranche</h4>
+                        <div id="trancheDetails" class="mt-2 text-sm text-blue-700 space-y-1"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Informations sur l'étudiant sélectionné -->
+            <div id="studentInfo" class="bg-green-50 border border-green-200 rounded-xl p-6" style="display: none;">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-user text-green-600 text-xl"></i>
+                    </div>
+                    <div class="ml-3">
+                        <h4 class="text-sm font-medium text-green-900">Informations sur l'étudiant</h4>
+                        <div id="studentDetails" class="mt-2 text-sm text-green-700 space-y-1"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Erreurs générales du formulaire -->
+            {% if form.non_field_errors %}
+                <div class="bg-red-50 border border-red-200 rounded-xl p-4">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-exclamation-circle text-red-600"></i>
+                        </div>
+                        <div class="ml-3">
+                            <h4 class="text-sm font-medium text-red-900">Erreurs de validation</h4>
+                            <div class="mt-2 text-sm text-red-700">
+                                {% for error in form.non_field_errors %}
+                                    <p>{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Informations importantes -->
+            <div class="bg-amber-50 border border-amber-200 rounded-xl p-6">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-lightbulb text-amber-600 text-xl"></i>
+                    </div>
+                    <div class="ml-3">
+                        <h4 class="text-sm font-medium text-amber-900">Informations importantes</h4>
+                        <div class="mt-2 text-sm text-amber-700 space-y-1">
+                            <p>• Le numéro de reçu est généré automatiquement si non fourni</p>
+                            <p>• Le montant doit correspondre au montant de la tranche sélectionnée</p>
+                            <p>• Un document justificatif peut être joint (reçu, chèque, etc.)</p>
+                            <p>• Le paiement sera enregistré avec la date du jour</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Boutons d'action -->
+            <div class="flex items-center justify-end gap-4 pt-6 border-t border-slate-200">
+                <a href="{% url 'finances:payment_list' %}" 
+                   class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 px-6 rounded-xl transition-all duration-200">
+                    Annuler
+                </a>
+                <button type="submit" 
+                        class="btn-gradient text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg">
+                    <i class="fas fa-save mr-2"></i>Enregistrer le paiement
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const classSelect = document.getElementById('class_select');
+    const studentSelect = document.getElementById('student_select');
+    const studentSearch = document.getElementById('student_search');
+    const studentSearchResults = document.getElementById('student_search_results');
+    const selectedStudentInfo = document.getElementById('selected_student_info');
+    const trancheSelect = document.getElementById('{{ form.tranche.id_for_label }}');
+    const amountField = document.getElementById('{{ form.amount.id_for_label }}');
+    const receiptField = document.getElementById('{{ form.receipt.id_for_label }}');
+    
+    let searchTimeout;
+    let classesData = [];
+    let currentClassStudents = [];
+    
+    // Charger les classes au démarrage
+    loadClasses();
+    
+    // Charger les classes disponibles
+    function loadClasses() {
+        fetch('{% url "finances:get_classes_with_fee_structures" %}')
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    console.error('Erreur:', data.error);
+                    return;
+                }
+                
+                classesData = data.classes;
+                
+                // Vider et remplir le select des classes
+                classSelect.innerHTML = '<option value="">Choisir une classe...</option>';
+                
+                classesData.forEach(cls => {
+                    const option = document.createElement('option');
+                    option.value = cls.id;
+                    option.textContent = cls.display_name;
+                    option.setAttribute('data-class', JSON.stringify(cls));
+                    classSelect.appendChild(option);
+                });
+            })
+            .catch(error => {
+                console.error('Erreur lors du chargement des classes:', error);
+            });
+    }
+    
+    // Quand une classe est sélectionnée
+    classSelect.addEventListener('change', function() {
+        const selectedClassId = this.value;
+        
+        if (selectedClassId) {
+            const selectedClass = classesData.find(cls => cls.id == selectedClassId);
+            if (selectedClass) {
+                // Activer la sélection d'étudiant
+                studentSelect.disabled = false;
+                studentSearch.disabled = false;
+                
+                // Charger les étudiants de cette classe
+                loadStudentsForClass(selectedClassId);
+            }
+        } else {
+            // Désactiver les champs
+            studentSelect.disabled = true;
+            studentSearch.disabled = true;
+            trancheSelect.disabled = true;
+            
+            // Vider les champs
+            studentSelect.innerHTML = '<option value="">Choisir un étudiant...</option>';
+            trancheSelect.innerHTML = '<option value="">Sélectionner une tranche</option>';
+            selectedStudentInfo.classList.add('hidden');
+            document.getElementById('trancheInfo').style.display = 'none';
+            amountField.value = '';
+        }
+    });
+    
+    // Charger les étudiants d'une classe
+    function loadStudentsForClass(classId) {
+        fetch(`{% url 'finances:get_students_for_class' %}?class_id=${classId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    console.error('Erreur:', data.error);
+                    return;
+                }
+                
+                currentClassStudents = data.students;
+                
+                // Vider et remplir le select des étudiants
+                studentSelect.innerHTML = '<option value="">Choisir un étudiant...</option>';
+                
+                currentClassStudents.forEach(student => {
+                    const option = document.createElement('option');
+                    option.value = student.id;
+                    option.textContent = `${student.name} (${student.matricule})`;
+                    option.setAttribute('data-student', JSON.stringify(student));
+                    studentSelect.appendChild(option);
+                });
+            })
+            .catch(error => {
+                console.error('Erreur lors du chargement des étudiants:', error);
+            });
+    }
+    
+    // Quand un étudiant est sélectionné dans le dropdown
+    studentSelect.addEventListener('change', function() {
+        const selectedStudentId = this.value;
+        
+        if (selectedStudentId) {
+            const selectedStudent = currentClassStudents.find(s => s.id == selectedStudentId);
+            if (selectedStudent) {
+                displaySelectedStudent(selectedStudent);
+                loadTranchesForClass(classSelect.value);
+            }
+        } else {
+            selectedStudentInfo.classList.add('hidden');
+            trancheSelect.disabled = true;
+            trancheSelect.innerHTML = '<option value="">Sélectionner une tranche</option>';
+        }
+    });
+    
+    // Recherche d'étudiants dans la classe sélectionnée
+    studentSearch.addEventListener('input', function() {
+        const query = this.value.trim();
+        
+        clearTimeout(searchTimeout);
+        
+        if (query.length < 2) {
+            studentSearchResults.classList.add('hidden');
+            return;
+        }
+        
+        searchTimeout = setTimeout(() => {
+            // Filtrer les étudiants de la classe actuelle
+            const filteredStudents = currentClassStudents.filter(student => 
+                student.name.toLowerCase().includes(query.toLowerCase()) ||
+                student.matricule.toLowerCase().includes(query.toLowerCase())
+            );
+            
+            displayStudentSearchResults(filteredStudents);
+        }, 300);
+    });
+    
+    // Afficher les résultats de recherche d'étudiants
+    function displayStudentSearchResults(students) {
+        if (students.length === 0) {
+            studentSearchResults.innerHTML = '<div class="p-3 text-sm text-slate-500">Aucun étudiant trouvé</div>';
+        } else {
+            studentSearchResults.innerHTML = students.map(student => `
+                <div class="student-result p-3 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0" 
+                     data-student-id="${student.id}">
+                    <div class="flex items-center">
+                        <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-xs">
+                            ${student.name.split(' ')[0][0]}${student.name.split(' ')[1] ? student.name.split(' ')[1][0] : ''}
+                        </div>
+                        <div class="ml-3">
+                            <div class="text-sm font-medium text-slate-900">${student.name}</div>
+                            <div class="text-xs text-slate-500">Matricule: ${student.matricule}</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        studentSearchResults.classList.remove('hidden');
+    }
+    
+    // Sélectionner un étudiant depuis les résultats de recherche
+    studentSearchResults.addEventListener('click', function(e) {
+        const studentResult = e.target.closest('.student-result');
+        if (studentResult) {
+            const studentId = studentResult.dataset.studentId;
+            const selectedStudent = currentClassStudents.find(s => s.id == studentId);
+            if (selectedStudent) {
+                // Mettre à jour le select
+                studentSelect.value = studentId;
+                displaySelectedStudent(selectedStudent);
+                loadTranchesForClass(classSelect.value);
+                studentSearchResults.classList.add('hidden');
+                studentSearch.value = '';
+            }
+        }
+    });
+    
+    // Afficher les informations de l'étudiant sélectionné
+    function displaySelectedStudent(student) {
+        const nameParts = student.name.split(' ');
+        const initials = nameParts[0][0] + (nameParts[1] ? nameParts[1][0] : '');
+        
+        document.getElementById('student_initials').textContent = initials;
+        document.getElementById('student_display_name').textContent = student.name;
+        document.getElementById('student_class_info').textContent = `Matricule: ${student.matricule}`;
+        selectedStudentInfo.classList.remove('hidden');
+    }
+    
+    // Charger les tranches pour une classe
+    function loadTranchesForClass(classId) {
+        fetch(`{% url 'finances:get_tranches_for_class' %}?class_id=${classId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    console.error('Erreur:', data.error);
+                    return;
+                }
+                
+                // Vider et remplir le select des tranches
+                trancheSelect.innerHTML = '<option value="">Sélectionner une tranche</option>';
+                
+                data.tranches.forEach(tranche => {
+                    const option = document.createElement('option');
+                    option.value = tranche.id;
+                    option.textContent = `Tranche ${tranche.number} - ${tranche.amount} FCFA (Échéance: ${tranche.due_date})`;
+                    option.setAttribute('data-tranche', JSON.stringify({
+                        number: tranche.number,
+                        amount: tranche.amount,
+                        due_date: tranche.due_date,
+                        fee_structure: tranche.fee_structure
+                    }));
+                    trancheSelect.appendChild(option);
+                });
+                
+                trancheSelect.disabled = false;
+            })
+            .catch(error => {
+                console.error('Erreur lors du chargement des tranches:', error);
+            });
+    }
+    
+    // Quand une tranche est sélectionnée
+    trancheSelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        if (selectedOption && selectedOption.value) {
+            const trancheData = JSON.parse(selectedOption.getAttribute('data-tranche') || '{}');
+            showTrancheInfo(trancheData);
+            
+            // Pré-remplir le montant
+            if (!amountField.value) {
+                amountField.value = trancheData.amount;
+            }
+        } else {
+            document.getElementById('trancheInfo').style.display = 'none';
+        }
+    });
+    
+    // Afficher les informations de la tranche
+    function showTrancheInfo(trancheData) {
+        const trancheInfo = document.getElementById('trancheInfo');
+        const trancheDetails = document.getElementById('trancheDetails');
+        
+        if (trancheData.amount) {
+            trancheDetails.innerHTML = `
+                <p><strong>Numéro de tranche:</strong> ${trancheData.number || ''}</p>
+                <p><strong>Montant:</strong> ${trancheData.amount} FCFA</p>
+                <p><strong>Date d'échéance:</strong> ${trancheData.due_date || ''}</p>
+                <p><strong>Structure de frais:</strong> ${trancheData.fee_structure || ''}</p>
+            `;
+            trancheInfo.style.display = 'block';
+        }
+    }
+    
+    // Générer automatiquement le numéro de reçu
+    function generateReceiptNumber() {
+        if (!receiptField.value) {
+            const now = new Date();
+            const dateStr = now.getFullYear().toString() + 
+                           (now.getMonth() + 1).toString().padStart(2, '0') + 
+                           now.getDate().toString().padStart(2, '0');
+            const randomNum = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+            receiptField.value = `TR-${dateStr}-${randomNum}`;
+        }
+    }
+    
+    // Masquer les résultats de recherche quand on clique ailleurs
+    document.addEventListener('click', function(e) {
+        if (!studentSearch.contains(e.target) && !studentSearchResults.contains(e.target)) {
+            studentSearchResults.classList.add('hidden');
+        }
+    });
+    
+    // Événements
+    receiptField.addEventListener('focus', generateReceiptNumber);
+    
+    // Initialisation
+    generateReceiptNumber();
+});
+</script>
+{% endblock %} 

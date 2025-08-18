@@ -1,0 +1,200 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Rapport Retards - {{ school_class.name }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- En-tête -->
+    <div class="mb-8">
+        <div class="flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">Rapport des Retards - {{ school_class.name }}</h1>
+                <p class="text-gray-600">Date de référence : {{ today|date:"d/m/Y" }}</p>
+            </div>
+            <div class="flex space-x-3">
+                <a href="{% url 'finances:overdue_report' %}" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition-colors">
+                    <i class="fas fa-arrow-left mr-2"></i>Retour
+                </a>
+                <a href="{% url 'finances:export_overdue_report' %}" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition-colors">
+                    <i class="fas fa-download mr-2"></i>Exporter PDF
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques de la classe -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-red-100 text-red-600">
+                    <i class="fas fa-exclamation-triangle text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Étudiants en Retard</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ total_overdue_students }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-orange-100 text-orange-600">
+                    <i class="fas fa-money-bill text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Montant Total en Retard</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ total_overdue_amount|floatformat:0 }} FCFA</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-purple-100 text-purple-600">
+                    <i class="fas fa-chart-line text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Année Scolaire</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ current_year.annee }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Détail des retardataires -->
+    <div class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900">Détail des Retardataires</h3>
+        </div>
+        <div class="overflow-x-auto">
+            {% for student_data in overdue_students %}
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h4 class="text-lg font-semibold text-gray-900">{{ student_data.student.last_name.upper }} {{ student_data.student.first_name }}</h4>
+                        <p class="text-sm text-gray-600">{{ student_data.student.matricule }}</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-lg font-bold text-red-600">{{ student_data.total_overdue|floatformat:0 }} FCFA</p>
+                        <p class="text-sm text-gray-600">Total en retard</p>
+                    </div>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tranche</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Échéance</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Montant Payé</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Montant Dû</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jours Retard</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for detail in student_data.overdue_details %}
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-gray-900">Tranche {{ detail.tranche.number }}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">{{ detail.tranche.due_date|date:"d/m/Y" }}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-green-600">{{ detail.paid_amount|floatformat:0 }} FCFA</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-red-600">{{ detail.overdue_amount|floatformat:0 }} FCFA</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">{{ detail.days_overdue }} jours</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    {% if detail.severity == 'high' %}
+                                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                                            <i class="fas fa-exclamation-circle mr-1"></i>Critique
+                                        </span>
+                                    {% elif detail.severity == 'medium' %}
+                                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800">
+                                            <i class="fas fa-exclamation-triangle mr-1"></i>Important
+                                        </span>
+                                    {% else %}
+                                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                            <i class="fas fa-clock mr-1"></i>Modéré
+                                        </span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Légende -->
+    <div class="mt-6 bg-white rounded-lg shadow p-6">
+        <h4 class="text-lg font-semibold text-gray-900 mb-4">Légende des Statuts</h4>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="flex items-center">
+                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800 mr-3">
+                    <i class="fas fa-exclamation-circle mr-1"></i>Critique
+                </span>
+                <span class="text-sm text-gray-600">Plus de 30 jours</span>
+            </div>
+            <div class="flex items-center">
+                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800 mr-3">
+                    <i class="fas fa-exclamation-triangle mr-1"></i>Important
+                </span>
+                <span class="text-sm text-gray-600">7 à 30 jours</span>
+            </div>
+            <div class="flex items-center">
+                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800 mr-3">
+                    <i class="fas fa-clock mr-1"></i>Modéré
+                </span>
+                <span class="text-sm text-gray-600">1 à 7 jours</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions recommandées -->
+    <div class="mt-6 bg-white rounded-lg shadow p-6">
+        <h4 class="text-lg font-semibold text-gray-900 mb-4">Actions Recommandées</h4>
+        <div class="space-y-3">
+            <div class="flex items-start">
+                <div class="flex-shrink-0 w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                    <i class="fas fa-phone text-red-600 text-sm"></i>
+                </div>
+                <div class="ml-4">
+                    <h5 class="text-sm font-medium text-gray-900">Contact immédiat</h5>
+                    <p class="text-sm text-gray-600">Contacter les parents des étudiants en retard critique (>30 jours)</p>
+                </div>
+            </div>
+            
+            <div class="flex items-start">
+                <div class="flex-shrink-0 w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
+                    <i class="fas fa-envelope text-orange-600 text-sm"></i>
+                </div>
+                <div class="ml-4">
+                    <h5 class="text-sm font-medium text-gray-900">Rappel par email/SMS</h5>
+                    <p class="text-sm text-gray-600">Envoyer des rappels aux étudiants en retard important (7-30 jours)</p>
+                </div>
+            </div>
+            
+            <div class="flex items-start">
+                <div class="flex-shrink-0 w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
+                    <i class="fas fa-bell text-yellow-600 text-sm"></i>
+                </div>
+                <div class="ml-4">
+                    <h5 class="text-sm font-medium text-gray-900">Surveillance</h5>
+                    <p class="text-sm text-gray-600">Surveiller les étudiants en retard modéré (1-7 jours)</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,112 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Tailwind CSS local -->
+  <link rel="stylesheet" href="{% static 'dist/styles.css' %}" />
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <!-- Alpine.js local -->
+  <script defer src="{% static 'js/alpine.min.js' %}"></script>
+  <title>Connexion | Gestion Scolaire</title>
+</head>
+<body>
+<!-- Toasts -->
+<div id="toast-container" class="fixed top-4 right-4 z-50">
+    {% if messages %}
+      {% for message in messages %}
+        <div class="toast-message mb-2 px-4 py-3 rounded shadow-lg text-white transition-opacity duration-500
+          {% if message.tags == 'error' %}bg-red-600{% elif message.tags == 'success' %}bg-green-600{% else %}bg-indigo-600{% endif %}"
+          style="opacity: 1;">
+          {{ message }}
+        </div>
+      {% endfor %}
+    {% endif %}
+  </div>
+
+<div
+  class="min-h-screen flex items-center justify-center"
+  style="background: linear-gradient(135deg, #6a82fb 0%, #fc5c7d 100%)"
+>
+  <div
+    class="w-full max-w-md mx-auto bg-white rounded-2xl shadow-2xl p-8 flex flex-col items-center"
+  >
+    <h2 class="text-3xl font-bold text-gray-900 mb-6">Connexion</h2>
+    <form method="post" class="w-full space-y-4">
+      {% csrf_token %}
+      <div class="relative">
+        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+        </span>
+        {{ form.username }}
+      </div>
+      <div class="relative">
+        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+          
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 15v2m0-6v2m-6 4v-2a4 4 0 014-4h4a4 4 0 014 4v2"
+            />
+          </svg>
+        </span>
+        {{ form.password }}
+      </div>
+      <div class="flex justify-between items-center text-sm">
+        <div></div>
+        <a href="#" class="text-xs text-blue-600 hover:underline"
+          >Forgot password?</a
+        >
+      </div>
+      <button
+        type="submit"
+        class="w-full py-2 px-4 rounded-full font-semibold text-white shadow-md transition bg-gradient-to-r from-blue-400 to-pink-400 hover:from-blue-500 hover:to-pink-500"
+      >
+        LOGIN
+      </button>
+    </form>
+    <div class="flex items-center my-4 w-full">
+      <div class="flex-grow border-t border-gray-300"></div>
+      <span class="mx-2 text-gray-400 text-xs">Or Sign Up Using</span>
+      <div class="flex-grow border-t border-gray-300"></div>
+    </div>
+    <div class="flex justify-center gap-4 w-full mb-2">
+      <a
+        href="#"
+        class="w-10 h-10 flex items-center justify-center rounded-full bg-blue-800 text-white"
+        ><i class="fab fa-facebook-f"></i
+      ></a>
+      <a
+        href="#"
+        class="w-10 h-10 flex items-center justify-center rounded-full bg-blue-400 text-white"
+        ><i class="fab fa-twitter"></i
+      ></a>
+      <a
+        href="#"
+        class="w-10 h-10 flex items-center justify-center rounded-full bg-red-500 text-white"
+        ><i class="fab fa-google"></i
+      ></a>
+    </div>
+    <div class="text-center mt-2 text-sm text-gray-500">
+      Or Sign Up Using
+      <a href="#" class="text-blue-600 hover:underline font-semibold"
+        >SIGN UP</a
+      >
+    </div>
+  </div>
+</div>
+
+<script>
+    // Disparition automatique des toasts après 3 secondes
+    window.addEventListener('DOMContentLoaded', () => {
+      setTimeout(() => {
+        document.querySelectorAll('.toast-message').forEach(el => {
+          el.style.opacity = '0';
+        });
+      }, 3000);
+    });
+  </script>
+</body>
+</html>

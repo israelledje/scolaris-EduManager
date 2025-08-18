@@ -1,0 +1,10 @@
+<form id="history-delete-form" method="post" hx-post="" hx-target="#history-list" hx-swap="outerHTML" class="space-y-4">
+  {% csrf_token %}
+  <p class="text-gray-700 text-base mb-4">
+    Voulez-vous vraiment supprimer l'entrée d'historique de la classe <strong>{{ history.school_class }}</strong> pour l'année <strong>{{ history.year }}</strong> ?
+  </p>
+  <div class="flex justify-end gap-2 mt-4">
+    <button type="submit" class="inline-flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg shadow">Supprimer</button>
+    <button type="button" class="inline-flex items-center px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-semibold rounded-lg shadow" @click="open = false">Annuler</button>
+  </div>
+</form> 

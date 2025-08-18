@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuration de l'Établissement - Scolaris</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .form-input { width: 100%; padding: 0.75rem 1rem; border: 1px solid #d1d5db; border-radius: 0.5rem; margin-bottom: 0.5rem; }
+        .form-select { width: 100%; padding: 0.75rem 1rem; border: 1px solid #d1d5db; border-radius: 0.5rem; margin-bottom: 0.5rem; }
+        .btn-primary { padding: 0.75rem 1.5rem; background-color: #2563eb; color: white; font-weight: 600; border-radius: 0.5rem; }
+        .btn-secondary { padding: 0.75rem 1.5rem; background-color: #4b5563; color: white; font-weight: 600; border-radius: 0.5rem; }
+        .step-indicator { display: flex; align-items: center; justify-content: center; width: 2.5rem; height: 2.5rem; border-radius: 9999px; border: 2px solid; font-weight: 600; font-size: 0.875rem; }
+        .step-active { background-color: #2563eb; border-color: #2563eb; color: white; }
+        .step-completed { background-color: #10b981; border-color: #10b981; color: white; }
+        .step-pending { background-color: #e5e7eb; border-color: #d1d5db; color: #6b7280; }
+    </style>
+</head>
+<body class="h-full bg-gray-50">
+    <div x-data="configWizard()" class="min-h-screen">
+        <!-- Header -->
+        <header class="bg-white shadow-sm border-b">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center py-4">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-graduation-cap text-white text-xl"></i>
+                        </div>
+                        <h1 class="text-2xl font-bold text-gray-900">Scolaris</h1>
+                    </div>
+                    <div class="text-sm text-gray-500">
+                        Configuration de l'établissement - Étape {{ current_step }}/{{ total_steps }}
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Progress Steps -->
+            <div class="mb-8">
+                <div class="flex items-center justify-center space-x-4">
+                    <!-- Step 1 -->
+                    <div class="step-indicator {% if current_step >= 1 %}step-completed{% else %}step-active{% endif %}">
+                        {% if current_step > 1 %}
+                            <i class="fas fa-check"></i>
+                        {% else %}
+                            1
+                        {% endif %}
+                    </div>
+                    <div class="h-1 w-16 {% if current_step > 1 %}bg-green-500{% else %}bg-gray-200{% endif %}"></div>
+                    
+                    <!-- Step 2 -->
+                    <div class="step-indicator {% if current_step >= 2 %}step-completed{% elif current_step == 2 %}step-active{% else %}step-pending{% endif %}">
+                        {% if current_step > 2 %}
+                            <i class="fas fa-check"></i>
+                        {% else %}
+                            2
+                        {% endif %}
+                    </div>
+                    <div class="h-1 w-16 {% if current_step > 2 %}bg-green-500{% else %}bg-gray-200{% endif %}"></div>
+                    
+                    <!-- Step 3 -->
+                    <div class="step-indicator {% if current_step >= 3 %}step-completed{% elif current_step == 3 %}step-active{% else %}step-pending{% endif %}">
+                        {% if current_step > 3 %}
+                            <i class="fas fa-check"></i>
+                        {% else %}
+                            3
+                        {% endif %}
+                    </div>
+                    <div class="h-1 w-16 {% if current_step > 3 %}bg-green-500{% else %}bg-gray-200{% endif %}"></div>
+                    
+                    <!-- Step 4 -->
+                    <div class="step-indicator {% if current_step >= 4 %}step-completed{% elif current_step == 4 %}step-active{% else %}step-pending{% endif %}">
+                        {% if current_step > 4 %}
+                            <i class="fas fa-check"></i>
+                        {% else %}
+                            4
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="flex justify-center mt-4 space-x-16">
+                    <span class="text-sm font-medium {% if current_step >= 1 %}text-green-600{% else %}text-gray-400{% endif %}">Système</span>
+                    <span class="text-sm font-medium {% if current_step >= 2 %}text-green-600{% else %}text-gray-400{% endif %}">Établissement</span>
+                    <span class="text-sm font-medium {% if current_step >= 3 %}text-green-600{% else %}text-gray-400{% endif %}">En-tête</span>
+                    <span class="text-sm font-medium {% if current_step >= 4 %}text-green-600{% else %}text-gray-400{% endif %}">Année</span>
+                </div>
+            </div>
+
+            <!-- Success/Error Messages -->
+            {% if messages %}
+            <div class="mb-6 space-y-2">
+                {% for message in messages %}
+                <div class="{% if message.tags == 'success' %}bg-green-100 border-green-400 text-green-700{% elif message.tags == 'error' %}bg-red-100 border-red-400 text-red-700{% else %}bg-blue-100 border-blue-400 text-blue-700{% endif %} border px-4 py-3 rounded-lg">
+                    <div class="flex items-center">
+                        <i class="fas fa-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' %}exclamation-triangle{% else %}info-circle{% endif %} mr-2"></i>
+                        {{ message }}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Step 1: System Configuration -->
+            {% if current_step == 1 %}
+            <div class="bg-white rounded-xl shadow-lg p-8">
+                <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+                    <i class="fas fa-cogs text-blue-600 mr-3"></i>
+                    Étape 1: Configuration du Système
+                </h2>
+                
+                <form method="post" class="space-y-6">
+                    {% csrf_token %}
+                    
+                    <!-- Education Systems -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Systèmes éducatifs *</label>
+                        <div class="space-y-3">
+                            <div class="flex items-center space-x-3">
+                                <input type="checkbox" name="education_systems" value="francophone" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="text-sm text-gray-700">Francophone</span>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <input type="checkbox" name="education_systems" value="anglophone" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="text-sm text-gray-700">Anglophone</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- School Types -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Types d'établissements *</label>
+                        <div class="space-y-3">
+                            <div class="flex items-center space-x-3">
+                                <input type="checkbox" name="school_types" value="public" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="text-sm text-gray-700">Public</span>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <input type="checkbox" name="school_types" value="prive" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="text-sm text-gray-700">Privé</span>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <input type="checkbox" name="school_types" value="confessionnel" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="text-sm text-gray-700">Confessionnel</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Ministry -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Ministère de tutelle *</label>
+                        <input type="text" name="ministry_name" class="form-input" placeholder="Ex: Ministère de l'Éducation de Base" required>
+                        <input type="text" name="ministry_code" class="form-input" placeholder="Code du ministère (ex: MINEDUB)">
+                        <input type="text" name="ministry_address" class="form-input" placeholder="Adresse du ministère">
+                        <input type="tel" name="ministry_phone" class="form-input" placeholder="Téléphone du ministère">
+                        <input type="email" name="ministry_email" class="form-input" placeholder="Email du ministère">
+                    </div>
+
+                    <!-- Regional Delegation -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Délégation régionale *</label>
+                        <input type="text" name="delegation_name" class="form-input" placeholder="Ex: Délégation Régionale de l'Éducation" required>
+                        <input type="text" name="delegation_region" class="form-input" placeholder="Région (ex: Centre)" required>
+                        <input type="text" name="delegation_address" class="form-input" placeholder="Adresse de la délégation">
+                        <input type="tel" name="delegation_phone" class="form-input" placeholder="Téléphone de la délégation">
+                        <input type="email" name="delegation_email" class="form-input" placeholder="Email de la délégation">
+                    </div>
+
+                    <!-- School Levels -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Niveaux scolaires *</label>
+                        <div class="space-y-3">
+                            <div class="flex items-center space-x-3">
+                                <input type="checkbox" name="school_levels" value="maternelle" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="text-sm text-gray-700">Maternelle</span>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <input type="checkbox" name="school_levels" value="primaire" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="text-sm text-gray-700">Primaire</span>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <input type="checkbox" name="school_levels" value="secondaire" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="text-sm text-gray-700">Secondaire</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Navigation -->
+                    <div class="flex justify-end mt-8">
+                        <button type="submit" name="next_step" class="btn-primary">
+                            Suivant <i class="fas fa-arrow-right ml-2"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+            {% endif %}
+
+            <!-- Step 2: School Configuration -->
+            {% if current_step == 2 %}
+            <div class="bg-white rounded-xl shadow-lg p-8">
+                <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+                    <i class="fas fa-school text-green-600 mr-3"></i>
+                    Étape 2: Configuration de l'Établissement
+                </h2>
+                
+                <form method="post" class="space-y-6">
+                    {% csrf_token %}
+                    
+                    <!-- Basic Information -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Nom de l'établissement *</label>
+                            <input type="text" name="name" class="form-input" placeholder="Ex: Collège Lumière" required 
+                                   value="{{ school.name|default:'' }}">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Code de l'établissement *</label>
+                            <input type="text" name="code" class="form-input" placeholder="Ex: CL001" required
+                                   value="{{ school.code|default:'' }}">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Numéro d'autorisation</label>
+                            <input type="text" name="authorization_number" class="form-input" placeholder="N° d'autorisation"
+                                   value="{{ school.authorization_number|default:'' }}">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Date de création</label>
+                            <input type="date" name="creation_date" class="form-input"
+                                   value="{{ school.creation_date|date:'Y-m-d'|default:'' }}">
+                        </div>
+                    </div>
+
+                    <!-- Contact Information -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Adresse *</label>
+                        <textarea name="address" rows="3" class="form-input" placeholder="Adresse complète de l'établissement" required>{{ school.address|default:'' }}</textarea>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Téléphone</label>
+                            <input type="tel" name="phone" class="form-input" placeholder="+237 XXX XXX XXX"
+                                   value="{{ school.phone|default:'' }}">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                            <input type="email" name="email" class="form-input" placeholder="contact@ecole.com"
+                                   value="{{ school.email|default:'' }}">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Site web</label>
+                            <input type="url" name="website" class="form-input" placeholder="https://www.ecole.com"
+                                   value="{{ school.website|default:'' }}">
+                        </div>
+                    </div>
+
+                    <!-- Hidden fields for system data -->
+                    <input type="hidden" name="education_system" value="{{ education_systems.0.id }}">
+                    <input type="hidden" name="type" value="{{ school_types.0.id }}">
+                    <input type="hidden" name="ministry" value="{{ ministries.0.id }}">
+                    <input type="hidden" name="regional_delegation" value="{{ regional_delegations.0.id }}">
+
+                    <!-- School Levels Selection -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Niveaux enseignés *</label>
+                        <p class="text-xs text-gray-500 mb-2">Maternelle, Primaire, Secondaire</p>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <label class="flex items-center space-x-2">
+                                <input type="checkbox" name="levels" value="1" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="text-sm text-gray-700">Maternelle</span>
+                            </label>
+                            <label class="flex items-center space-x-2">
+                                <input type="checkbox" name="levels" value="2" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="text-sm text-gray-700">Primaire</span>
+                            </label>
+                            <label class="flex items-center space-x-2">
+                                <input type="checkbox" name="levels" value="3" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="text-sm text-gray-700">Secondaire</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Navigation -->
+                    <div class="flex justify-between pt-6">
+                        <form method="post" class="inline">
+                            {% csrf_token %}
+                            <button type="submit" name="prev_step" class="btn-secondary">
+                                <i class="fas fa-arrow-left mr-2"></i> Précédent
+                            </button>
+                        </form>
+                        <button type="submit" name="next_step" class="btn-primary">
+                            Suivant <i class="fas fa-arrow-right ml-2"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+            {% endif %}
+
+            <!-- Step 3: Document Header Configuration -->
+            {% if current_step == 3 %}
+            <div class="bg-white rounded-xl shadow-lg p-8">
+                <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+                    <i class="fas fa-file-alt text-purple-600 mr-3"></i>
+                    Étape 3: Configuration de l'En-tête des Documents
+                </h2>
+                
+                <form method="post" class="space-y-6">
+                    {% csrf_token %}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Nom de l'en-tête</label>
+                            <input type="text" name="header_name" class="form-input" placeholder="En-tête principal" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Devise de l'école</label>
+                            <input type="text" name="school_motto" class="form-input" placeholder="Ex: Excellence et Discipline">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Logo de l'école</label>
+                            <input type="file" name="logo" accept="image/*" class="form-input">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Signature du directeur</label>
+                            <input type="file" name="signature" accept="image/*" class="form-input">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Tampon de l'école</label>
+                            <input type="file" name="stamp" accept="image/*" class="form-input">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Nom du directeur</label>
+                            <input type="text" name="director_name" class="form-input" placeholder="Nom complet du directeur">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Titre du directeur</label>
+                            <input type="text" name="director_title" class="form-input" placeholder="Ex: Directeur Général">
+                        </div>
+                    </div>
+
+                    <!-- Navigation -->
+                    <div class="flex justify-between pt-6">
+                        <form method="post" class="inline">
+                            {% csrf_token %}
+                            <button type="submit" name="prev_step" class="btn-secondary">
+                                <i class="fas fa-arrow-left mr-2"></i> Précédent
+                            </button>
+                        </form>
+                        <button type="submit" name="next_step" class="btn-primary">
+                            Suivant <i class="fas fa-arrow-right ml-2"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+            {% endif %}
+
+            <!-- Step 4: School Year Configuration -->
+            {% if current_step == 4 %}
+            <div class="bg-white rounded-xl shadow-lg p-8">
+                <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+                    <i class="fas fa-calendar-alt text-orange-600 mr-3"></i>
+                    Étape 4: Configuration de l'Année Scolaire
+                </h2>
+                
+                <form method="post" class="space-y-6">
+                    {% csrf_token %}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Année scolaire *</label>
+                            <input type="text" name="annee" class="form-input" placeholder="2024-2025" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Statut</label>
+                            <select name="statut" class="form-select">
+                                <option value="EN_COURS">En cours</option>
+                                <option value="CLOTUREE">Clôturée</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Navigation -->
+                    <div class="flex justify-between pt-6">
+                        <form method="post" class="inline">
+                            {% csrf_token %}
+                            <button type="submit" name="prev_step" class="btn-secondary">
+                                <i class="fas fa-arrow-left mr-2"></i> Précédent
+                            </button>
+                        </form>
+                        <button type="submit" name="next_step" class="btn-primary">
+                            <i class="fas fa-check mr-2"></i> Terminer
+                        </button>
+                    </div>
+                </form>
+            </div>
+            {% endif %}
+        </main>
+    </div>
+
+    <script>
+        function configWizard() {
+            return {
+                currentStep: {{ current_step }},
+                totalSteps: {{ total_steps }},
+                
+                init() {
+                    console.log('Configuration wizard initialized at step:', this.currentStep);
+                }
+            };
+        }
+    </script>
+</body>
+</html>

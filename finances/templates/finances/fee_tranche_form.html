@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}{{ title }} - Finances{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block breadcrumb_current %}Tranches{% endblock %}
+
+{% block page_actions %}
+<div class="flex items-center gap-3">
+    <a href="{% url 'finances:fee_structure_detail' fee_structure.pk %}" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2 px-4 rounded-xl transition-all duration-200">
+        <i class="fas fa-arrow-left mr-2"></i>Retour
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="card-hover bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-200/60">
+            <h3 class="text-lg font-semibold text-slate-900">
+                <i class="fas fa-edit mr-2"></i>{{ title }}
+            </h3>
+        </div>
+        
+        <form method="post" class="p-6 space-y-6">
+            {% csrf_token %}
+            
+            <!-- Informations de la structure de frais -->
+            <div class="bg-blue-50 rounded-xl p-4 border border-blue-200">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-info text-white text-sm"></i>
+                    </div>
+                    <h4 class="text-sm font-medium text-blue-900">Structure de frais</h4>
+                </div>
+                <p class="text-sm text-blue-700">
+                    {{ fee_structure.school_class.name }} - {{ fee_structure.year.annee }}
+                </p>
+            </div>
+            
+            <!-- Numéro de tranche -->
+            <div>
+                <label for="{{ form.number.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                    Numéro de tranche <span class="text-red-500">*</span>
+                </label>
+                {% render_field form.number class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="1" %}
+                {% if form.number.errors %}
+                    <div class="mt-2 text-sm text-red-600">
+                        {% for error in form.number.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                {% if form.number.help_text %}
+                    <p class="mt-1 text-xs text-slate-500">{{ form.number.help_text }}</p>
+                {% endif %}
+            </div>
+            
+            <!-- Montant -->
+            <div>
+                <label for="{{ form.amount.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                    Montant (FCFA) <span class="text-red-500">*</span>
+                </label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
+                        <i class="fas fa-money-bill-wave"></i>
+                    </span>
+                    {% render_field form.amount class="w-full pl-10 pr-12 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="0.00" %}
+                    <span class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-500 text-sm">
+                        FCFA
+                    </span>
+                </div>
+                {% if form.amount.errors %}
+                    <div class="mt-2 text-sm text-red-600">
+                        {% for error in form.amount.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                {% if form.amount.help_text %}
+                    <p class="mt-1 text-xs text-slate-500">{{ form.amount.help_text }}</p>
+                {% endif %}
+            </div>
+            
+            <!-- Date d'échéance -->
+            <div>
+                <label for="{{ form.due_date.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                    Date d'échéance <span class="text-red-500">*</span>
+                </label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
+                        <i class="fas fa-calendar"></i>
+                    </span>
+                    {% render_field form.due_date class="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" type="date" %}
+                </div>
+                {% if form.due_date.errors %}
+                    <div class="mt-2 text-sm text-red-600">
+                        {% for error in form.due_date.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                {% if form.due_date.help_text %}
+                    <p class="mt-1 text-xs text-slate-500">{{ form.due_date.help_text }}</p>
+                {% endif %}
+            </div>
+
+            <!-- Erreurs générales du formulaire -->
+            {% if form.non_field_errors %}
+                <div class="bg-red-50 border border-red-200 rounded-xl p-4">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-exclamation-circle text-red-600"></i>
+                        </div>
+                        <div class="ml-3">
+                            <h4 class="text-sm font-medium text-red-900">Erreurs de validation</h4>
+                            <div class="mt-2 text-sm text-red-700">
+                                {% for error in form.non_field_errors %}
+                                    <p>{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Informations importantes -->
+            <div class="bg-amber-50 border border-amber-200 rounded-xl p-6">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-exclamation-triangle text-amber-600 text-xl"></i>
+                    </div>
+                    <div class="ml-3">
+                        <h4 class="text-sm font-medium text-amber-900">Informations importantes</h4>
+                        <div class="mt-2 text-sm text-amber-700 space-y-1">
+                            <p>• Le numéro de tranche doit être unique pour cette structure de frais</p>
+                            <p>• Le montant doit être supérieur à 0</p>
+                            <p>• La date d'échéance doit être dans le futur</p>
+                            <p>• Une fois créée, la tranche ne peut être supprimée que si aucun paiement n'y est associé</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Boutons d'action -->
+            <div class="flex items-center justify-end gap-4 pt-6 border-t border-slate-200">
+                <a href="{% url 'finances:fee_structure_detail' fee_structure.pk %}" 
+                   class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 px-6 rounded-xl transition-all duration-200">
+                    Annuler
+                </a>
+                <button type="submit" 
+                        class="btn-gradient text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg">
+                    <i class="fas fa-save mr-2"></i>
+                    {% if tranche %}Mettre à jour{% else %}Créer{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const numberField = document.getElementById('{{ form.number.id_for_label }}');
+    const amountField = document.getElementById('{{ form.amount.id_for_label }}');
+    const dueDateField = document.getElementById('{{ form.due_date.id_for_label }}');
+    
+    // Validation du numéro de tranche
+    numberField.addEventListener('input', function() {
+        const value = parseInt(this.value);
+        if (value < 1) {
+            this.setCustomValidity('Le numéro de tranche doit être au moins 1');
+        } else {
+            this.setCustomValidity('');
+        }
+    });
+    
+    // Validation du montant
+    amountField.addEventListener('input', function() {
+        const value = parseFloat(this.value);
+        if (value <= 0) {
+            this.setCustomValidity('Le montant doit être supérieur à 0');
+        } else {
+            this.setCustomValidity('');
+        }
+    });
+    
+    // Validation de la date d'échéance
+    dueDateField.addEventListener('input', function() {
+        const selectedDate = new Date(this.value);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        if (selectedDate < today) {
+            this.setCustomValidity('La date d\'échéance doit être dans le futur');
+        } else {
+            this.setCustomValidity('');
+        }
+    });
+    
+    // Définir la date minimale à aujourd'hui
+    const today = new Date().toISOString().split('T')[0];
+    dueDateField.setAttribute('min', today);
+});
+</script>
+{% endblock %}

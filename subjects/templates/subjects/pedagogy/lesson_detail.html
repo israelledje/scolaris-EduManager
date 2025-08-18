@@ -1,0 +1,848 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ lesson.title }} - Détail de la Leçon{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --primary-blue: #2563eb;
+        --secondary-blue: #1e40af;
+        --success-green: #059669;
+        --warning-amber: #d97706;
+        --danger-red: #dc2626;
+        --neutral-gray: #64748b;
+        --light-gray: #f8fafc;
+        --white: #ffffff;
+        
+        --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.1);
+        --shadow-medium: 0 4px 6px rgba(0, 0, 0, 0.1);
+        --shadow-large: 0 10px 25px rgba(0, 0, 0, 0.1);
+        --border-radius: 8px;
+        --border-radius-large: 12px;
+    }
+
+    .lesson-header {
+        background: linear-gradient(135deg, var(--success-green) 0%, var(--primary-blue) 100%);
+        color: var(--white);
+        border-radius: var(--border-radius-large);
+        padding: 3rem 2rem;
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow-large);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .lesson-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        animation: float 6s ease-in-out infinite reverse;
+    }
+
+    @keyframes float {
+        0%, 100% { transform: translateY(0px) rotate(0deg); }
+        50% { transform: translateY(-20px) rotate(180deg); }
+    }
+
+    .lesson-header h1 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+        position: relative;
+        z-index: 1;
+    }
+
+    .lesson-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 2rem;
+        margin-bottom: 1rem;
+        position: relative;
+        z-index: 1;
+    }
+
+    .meta-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 1.1rem;
+        opacity: 0.9;
+    }
+
+    .meta-item i {
+        width: 20px;
+        text-align: center;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        border-radius: 25px;
+        font-size: 0.9rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        background: rgba(255, 255, 255, 0.2);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        position: relative;
+        z-index: 1;
+    }
+
+    .stats-overview {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: var(--white);
+        border-radius: var(--border-radius);
+        padding: 1.5rem;
+        box-shadow: var(--shadow-medium);
+        border: 1px solid #e2e8f0;
+        text-align: center;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--success-green), var(--primary-blue));
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-large);
+    }
+
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: var(--primary-blue);
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+
+    .stat-card:nth-child(2) .stat-number { color: var(--success-green); }
+    .stat-card:nth-child(3) .stat-number { color: var(--warning-amber); }
+    .stat-card:nth-child(4) .stat-number { color: var(--danger-red); }
+
+    .stat-label {
+        color: var(--neutral-gray);
+        font-size: 0.9rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .content-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .main-content, .sidebar {
+        background: var(--white);
+        border-radius: var(--border-radius);
+        padding: 2rem;
+        box-shadow: var(--shadow-medium);
+        border: 1px solid #e2e8f0;
+    }
+
+    .section-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid var(--light-gray);
+    }
+
+    .section-header h2 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .section-header .icon {
+        width: 40px;
+        height: 40px;
+        background: var(--primary-blue);
+        border-radius: var(--border-radius);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--white);
+        font-size: 1.2rem;
+    }
+
+    .info-card {
+        background: var(--light-gray);
+        border-radius: var(--border-radius);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        border: 1px solid #e2e8f0;
+        border-left: 4px solid var(--primary-blue);
+    }
+
+    .info-card h3 {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .info-card h3 i {
+        color: var(--primary-blue);
+        width: 20px;
+        text-align: center;
+    }
+
+    .info-content {
+        color: var(--neutral-gray);
+        line-height: 1.6;
+    }
+
+    .materials-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .materials-list li {
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #e2e8f0;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .materials-list li:last-child {
+        border-bottom: none;
+    }
+
+    .materials-list li::before {
+        content: '📚';
+        font-size: 1.2rem;
+    }
+
+    .objectives-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .objectives-list li {
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #e2e8f0;
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .objectives-list li:last-child {
+        border-bottom: none;
+    }
+
+    .objectives-list li::before {
+        content: '✓';
+        background: var(--success-green);
+        color: var(--white);
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+        font-weight: 700;
+        flex-shrink: 0;
+    }
+
+    .activities-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .activities-list li {
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #e2e8f0;
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .activities-list li:last-child {
+        border-bottom: none;
+    }
+
+    .activities-list li::before {
+        content: '🎯';
+        font-size: 1.2rem;
+        flex-shrink: 0;
+    }
+
+    .progress-section {
+        background: var(--light-gray);
+        border-radius: var(--border-radius);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .progress-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .progress-title {
+        font-weight: 600;
+        color: #1e293b;
+    }
+
+    .progress-percentage {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--success-green);
+    }
+
+    .progress-bar {
+        height: 12px;
+        border-radius: 6px;
+        background-color: #e2e8f0;
+        overflow: hidden;
+        margin-bottom: 1rem;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--success-green), var(--primary-blue));
+        border-radius: 6px;
+        transition: width 1s ease;
+    }
+
+    .progress-details {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 1rem;
+    }
+
+    .progress-detail {
+        text-align: center;
+    }
+
+    .progress-detail-value {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--primary-blue);
+        margin-bottom: 0.25rem;
+    }
+
+    .progress-detail-label {
+        font-size: 0.8rem;
+        color: var(--neutral-gray);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .timetable-info {
+        background: var(--light-gray);
+        border-radius: var(--border-radius);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        border-left: 4px solid var(--warning-amber);
+    }
+
+    .timetable-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+    }
+
+    .timetable-header h3 {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin: 0;
+    }
+
+    .timetable-header i {
+        color: var(--warning-amber);
+        font-size: 1.5rem;
+    }
+
+    .timetable-details {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+    }
+
+    .timetable-detail {
+        text-align: center;
+        padding: 1rem;
+        background: var(--white);
+        border-radius: var(--border-radius);
+        border: 1px solid #e2e8f0;
+    }
+
+    .timetable-detail-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--warning-amber);
+        margin-bottom: 0.5rem;
+    }
+
+    .timetable-detail-label {
+        font-size: 0.8rem;
+        color: var(--neutral-gray);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .btn-modern {
+        padding: 0.75rem 1.5rem;
+        border-radius: var(--border-radius);
+        font-weight: 600;
+        font-size: 0.9rem;
+        transition: all 0.2s ease;
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        text-decoration: none;
+    }
+
+    .btn-primary {
+        background: var(--primary-blue);
+        color: var(--white);
+    }
+
+    .btn-primary:hover {
+        background: var(--secondary-blue);
+        transform: translateY(-1px);
+        color: var(--white);
+    }
+
+    .btn-success {
+        background: var(--success-green);
+        color: var(--white);
+    }
+
+    .btn-success:hover {
+        background: #047857;
+        transform: translateY(-1px);
+        color: var(--white);
+    }
+
+    .btn-warning {
+        background: var(--warning-amber);
+        color: var(--white);
+    }
+
+    .btn-warning:hover {
+        background: #b45309;
+        transform: translateY(-1px);
+        color: var(--white);
+    }
+
+    .info-list {
+        margin-bottom: 1.5rem;
+    }
+
+    .info-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .info-item:last-child {
+        border-bottom: none;
+    }
+
+    .info-item strong {
+        color: #1e293b;
+        font-weight: 600;
+    }
+
+    .badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .badge-success {
+        background: var(--success-green);
+        color: var(--white);
+    }
+
+    .badge-warning {
+        background: var(--warning-amber);
+        color: var(--white);
+    }
+
+    .badge-secondary {
+        background: var(--neutral-gray);
+        color: var(--white);
+    }
+
+    @media (max-width: 768px) {
+        .content-grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        .lesson-header {
+            padding: 2rem 1rem;
+            text-align: center;
+        }
+
+        .lesson-header h1 {
+            font-size: 2rem;
+        }
+
+        .meta-item {
+            justify-content: center;
+        }
+
+        .stats-overview {
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+        }
+
+        .timetable-details {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête de la leçon -->
+    <div class="lesson-header">
+        <h1>{{ lesson.title }}</h1>
+        <div class="lesson-meta">
+            <div class="meta-item">
+                <i class="fas fa-book"></i>
+                <span>{{ lesson.learning_unit.subject_program.subject.name }}</span>
+            </div>
+            <div class="meta-item">
+                <i class="fas fa-users"></i>
+                <span>{{ lesson.learning_unit.subject_program.school_class.name }}</span>
+            </div>
+            <div class="meta-item">
+                <i class="fas fa-user"></i>
+                <span>{{ lesson.teacher.get_full_name }}</span>
+            </div>
+            <div class="meta-item">
+                <i class="fas fa-calendar"></i>
+                <span>{{ lesson.planned_date|date:"d/m/Y" }}</span>
+            </div>
+        </div>
+        <div class="status-badge">
+            {{ lesson.get_status_display }}
+        </div>
+    </div>
+
+    <!-- Statistiques globales -->
+    <div class="stats-overview">
+        <div class="stat-card">
+            <div class="stat-number">{{ lesson.planned_duration }}</div>
+            <div class="stat-label">Minutes Planifiées</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ lesson.learning_unit.estimated_hours }}</div>
+            <div class="stat-label">Heures de l'Unité</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ lesson.learning_unit.lessons.count }}</div>
+            <div class="stat-label">Leçons dans l'Unité</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ lesson.learning_unit.order }}</div>
+            <div class="stat-label">Ordre de l'Unité</div>
+        </div>
+    </div>
+
+    <div class="content-grid">
+        <!-- Contenu principal -->
+        <div class="main-content">
+            <!-- Section des objectifs -->
+            {% if lesson.objectives %}
+            <div class="info-card">
+                <h3>
+                    <i class="fas fa-bullseye"></i>
+                    Objectifs de la Leçon
+                </h3>
+                <div class="info-content">
+                    {{ lesson.objectives|linebreaks }}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Section des activités -->
+            {% if lesson.activities %}
+            <div class="info-card">
+                <h3>
+                    <i class="fas fa-tasks"></i>
+                    Activités Préparées
+                </h3>
+                <div class="info-content">
+                    {{ lesson.activities|linebreaks }}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Section du matériel nécessaire -->
+            {% if lesson.materials_needed %}
+            <div class="info-card">
+                <h3>
+                    <i class="fas fa-tools"></i>
+                    Matériel Nécessaire
+                </h3>
+                <div class="info-content">
+                    {{ lesson.materials_needed|linebreaks }}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Section de progression -->
+            <div class="progress-section">
+                <div class="progress-header">
+                    <div class="progress-title">Progression de l'Unité d'Apprentissage</div>
+                    <div class="progress-percentage">{{ lesson.learning_unit.get_completion_percentage }}%</div>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {{ lesson.learning_unit.get_completion_percentage }}%"></div>
+                </div>
+                <div class="progress-details">
+                    <div class="progress-detail">
+                        <div class="progress-detail-value">{{ lesson.learning_unit.estimated_hours }}</div>
+                        <div class="progress-detail-label">Heures Planifiées</div>
+                    </div>
+                    <div class="progress-detail">
+                        <div class="progress-detail-value">{{ lesson.learning_unit.get_completed_hours }}</div>
+                        <div class="progress-detail-label">Heures Réalisées</div>
+                    </div>
+                    <div class="progress-detail">
+                        <div class="progress-detail-value">{{ lesson.learning_unit.get_remaining_hours }}</div>
+                        <div class="progress-detail-label">Heures Restantes</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section des informations de l'unité -->
+            <div class="info-card">
+                <h3>
+                    <i class="fas fa-layer-group"></i>
+                    Informations de l'Unité d'Apprentissage
+                </h3>
+                <div class="info-content">
+                    <h4>{{ lesson.learning_unit.title }}</h4>
+                    <p>{{ lesson.learning_unit.description }}</p>
+                    
+                    {% if lesson.learning_unit.key_concepts %}
+                    <h5>Concepts Clés :</h5>
+                    <p>{{ lesson.learning_unit.key_concepts }}</p>
+                    {% endif %}
+                    
+                    {% if lesson.learning_unit.skills_developed %}
+                    <h5>Compétences Développées :</h5>
+                    <p>{{ lesson.learning_unit.skills_developed }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Barre latérale -->
+        <div class="sidebar">
+            <!-- Informations de la leçon -->
+            <div class="section-header">
+                <div class="icon">
+                    <i class="fas fa-info-circle"></i>
+                </div>
+                <h2>Informations</h2>
+            </div>
+
+            <div class="info-list">
+                <div class="info-item">
+                    <strong>Statut:</strong>
+                    <span class="badge 
+                        {% if lesson.status == 'COMPLETED' %}badge-success
+                        {% elif lesson.status == 'IN_PROGRESS' %}badge-warning
+                        {% else %}badge-secondary{% endif %}">
+                        {{ lesson.get_status_display }}
+                    </span>
+                </div>
+                <div class="info-item">
+                    <strong>Durée:</strong>
+                    <span>{{ lesson.planned_duration }} min</span>
+                </div>
+                <div class="info-item">
+                    <strong>Date planifiée:</strong>
+                    <span>{{ lesson.planned_date|date:"d/m/Y" }}</span>
+                </div>
+                <div class="info-item">
+                    <strong>Enseignant:</strong>
+                    <span>{{ lesson.teacher.get_full_name }}</span>
+                </div>
+                <div class="info-item">
+                    <strong>Matière:</strong>
+                    <span>{{ lesson.learning_unit.subject_program.subject.name }}</span>
+                </div>
+                <div class="info-item">
+                    <strong>Classe:</strong>
+                    <span>{{ lesson.learning_unit.subject_program.school_class.name }}</span>
+                </div>
+                <div class="info-item">
+                    <strong>Année scolaire:</strong>
+                    <span>{{ lesson.learning_unit.subject_program.school_year }}</span>
+                </div>
+            </div>
+
+            <!-- Informations de l'emploi du temps -->
+            {% if lesson.timetable_slot %}
+            <div class="timetable-info">
+                <div class="timetable-header">
+                    <i class="fas fa-clock"></i>
+                    <h3>Emploi du Temps</h3>
+                </div>
+                <div class="timetable-details">
+                    <div class="timetable-detail">
+                        <div class="timetable-detail-value">
+                            {% if lesson.timetable_slot.day == 1 %}Lun
+                            {% elif lesson.timetable_slot.day == 2 %}Mar
+                            {% elif lesson.timetable_slot.day == 3 %}Mer
+                            {% elif lesson.timetable_slot.day == 4 %}Jeu
+                            {% elif lesson.timetable_slot.day == 5 %}Ven
+                            {% else %}{{ lesson.timetable_slot.day }}{% endif %}
+                        </div>
+                        <div class="timetable-detail-label">Jour</div>
+                    </div>
+                    <div class="timetable-detail">
+                        <div class="timetable-detail-value">{{ lesson.timetable_slot.period }}</div>
+                        <div class="timetable-detail-label">Période</div>
+                    </div>
+                    <div class="timetable-detail">
+                        <div class="timetable-detail-value">{{ lesson.timetable_slot.duration }}h</div>
+                        <div class="timetable-detail-label">Durée</div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Actions rapides -->
+            <div class="section-header" style="margin-top: 2rem;">
+                <div class="icon">
+                    <i class="fas fa-tools"></i>
+                </div>
+                <h2>Actions</h2>
+            </div>
+
+            <div class="actions-list">
+                <a href="{% url 'admin:subjects_lesson_change' lesson.id %}" class="btn-modern btn-primary w-100 mb-2">
+                    <i class="fas fa-edit"></i>
+                    Modifier la Leçon
+                </a>
+                <a href="{% url 'subjects:program_detail' lesson.learning_unit.subject_program.id %}" class="btn-modern btn-success w-100 mb-2">
+                    <i class="fas fa-book-open"></i>
+                    Voir le Programme
+                </a>
+                
+                <!-- Formulaire pour changer le statut -->
+                {% if lesson.status == 'PLANNED' %}
+                <form method="post" action="{% url 'subjects:lesson_change_status' lesson.id %}" class="mb-2">
+                    {% csrf_token %}
+                    <input type="hidden" name="status" value="IN_PROGRESS">
+                    <button type="submit" class="btn-modern btn-warning w-100">
+                        <i class="fas fa-play"></i>
+                        Démarrer la Leçon
+                    </button>
+                </form>
+                {% elif lesson.status == 'IN_PROGRESS' %}
+                <form method="post" action="{% url 'subjects:lesson_change_status' lesson.id %}" class="mb-2">
+                    {% csrf_token %}
+                    <input type="hidden" name="status" value="COMPLETED">
+                    <button type="submit" class="btn-modern btn-success w-100">
+                        <i class="fas fa-check"></i>
+                        Terminer la Leçon
+                    </button>
+                </form>
+                {% endif %}
+                
+                <a href="{% url 'subjects:pedagogy_dashboard' %}" class="btn-modern btn-secondary w-100">
+                    <i class="fas fa-arrow-left"></i>
+                    Retour au Tableau de Bord
+                </a>
+            </div>
+
+            <!-- Liens rapides -->
+            <div class="section-header" style="margin-top: 2rem;">
+                <div class="icon">
+                    <i class="fas fa-link"></i>
+                </div>
+                <h2>Liens Rapides</h2>
+            </div>
+
+            <div class="quick-links">
+                <a href="{% url 'subjects:unit_detail' lesson.learning_unit.id %}" class="btn-modern btn-outline w-100 mb-2">
+                    <i class="fas fa-layer-group"></i>
+                    Détails de l'Unité
+                </a>
+                <a href="{% url 'subjects:subject_detail' lesson.learning_unit.subject_program.subject.id %}" class="btn-modern btn-outline w-100 mb-2">
+                    <i class="fas fa-book"></i>
+                    Détails de la Matière
+                </a>
+                <a href="{% url 'classes:schoolclass_detail' lesson.learning_unit.subject_program.school_class.id %}" class="btn-modern btn-outline w-100">
+                    <i class="fas fa-users"></i>
+                    Détails de la Classe
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Animation des barres de progression
+    document.addEventListener('DOMContentLoaded', function() {
+        const progressBars = document.querySelectorAll('.progress-fill');
+        progressBars.forEach(bar => {
+            const width = bar.style.width;
+            bar.style.width = '0%';
+            setTimeout(() => {
+                bar.style.width = width;
+            }, 500);
+        });
+    });
+</script>
+{% endblock %}

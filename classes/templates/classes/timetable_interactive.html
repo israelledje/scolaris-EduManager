@@ -1,0 +1,897 @@
+{% extends "base.html" %}
+{% load dict_extras %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --primary-color: #3b82f6;
+        --primary-dark: #1e40af;
+        --secondary-color: #64748b;
+        --success-color: #10b981;
+        --warning-color: #f59e0b;
+        --danger-color: #ef4444;
+        --background-main: #ffffff;
+        --background-alt: #f8fafc;
+        --background-accent: #f1f5f9;
+        --text-primary: #0f172a;
+        --text-secondary: #475569;
+        --text-muted: #94a3b8;
+        --border-color: #e2e8f0;
+        --border-light: #f1f5f9;
+        --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+        --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+        --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+        --radius-sm: 6px;
+        --radius-md: 8px;
+        --radius-lg: 12px;
+        --radius-xl: 16px;
+        --spacing-xs: 4px;
+        --spacing-sm: 8px;
+        --spacing-md: 16px;
+        --spacing-lg: 24px;
+        --spacing-xl: 32px;
+        --transition-fast: 150ms ease;
+        --transition-normal: 250ms ease;
+        --transition-slow: 350ms ease;
+    }
+
+    /* Layout principal */
+    .timetable-container {
+        background: var(--background-main);
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow-lg);
+        overflow: hidden;
+        border: 1px solid var(--border-color);
+    }
+
+    .timetable-header {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+        color: white;
+        padding: var(--spacing-xl);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .timetable-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 200px;
+        height: 200px;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        transform: translate(50%, -50%);
+    }
+
+    .timetable-title {
+        font-size: 1.75rem;
+        font-weight: 700;
+        margin: 0;
+        position: relative;
+        z-index: 1;
+    }
+
+    .timetable-subtitle {
+        font-size: 1rem;
+        opacity: 0.9;
+        margin-top: var(--spacing-xs);
+        position: relative;
+        z-index: 1;
+    }
+
+    /* Actions toolbar */
+    .timetable-actions {
+        padding: var(--spacing-lg);
+        background: var(--background-alt);
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: var(--spacing-md);
+    }
+
+    .action-group {
+        display: flex;
+        gap: var(--spacing-sm);
+        align-items: center;
+    }
+
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--spacing-xs);
+        padding: var(--spacing-sm) var(--spacing-md);
+        border-radius: var(--radius-md);
+        font-weight: 500;
+        font-size: 0.875rem;
+        transition: all var(--transition-fast);
+        cursor: pointer;
+        border: none;
+        text-decoration: none;
+    }
+
+    .btn-primary {
+        background: var(--primary-color);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: var(--primary-dark);
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .btn-secondary {
+        background: var(--background-main);
+        color: var(--text-secondary);
+        border: 1px solid var(--border-color);
+    }
+
+    .btn-secondary:hover {
+        background: var(--background-accent);
+        border-color: var(--primary-color);
+    }
+
+    /* Table moderne */
+    .timetable-wrapper {
+        overflow-x: auto;
+        background: var(--background-main);
+    }
+
+    .timetable {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        font-size: 0.875rem;
+    }
+
+    .timetable th {
+        background: linear-gradient(135deg, var(--secondary-color) 0%, #475569 100%);
+        color: white;
+        padding: var(--spacing-md);
+        text-align: center;
+        font-weight: 600;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+    .timetable th:first-child {
+        border-top-left-radius: var(--radius-md);
+    }
+
+    .timetable th:last-child {
+        border-top-right-radius: var(--radius-md);
+    }
+
+    .timetable td {
+        padding: 0;
+        border: 1px solid var(--border-light);
+        vertical-align: top;
+        position: relative;
+    }
+
+    .time-cell {
+        background: var(--background-accent);
+        padding: var(--spacing-md);
+        font-weight: 600;
+        color: var(--text-primary);
+        text-align: center;
+        min-width: 100px;
+        position: sticky;
+        left: 0;
+        z-index: 5;
+    }
+
+    .break-row {
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+        color: #92400e;
+        font-weight: 600;
+        text-align: center;
+        padding: var(--spacing-sm);
+        border-left: 4px solid var(--warning-color);
+    }
+
+    /* Slots de cours */
+    .timetable-slot {
+        min-width: 140px;
+        min-height: 80px;
+        padding: var(--spacing-sm);
+        background: var(--background-main);
+        transition: all var(--transition-fast);
+        position: relative;
+    }
+
+    .timetable-slot:hover {
+        background: var(--background-accent);
+    }
+
+    .timetable-slot.drag-over {
+        background: rgba(59, 130, 246, 0.1);
+        border: 2px dashed var(--primary-color);
+    }
+
+    .course-card {
+        background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+        border: 1px solid #93c5fd;
+        border-radius: var(--radius-md);
+        padding: var(--spacing-sm);
+        margin-bottom: var(--spacing-xs);
+        cursor: move;
+        transition: all var(--transition-fast);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .course-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+        border-color: var(--primary-color);
+    }
+
+    .course-card.dragging {
+        opacity: 0.5;
+        transform: rotate(5deg);
+        z-index: 1000;
+    }
+
+    .course-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--primary-color);
+    }
+
+    .course-subject {
+        font-weight: 700;
+        color: var(--primary-dark);
+        font-size: 0.875rem;
+        margin-bottom: var(--spacing-xs);
+        line-height: 1.2;
+    }
+
+    .course-teacher {
+        color: var(--text-secondary);
+        font-size: 0.75rem;
+        margin-bottom: var(--spacing-xs);
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-xs);
+    }
+
+    .course-duration {
+        color: var(--text-muted);
+        font-size: 0.75rem;
+        font-style: italic;
+    }
+
+    .add-slot-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--spacing-xs);
+        width: 100%;
+        padding: var(--spacing-sm);
+        background: transparent;
+        border: 2px dashed var(--border-color);
+        border-radius: var(--radius-md);
+        color: var(--text-muted);
+        font-size: 0.75rem;
+        cursor: pointer;
+        transition: all var(--transition-fast);
+        margin-top: var(--spacing-xs);
+    }
+
+    .add-slot-btn:hover {
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+        background: rgba(59, 130, 246, 0.05);
+    }
+
+    /* Modale moderne */
+    .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(8px);
+        z-index: 50;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: var(--spacing-lg);
+        opacity: 0;
+        visibility: hidden;
+        transition: all var(--transition-normal);
+    }
+
+    .modal-overlay.active {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .modal-content {
+        background: var(--background-main);
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow-xl);
+        max-width: 500px;
+        width: 100%;
+        max-height: 90vh;
+        overflow: hidden;
+        transform: scale(0.95) translateY(20px);
+        transition: all var(--transition-normal);
+    }
+
+    .modal-overlay.active .modal-content {
+        transform: scale(1) translateY(0);
+    }
+
+    .modal-header {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+        color: white;
+        padding: var(--spacing-lg);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .modal-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin: 0;
+    }
+
+    .modal-close {
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        color: white;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all var(--transition-fast);
+    }
+
+    .modal-close:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: rotate(90deg);
+    }
+
+    .modal-body {
+        padding: var(--spacing-lg);
+        max-height: 60vh;
+        overflow-y: auto;
+    }
+
+    /* Formulaires */
+    .form-group {
+        margin-bottom: var(--spacing-md);
+    }
+
+    .form-label {
+        display: block;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: var(--spacing-xs);
+        font-size: 0.875rem;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: var(--spacing-sm) var(--spacing-md);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        font-size: 0.875rem;
+        transition: all var(--transition-fast);
+        background: var(--background-main);
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .form-actions {
+        display: flex;
+        gap: var(--spacing-sm);
+        justify-content: flex-end;
+        padding-top: var(--spacing-md);
+        border-top: 1px solid var(--border-color);
+        margin-top: var(--spacing-lg);
+    }
+
+    /* Animations */
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes pulse {
+        0%, 100% {
+            opacity: 1;
+        }
+        50% {
+            opacity: 0.7;
+        }
+    }
+
+    .loading {
+        animation: pulse 2s infinite;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .timetable-actions {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .action-group {
+            justify-content: center;
+        }
+
+        .timetable-slot {
+            min-width: 120px;
+        }
+
+        .modal-content {
+            margin: var(--spacing-md);
+            max-width: none;
+        }
+    }
+
+    /* États de drag & drop */
+    .drag-ghost {
+        opacity: 0.5;
+        transform: rotate(5deg);
+    }
+
+    .drop-zone-active {
+        background: rgba(16, 185, 129, 0.1);
+        border: 2px dashed var(--success-color);
+    }
+
+    .drop-zone-invalid {
+        background: rgba(239, 68, 68, 0.1);
+        border: 2px dashed var(--danger-color);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- En-tête -->
+    <div class="timetable-container">
+        <div class="timetable-header">
+            <h1 class="timetable-title">
+                <i class="fas fa-calendar-alt mr-3"></i>
+                Emploi du temps - {{ schoolclass.name }}
+            </h1>
+            <p class="timetable-subtitle">
+                <i class="fas fa-graduation-cap mr-2"></i>
+                Année scolaire {{ schoolclass.year }} • {{ students_count|default:0 }} élèves
+            </p>
+        </div>
+
+        <!-- Barre d'actions -->
+        <div class="timetable-actions">
+            <div class="action-group">
+                <button class="btn btn-primary" onclick="exportTimetable()">
+                    <i class="fas fa-download"></i>
+                    Exporter PDF
+                </button>
+                <button class="btn btn-secondary" onclick="printTimetable()">
+                    <i class="fas fa-print"></i>
+                    Imprimer
+                </button>
+            </div>
+            <div class="action-group">
+                <button class="btn btn-secondary" onclick="toggleView()">
+                    <i class="fas fa-eye"></i>
+                    Vue élève
+                </button>
+                <button class="btn btn-secondary" onclick="showStatistics()">
+                    <i class="fas fa-chart-bar"></i>
+                    Statistiques
+                </button>
+            </div>
+        </div>
+
+        <!-- Table de l'emploi du temps -->
+        <div class="timetable-wrapper">
+            <table class="timetable">
+                <thead>
+                    <tr>
+                        <th>
+                            <i class="fas fa-clock mr-2"></i>
+                            Horaires
+                        </th>
+                        {% for day_num, day_name in day_choices %}
+                            <th>
+                                <i class="fas fa-calendar-day mr-2"></i>
+                                {{ day_name }}
+                            </th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in table_cells %}
+                        {% if row.is_pause %}
+                            <tr>
+                                <td colspan="{{ day_choices|length|add:1 }}" class="break-row">
+                                    <i class="fas fa-coffee mr-2"></i>
+                                    {{ row.horaire.label }}
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td class="time-cell">
+                                    <div class="font-bold">{{ row.horaire.start_time|time:"H:i" }}</div>
+                                    <div class="text-xs opacity-75">{{ row.horaire.end_time|time:"H:i" }}</div>
+                                </td>
+                                {% for cell in row.cells %}
+                                    {% if cell.show %}
+                                        <td class="timetable-slot" 
+                                            data-day="{{ cell.day_num }}" 
+                                            data-period="{{ cell.period }}"
+                                            rowspan="{{ cell.rowspan }}"
+                                            ondragover="handleDragOver(event)" 
+                                            ondrop="handleDrop(event, {{ cell.day_num }}, {{ cell.period }})"
+                                            ondragleave="handleDragLeave(event)">
+                                            
+                                            {% if cell.slot %}
+                                                <div class="course-card" 
+                                                     draggable="true"
+                                                     data-slot-id="{{ cell.slot.id }}" 
+                                                     ondragstart="handleDragStart(event, {{ cell.slot.id }})"
+                                                     ondragend="handleDragEnd(event)"
+                                                     onclick="openEditSlotModal({{ cell.slot.id }})">
+                                                    
+                                                    <div class="course-subject">
+                                                        {{ cell.slot.subject.name }}
+                                                    </div>
+                                                    <div class="course-teacher">
+                                                        <i class="fas fa-user-tie"></i>
+                                                        {{ cell.slot.teacher|default:"Non assigné" }}
+                                                    </div>
+                                                    <div class="course-duration">
+                                                        <i class="fas fa-clock"></i>
+                                                        {{ cell.slot.duration }} période{{ cell.slot.duration|pluralize }}
+                                                    </div>
+                                                </div>
+                                            {% endif %}
+                                            
+                                            <button class="add-slot-btn" onclick="openAddSlotModal({{ cell.day_num }}, {{ cell.period }})">
+                                                <i class="fas fa-plus"></i>
+                                                Ajouter un cours
+                                            </button>
+                                        </td>
+                                    {% endif %}
+                                {% endfor %}
+                            </tr>
+                        {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modale moderne -->
+<div id="slotModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title" id="slotModalTitle">
+                <i class="fas fa-book mr-2"></i>
+                Créneau de cours
+            </h3>
+            <button class="modal-close" onclick="closeSlotModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body" id="slotModalContent">
+            <!-- Le contenu sera chargé dynamiquement -->
+            <div class="text-center py-8">
+                <div class="loading">
+                    <i class="fas fa-spinner fa-spin fa-2x text-blue-500"></i>
+                    <p class="mt-2 text-gray-500">Chargement...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast notifications -->
+<div id="toastContainer" class="fixed top-4 right-4 z-50 space-y-2"></div>
+
+<script>
+// Variables globales
+let draggedSlotId = null;
+let draggedElement = null;
+
+// Utilitaires
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Notifications toast
+function showToast(message, type = 'success') {
+    const toast = document.createElement('div');
+    toast.className = `
+        px-4 py-3 rounded-lg shadow-lg text-white font-medium
+        transform transition-all duration-300 translate-x-full
+        ${type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500'}
+    `;
+    
+    toast.innerHTML = `
+        <div class="flex items-center gap-2">
+            <i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'exclamation-triangle' : 'info'}-circle"></i>
+            <span>${message}</span>
+        </div>
+    `;
+    
+    document.getElementById('toastContainer').appendChild(toast);
+    
+    // Animation d'entrée
+    setTimeout(() => {
+        toast.classList.remove('translate-x-full');
+    }, 100);
+    
+    // Suppression automatique
+    setTimeout(() => {
+        toast.classList.add('translate-x-full');
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+// Gestion du drag & drop
+function handleDragStart(event, slotId) {
+    draggedSlotId = slotId;
+    draggedElement = event.target;
+    event.target.classList.add('dragging');
+    
+    // Effet visuel
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/html', event.target.outerHTML);
+}
+
+function handleDragEnd(event) {
+    event.target.classList.remove('dragging');
+    draggedSlotId = null;
+    draggedElement = null;
+    
+    // Nettoyer les classes de drop zones
+    document.querySelectorAll('.timetable-slot').forEach(slot => {
+        slot.classList.remove('drag-over', 'drop-zone-active', 'drop-zone-invalid');
+    });
+}
+
+function handleDragOver(event) {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    
+    const slot = event.currentTarget;
+    if (!slot.classList.contains('drag-over')) {
+        slot.classList.add('drag-over');
+    }
+}
+
+function handleDragLeave(event) {
+    const slot = event.currentTarget;
+    slot.classList.remove('drag-over');
+}
+
+function handleDrop(event, day, period) {
+    event.preventDefault();
+    const slot = event.currentTarget;
+    slot.classList.remove('drag-over');
+    
+    if (!draggedSlotId) return;
+    
+    // Vérifier si le slot est déjà occupé
+    const existingCourse = slot.querySelector('.course-card');
+    if (existingCourse && existingCourse !== draggedElement) {
+        showToast('Ce créneau est déjà occupé', 'error');
+        return;
+    }
+    
+    // Animation de chargement
+    slot.classList.add('loading');
+    
+    // Appel AJAX pour déplacer le créneau
+    fetch(`/classes/slot/${draggedSlotId}/move/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken'),
+        },
+        body: JSON.stringify({ day: day, period: period })
+    })
+    .then(response => response.json())
+    .then(data => {
+        slot.classList.remove('loading');
+        if (data.success) {
+            showToast('Créneau déplacé avec succès', 'success');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showToast(data.error || 'Erreur lors du déplacement', 'error');
+        }
+    })
+    .catch(error => {
+        slot.classList.remove('loading');
+        showToast('Erreur de connexion', 'error');
+        console.error('Error:', error);
+    });
+}
+
+// Gestion des modales
+function openAddSlotModal(day, period) {
+    const modal = document.getElementById('slotModal');
+    const title = document.getElementById('slotModalTitle');
+    const content = document.getElementById('slotModalContent');
+    
+    title.innerHTML = '<i class="fas fa-plus mr-2"></i>Ajouter un créneau';
+    modal.classList.add('active');
+    
+    // Charger le formulaire
+    fetch(`/classes/slot/add/?class_id={{ schoolclass.id }}&year_id={{ schoolclass.year.id }}&day=${day}&period=${period}`)
+        .then(response => response.text())
+        .then(html => {
+            content.innerHTML = html;
+        })
+        .catch(error => {
+            content.innerHTML = `
+                <div class="text-center py-8 text-red-500">
+                    <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                    <p>Erreur lors du chargement du formulaire</p>
+                </div>
+            `;
+        });
+}
+
+function openEditSlotModal(slotId) {
+    const modal = document.getElementById('slotModal');
+    const title = document.getElementById('slotModalTitle');
+    const content = document.getElementById('slotModalContent');
+    
+    title.innerHTML = '<i class="fas fa-edit mr-2"></i>Modifier le créneau';
+    modal.classList.add('active');
+    
+    fetch(`/classes/slot/${slotId}/edit/`)
+        .then(response => response.text())
+        .then(html => {
+            content.innerHTML = html;
+        })
+        .catch(error => {
+            content.innerHTML = `
+                <div class="text-center py-8 text-red-500">
+                    <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                    <p>Erreur lors du chargement du formulaire</p>
+                </div>
+            `;
+        });
+}
+
+function closeSlotModal() {
+    const modal = document.getElementById('slotModal');
+    modal.classList.remove('active');
+    setTimeout(() => {
+        document.getElementById('slotModalContent').innerHTML = '';
+    }, 300);
+}
+
+// Gestion des formulaires
+document.addEventListener('submit', function(event) {
+    if (event.target && event.target.id === 'slotForm') {
+        event.preventDefault();
+        const form = event.target;
+        const submitBtn = form.querySelector('button[type="submit"]');
+        
+        // État de chargement
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Enregistrement...';
+        
+        fetch(form.action, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: new FormData(form)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('Créneau enregistré avec succès', 'success');
+                closeSlotModal();
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showToast(data.error || 'Erreur lors de l\'enregistrement', 'error');
+                // Réafficher les erreurs du formulaire si nécessaire
+                if (data.form_html) {
+                    document.getElementById('slotModalContent').innerHTML = data.form_html;
+                }
+            }
+        })
+        .catch(error => {
+            showToast('Erreur de connexion', 'error');
+            console.error('Error:', error);
+        })
+        .finally(() => {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Enregistrer';
+        });
+    }
+});
+
+// Fonctions utilitaires
+function exportTimetable() {
+    showToast('Export en cours...', 'info');
+    window.open(`/classes/{{ schoolclass.id }}/timetable/export/pdf/`, '_blank');
+}
+
+function printTimetable() {
+    window.print();
+}
+
+function toggleView() {
+    showToast('Changement de vue...', 'info');
+    // Implémenter la logique de changement de vue
+}
+
+function showStatistics() {
+    showToast('Chargement des statistiques...', 'info');
+    // Implémenter l'affichage des statistiques
+}
+
+// Fermeture de la modale en cliquant à l'extérieur
+document.getElementById('slotModal').addEventListener('click', function(event) {
+    if (event.target === this) {
+        closeSlotModal();
+    }
+});
+
+// Raccourcis clavier
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        closeSlotModal();
+    }
+});
+
+// Animation d'entrée
+document.addEventListener('DOMContentLoaded', function() {
+    const cards = document.querySelectorAll('.course-card');
+    cards.forEach((card, index) => {
+        card.style.animationDelay = `${index * 50}ms`;
+        card.style.animation = 'slideInUp 0.5s ease forwards';
+    });
+});
+</script>
+{% endblock %}

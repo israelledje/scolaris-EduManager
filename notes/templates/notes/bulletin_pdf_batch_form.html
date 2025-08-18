@@ -1,0 +1,176 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Génération Groupée de Bulletins PDF{% endblock %}
+
+{% block breadcrumb_current %}Notes{% endblock %}
+
+{% block breadcrumb %}
+    <span class="text-slate-400">/</span>
+    <span class="text-slate-700 font-medium">Bulletins</span>
+    <span class="text-slate-400">/</span>
+    <span class="text-slate-700 font-medium">Génération PDF Groupé</span>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .bg-gradient-header {
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    }
+    
+    .bg-gradient-success {
+        background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+    }
+    
+    .hover-lift {
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .hover-lift:hover {
+        transform: translateY(-8px) scale(1.02);
+    }
+    
+    .focus-ring:focus {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+        border-color: #1e40af;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <div class="max-w-4xl mx-auto px-6 py-12">
+        <div class="bg-white rounded-3xl shadow-xl border border-gray-200 overflow-hidden">
+            <div class="px-8 py-6 bg-gradient-to-r from-green-50 to-emerald-50 border-b border-gray-100">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center text-white shadow-md">
+                        <i class="fas fa-cog text-lg" aria-hidden="true"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-900">Paramètres de Génération</h2>
+                        <p class="text-gray-600 mt-1">Configurez les critères de sélection des bulletins</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-8">
+                <form method="post" class="space-y-8">
+                    {% csrf_token %}
+                    
+                    <!-- Trimestre -->
+                    <div class="form-group">
+                        <label for="trimester" class="block text-lg font-bold text-gray-800 mb-4">
+                            Trimestre
+                        </label>
+                        <select name="trimester" id="trimester" 
+                                class="w-full px-6 py-4 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 transition-all duration-300 bg-white">
+                            <option value="">Tous les trimestres</option>
+                            {% for trimester in trimesters %}
+                            <option value="{{ trimester.id }}">
+                                {{ trimester.get_trimester_display }} - {{ trimester.year.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Classe -->
+                    <div class="form-group">
+                        <label for="class" class="block text-lg font-bold text-gray-800 mb-4">
+                            Classe
+                        </label>
+                        <select name="class" id="class" 
+                                class="w-full px-6 py-4 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 transition-all duration-300 bg-white">
+                            <option value="">Toutes les classes</option>
+                            {% for class in classes %}
+                            <option value="{{ class.id }}">
+                                {{ class.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Statut des bulletins -->
+                    <div class="form-group">
+                        <label class="block text-lg font-bold text-gray-800 mb-4">
+                            Statut des Bulletins
+                        </label>
+                        <div class="space-y-4">
+                            <div class="flex items-center">
+                                <input type="checkbox" name="include_approved" id="include_approved" 
+                                       class="w-5 h-5 text-green-600 border-gray-300 rounded focus:ring-green-500" checked>
+                                <label for="include_approved" class="ml-3 text-lg font-medium text-gray-700">
+                                    Inclure les bulletins approuvés
+                                </label>
+                            </div>
+                            <div class="flex items-center">
+                                <input type="checkbox" name="include_draft" id="include_draft" 
+                                       class="w-5 h-5 text-green-600 border-gray-300 rounded focus:ring-green-500" checked>
+                                <label for="include_draft" class="ml-3 text-lg font-medium text-gray-700">
+                                    Inclure les bulletins en brouillon
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Boutons d'action -->
+                    <div class="flex items-center gap-6 pt-6 border-t border-gray-200">
+                        <button type="submit" 
+                                class="inline-flex items-center px-8 py-4 bg-green-500 text-white rounded-xl font-bold hover:bg-green-600 transition-all duration-300">
+                            <i class="fas fa-file-pdf mr-3" aria-hidden="true"></i>
+                            Générer le PDF Groupé
+                        </button>
+                        <a href="{% url 'notes:bulletin_list' %}" 
+                           class="inline-flex items-center px-8 py-4 bg-white border-2 border-gray-300 text-gray-700 rounded-xl font-bold hover:bg-gray-50 transition-all duration-300">
+                            <i class="fas fa-times mr-3" aria-hidden="true"></i>
+                            Annuler
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Validation du formulaire
+        const form = document.querySelector('form');
+        const submitBtn = form.querySelector('button[type="submit"]');
+        
+        form.addEventListener('submit', function(e) {
+            const approved = document.getElementById('include_approved').checked;
+            const draft = document.getElementById('include_draft').checked;
+            
+            if (!approved && !draft) {
+                e.preventDefault();
+                alert('Veuillez sélectionner au moins un type de statut (approuvé ou brouillon).');
+                return false;
+            }
+            
+            // Afficher un indicateur de chargement
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-3" aria-hidden="true"></i>Génération en cours...';
+            submitBtn.disabled = true;
+        });
+        
+        // Améliorer l'UX des checkboxes
+        const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const approved = document.getElementById('include_approved').checked;
+                const draft = document.getElementById('include_draft').checked;
+                
+                if (!approved && !draft) {
+                    submitBtn.disabled = true;
+                    submitBtn.classList.add('opacity-50');
+                } else {
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove('opacity-50');
+                }
+            });
+        });
+    });
+</script>
+{% endblock %} 

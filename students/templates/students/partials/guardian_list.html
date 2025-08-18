@@ -1,0 +1,31 @@
+<div class="bg-white rounded-xl shadow p-4">
+  <div class="flex items-center justify-between mb-2">
+    <h3 class="font-semibold text-lg text-gray-800">Responsables</h3>
+    <button hx-get="" hx-target="#modal-content" @click="open = true" class="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded shadow">Ajouter</button>
+  </div>
+  <table class="min-w-full divide-y divide-gray-200">
+    <thead class="bg-gray-50">
+      <tr>
+        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Nom</th>
+        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Lien</th>
+        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Téléphone</th>
+        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for g in guardians %}
+      <tr class="hover:bg-gray-50 transition">
+        <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-800">{{ g.name }}</td>
+        <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{{ g.relation }}</td>
+        <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{{ g.phone }}</td>
+        <td class="px-4 py-2 whitespace-nowrap text-center">
+          <button hx-get="" hx-target="#modal-content" @click="open = true" class="inline-flex items-center px-3 py-1.5 bg-yellow-500 hover:bg-yellow-600 text-white text-xs font-medium rounded shadow">Modifier</button>
+          <button hx-get="" hx-target="#modal-content" @click="open = true" class="inline-flex items-center px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-medium rounded shadow ml-2">Supprimer</button>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" class="px-4 py-6 text-center text-gray-400 text-sm">Aucun responsable.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div> 

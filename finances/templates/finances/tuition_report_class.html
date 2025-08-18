@@ -1,0 +1,247 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Rapport Scolarité - {{ school_class.name }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- En-tête -->
+    <div class="mb-8">
+        <div class="flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">Rapport de Scolarité - {{ school_class.name }}</h1>
+                <p class="text-gray-600">Période : {{ period_name }}</p>
+            </div>
+            <div class="flex space-x-3">
+                <a href="{% url 'finances:tuition_report' %}" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition-colors">
+                    <i class="fas fa-arrow-left mr-2"></i>Retour
+                </a>
+                <a href="{% url 'finances:export_tuition_report' %}?period={{ request.GET.period }}&start_date={{ request.GET.start_date }}&end_date={{ request.GET.end_date }}" 
+                   class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-colors">
+                    <i class="fas fa-download mr-2"></i>Exporter PDF
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtres -->
+    <div class="bg-white rounded-lg shadow p-6 mb-8">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Filtres</h3>
+        <form method="get" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Période</label>
+                <select name="period" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500">
+                    <option value="today" {% if request.GET.period == 'today' %}selected{% endif %}>Aujourd'hui</option>
+                    <option value="yesterday" {% if request.GET.period == 'yesterday' %}selected{% endif %}>Hier</option>
+                    <option value="this_week" {% if request.GET.period == 'this_week' %}selected{% endif %}>Semaine en cours</option>
+                    <option value="last_week" {% if request.GET.period == 'last_week' %}selected{% endif %}>Semaine dernière</option>
+                    <option value="this_month" {% if request.GET.period == 'this_month' %}selected{% endif %}>Mois en cours</option>
+                    <option value="last_month" {% if request.GET.period == 'last_month' %}selected{% endif %}>Mois dernier</option>
+                    <option value="custom" {% if request.GET.period == 'custom' %}selected{% endif %}>Période personnalisée</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Date de début</label>
+                <input type="date" name="start_date" value="{{ request.GET.start_date }}" 
+                       class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Date de fin</label>
+                <input type="date" name="end_date" value="{{ request.GET.end_date }}" 
+                       class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500">
+            </div>
+            <div class="flex items-end">
+                <button type="submit" class="w-full bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-colors">
+                    <i class="fas fa-search mr-2"></i>Filtrer
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Statistiques de la classe -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+                    <i class="fas fa-users text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Total Étudiants</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ total_students }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-green-100 text-green-600">
+                    <i class="fas fa-credit-card text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Paiements</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ total_payments }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-purple-100 text-purple-600">
+                    <i class="fas fa-money-bill text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Montant Reçu</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ total_amount|floatformat:0 }} FCFA</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-orange-100 text-orange-600">
+                    <i class="fas fa-chart-line text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Taux Recouvrement</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ recovery_rate|floatformat:1 }}%</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Barre de progression -->
+    <div class="bg-white rounded-lg shadow p-6 mb-8">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Progression des Paiements</h3>
+        <div class="space-y-4">
+            <div class="flex justify-between items-center">
+                <span class="text-sm font-medium text-gray-700">Scolarité payée</span>
+                <span class="text-sm font-medium text-gray-900">{{ total_amount|floatformat:0 }} FCFA / {{ expected_amount|floatformat:0 }} FCFA</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-3">
+                <div class="bg-gradient-to-r from-green-500 to-blue-500 h-3 rounded-full" style="width: {{ recovery_rate }}%"></div>
+            </div>
+            <div class="flex justify-between text-sm text-gray-600">
+                <span>{{ total_payments }} paiements effectués</span>
+                <span>{{ total_students }} étudiants dans la classe</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques par étudiant -->
+    <div class="bg-white rounded-lg shadow mb-8">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900">Situation par Étudiant</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Étudiant</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Montant Payé</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Montant Dû</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reste</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Taux Paiement</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for stat in student_stats %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">{{ stat.student.last_name.upper }} {{ stat.student.first_name }}</div>
+                            <div class="text-sm text-gray-500">{{ stat.student.matricule }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-green-600">{{ stat.total_paid|floatformat:0 }} FCFA</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">{{ stat.amount_due|floatformat:0 }} FCFA</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium {% if stat.remaining > 0 %}text-red-600{% else %}text-green-600{% endif %}">
+                                {{ stat.remaining|floatformat:0 }} FCFA
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                    <div class="bg-green-600 h-2 rounded-full" style="width: {{ stat.payment_rate }}%"></div>
+                                </div>
+                                <span class="text-sm text-gray-900">{{ stat.payment_rate|floatformat:1 }}%</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if stat.payment_rate >= 100 %}
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                    <i class="fas fa-check mr-1"></i>Complet
+                                </span>
+                            {% elif stat.payment_rate >= 50 %}
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                    <i class="fas fa-clock mr-1"></i>Partiel
+                                </span>
+                            {% else %}
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                                    <i class="fas fa-exclamation-triangle mr-1"></i>En retard
+                                </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Détail des paiements -->
+    <div class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900">Détail des Paiements</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Étudiant</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tranche</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mode</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Montant</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for payment in payments %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">{{ payment.student.last_name.upper }} {{ payment.student.first_name }}</div>
+                            <div class="text-sm text-gray-500">{{ payment.student.matricule }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">Tranche {{ payment.tranche.number }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">{{ payment.payment_date|date:"d/m/Y" }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full 
+                                {% if payment.mode == 'CASH' %}bg-green-100 text-green-800
+                                {% elif payment.mode == 'CHECK' %}bg-blue-100 text-blue-800
+                                {% elif payment.mode == 'TRANSFER' %}bg-purple-100 text-purple-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {% if payment.mode == 'CASH' %}Espèces
+                                {% elif payment.mode == 'CHECK' %}Chèque
+                                {% elif payment.mode == 'TRANSFER' %}Virement
+                                {% elif payment.mode == 'MOBILE_MONEY' %}Mobile Money
+                                {% else %}{{ payment.mode }}{% endif %}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-green-600">{{ payment.amount|floatformat:0 }} FCFA</div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %} 

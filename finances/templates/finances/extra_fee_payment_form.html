@@ -1,0 +1,469 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}Paiement Frais Annexes - Finances{% endblock %}
+{% block page_title %}Paiement Frais Annexes{% endblock %}
+{% block breadcrumb_current %}Paiements{% endblock %}
+
+{% block page_actions %}
+<div class="flex items-center gap-3">
+    <a href="{% url 'finances:extra_fee_payment_list' %}" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2 px-4 rounded-xl transition-all duration-200">
+        <i class="fas fa-arrow-left mr-2"></i>Retour
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="card-hover bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-200/60">
+            <h3 class="text-lg font-semibold text-slate-900">Nouveau Paiement Frais Annexes</h3>
+        </div>
+        
+        <form method="post" class="p-6 space-y-6">
+            {% csrf_token %}
+            
+            <!-- Sélection du frais annexe -->
+            <div>
+                <label for="{{ form.extra_fee.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                    Frais annexe <span class="text-red-500">*</span>
+                </label>
+                {% render_field form.extra_fee class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" onchange="updateClassSelection()" %}
+                {% if form.extra_fee.errors %}
+                    <div class="mt-2 text-sm text-red-600">
+                        {% for error in form.extra_fee.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- Sélection de la classe -->
+            <div>
+                <label for="{{ form.school_class.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                    Classe <span class="text-red-500">*</span>
+                </label>
+                
+                <!-- Message d'information sur les classes disponibles -->
+                <div id="class-info" class="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg hidden">
+                    <div class="flex items-start">
+                        <i class="fas fa-info-circle text-blue-600 mt-0.5 mr-2"></i>
+                        <div class="text-sm text-blue-800">
+                            <p class="font-medium">Classes disponibles pour ce frais annexe :</p>
+                            <p id="available-classes-text" class="text-xs mt-1"></p>
+                        </div>
+                    </div>
+                </div>
+                
+                {% render_field form.school_class class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" onchange="updateStudentSelection()" %}
+                
+                <!-- Message d'erreur si aucune classe disponible -->
+                <div id="no-classes-error" class="mt-2 text-sm text-red-600 hidden">
+                    <p>Aucune classe n'est configurée pour ce frais annexe. Veuillez d'abord configurer le frais annexe.</p>
+                </div>
+                
+                {% if form.school_class.errors %}
+                    <div class="mt-2 text-sm text-red-600">
+                        {% for error in form.school_class.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- Sélection de l'étudiant avec recherche -->
+            <div>
+                <label for="{{ form.student.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                    Étudiant <span class="text-red-500">*</span>
+                </label>
+                
+                <!-- Champ de recherche -->
+                <div class="mb-3">
+                    <input type="text" id="student-search" 
+                           class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" 
+                           placeholder="Rechercher un étudiant par nom, prénom ou matricule..."
+                           onkeyup="searchStudents(this.value)">
+                </div>
+                
+                <!-- Liste des étudiants filtrés -->
+                <div id="student-results" class="max-h-48 overflow-y-auto border border-slate-200 rounded-lg hidden">
+                    <!-- Les résultats de recherche s'afficheront ici -->
+                </div>
+                
+                <!-- Sélection finale de l'étudiant -->
+                {% render_field form.student class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" onchange="updateAmount()" %}
+                
+                {% if form.student.errors %}
+                    <div class="mt-2 text-sm text-red-600">
+                        {% for error in form.student.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- Montant -->
+            <div>
+                <label for="{{ form.amount.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                    Montant (FCFA) <span class="text-red-500">*</span>
+                </label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
+                        <i class="fas fa-money-bill-wave"></i>
+                    </span>
+                    {% render_field form.amount class="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="0.00" step="0.01" attr="readonly" %}
+                </div>
+                <p class="mt-1 text-xs text-slate-500">Le montant est calculé automatiquement selon le frais et la classe</p>
+                {% if form.amount.errors %}
+                    <div class="mt-2 text-sm text-red-600">
+                        {% for error in form.amount.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- Mode de paiement -->
+            <div>
+                <label for="{{ form.mode.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                    Mode de paiement <span class="text-red-500">*</span>
+                </label>
+                {% render_field form.mode class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" %}
+                {% if form.mode.errors %}
+                    <div class="mt-2 text-sm text-red-600">
+                        {% for error in form.mode.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- Notes -->
+            <div>
+                <label for="{{ form.notes.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                    Notes
+                </label>
+                {% render_field form.notes class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" rows="3" placeholder="Notes additionnelles sur le paiement..." %}
+                {% if form.notes.errors %}
+                    <div class="mt-2 text-sm text-red-600">
+                        {% for error in form.notes.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- Boutons d'action -->
+            <div class="flex items-center justify-end gap-4 pt-6 border-t border-slate-200">
+                <a href="{% url 'finances:extra_fee_payment_list' %}" 
+                   class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 px-6 rounded-xl transition-all duration-200">
+                    Annuler
+                </a>
+                <button type="submit" 
+                        class="btn-gradient text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg">
+                    <i class="fas fa-credit-card mr-2"></i>
+                    Valider le Paiement
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Informations supplémentaires -->
+    <div class="mt-6 card-hover bg-blue-50 rounded-2xl border border-blue-200 p-6">
+        <div class="flex items-start">
+            <div class="flex-shrink-0">
+                <i class="fas fa-info-circle text-blue-600 text-xl"></i>
+            </div>
+            <div class="ml-3">
+                <h4 class="text-sm font-medium text-blue-900">Informations importantes</h4>
+                <div class="mt-2 text-sm text-blue-700 space-y-1">
+                    <p>• Sélectionnez d'abord le frais annexe, puis la classe et l'étudiant</p>
+                    <p>• Le montant est calculé automatiquement selon la configuration du frais</p>
+                    <p>• Après validation, un reçu PDF sera généré automatiquement</p>
+                    <p>• Les parents seront notifiés par email et SMS du paiement</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialiser le formulaire
+    const extraFeeSelect = document.getElementById('{{ form.extra_fee.id_for_label }}');
+    const classSelect = document.getElementById('{{ form.school_class.id_for_label }}');
+    const studentSelect = document.getElementById('{{ form.student.id_for_label }}');
+    
+    // Désactiver les champs classe et étudiant au début
+    classSelect.disabled = true;
+    classSelect.classList.add('opacity-50', 'cursor-not-allowed');
+    studentSelect.disabled = true;
+    studentSelect.classList.add('opacity-50', 'cursor-not-allowed');
+    
+    // Initialiser les sélections
+    updateClassSelection();
+    // updateStudentSelection() sera appelée quand une classe sera sélectionnée
+    
+    // Ajouter des écouteurs d'événements pour la validation
+    extraFeeSelect.addEventListener('change', function() {
+        updateClassSelection();
+    });
+    
+    classSelect.addEventListener('change', function() {
+        updateStudentSelection();
+    });
+});
+
+function updateClassSelection() {
+    const extraFeeSelect = document.getElementById('{{ form.extra_fee.id_for_label }}');
+    const classSelect = document.getElementById('{{ form.school_class.id_for_label }}');
+    const studentSelect = document.getElementById('{{ form.student.id_for_label }}');
+    const classInfo = document.getElementById('class-info');
+    const noClassesError = document.getElementById('no-classes-error');
+    const availableClassesText = document.getElementById('available-classes-text');
+    
+    // Masquer les messages
+    classInfo.classList.add('hidden');
+    noClassesError.classList.add('hidden');
+    
+    if (extraFeeSelect.value) {
+        // Récupérer les classes disponibles pour ce frais
+        fetch(`/finances/api/classes-for-extra-fee/${extraFeeSelect.value}/`)
+            .then(response => response.json())
+            .then(data => {
+                // Vider les options existantes
+                classSelect.innerHTML = '<option value="">Sélectionner une classe...</option>';
+                studentSelect.innerHTML = '<option value="">Sélectionner un étudiant...</option>';
+                
+                if (data.classes && data.classes.length > 0) {
+                    // Ajouter les nouvelles options
+                    data.classes.forEach(classItem => {
+                        const option = document.createElement('option');
+                        option.value = classItem.id;
+                        option.textContent = classItem.name;
+                        classSelect.appendChild(option);
+                    });
+                    
+                    // Afficher l'information sur les classes disponibles
+                    const classNames = data.classes.map(c => c.name).join(', ');
+                    availableClassesText.textContent = classNames;
+                    classInfo.classList.remove('hidden');
+                    
+                    // Activer le champ classe
+                    classSelect.disabled = false;
+                    classSelect.classList.remove('opacity-50', 'cursor-not-allowed');
+                } else {
+                    // Aucune classe disponible
+                    noClassesError.classList.remove('hidden');
+                    classSelect.disabled = true;
+                    classSelect.classList.add('opacity-50', 'cursor-not-allowed');
+                }
+                
+                // Réinitialiser les sélections
+                classSelect.value = '';
+                studentSelect.value = '';
+                document.getElementById('{{ form.amount.id_for_label }}').value = '';
+                
+                // Mettre à jour le montant si une classe est sélectionnée
+                if (data.classes && data.classes.length > 0) {
+                    updateAmountFromExtraFee();
+                }
+            })
+            .catch(error => {
+                console.error('Erreur lors de la récupération des classes:', error);
+                noClassesError.classList.remove('hidden');
+                classSelect.disabled = true;
+                classSelect.classList.add('opacity-50', 'cursor-not-allowed');
+            });
+    } else {
+        // Aucun frais sélectionné
+        classSelect.innerHTML = '<option value="">Sélectionner d\'abord un frais annexe...</option>';
+        studentSelect.innerHTML = '<option value="">Sélectionner d\'abord une classe...</option>';
+        classSelect.disabled = true;
+        classSelect.classList.add('opacity-50', 'cursor-not-allowed');
+    }
+}
+
+function updateStudentSelection() {
+    const extraFeeSelect = document.getElementById('{{ form.extra_fee.id_for_label }}');
+    const classSelect = document.getElementById('{{ form.school_class.id_for_label }}');
+    const studentSelect = document.getElementById('{{ form.student.id_for_label }}');
+    
+    console.log('updateStudentSelection appelée avec:', {
+        classSelectValue: classSelect.value,
+        extraFeeSelectValue: extraFeeSelect.value
+    });
+    
+    if (classSelect.value && extraFeeSelect.value) {
+        console.log('Récupération des étudiants pour la classe:', classSelect.value);
+        // Récupérer les étudiants de cette classe
+        fetch(`/finances/api/students-for-class/${classSelect.value}/`)
+            .then(response => response.json())
+            .then(data => {
+                console.log('Réponse de l\'API étudiants:', data);
+                // Vider les options existantes
+                studentSelect.innerHTML = '<option value="">Sélectionner un étudiant...</option>';
+                
+                if (data.students && data.students.length > 0) {
+                    // Ajouter les nouvelles options
+                    data.students.forEach(student => {
+                        const option = document.createElement('option');
+                        option.value = student.id;
+                        option.textContent = `${student.first_name} ${student.last_name} (${student.matricule || 'N/A'})`;
+                        studentSelect.appendChild(option);
+                    });
+                    
+                    // Activer le champ étudiant
+                    studentSelect.disabled = false;
+                    studentSelect.classList.remove('opacity-50', 'cursor-not-allowed');
+                } else {
+                    // Aucun étudiant dans cette classe
+                    studentSelect.innerHTML = '<option value="">Aucun étudiant dans cette classe</option>';
+                    studentSelect.disabled = true;
+                    studentSelect.classList.add('opacity-50', 'cursor-not-allowed');
+                }
+                
+                // Réinitialiser la sélection
+                studentSelect.value = '';
+                document.getElementById('{{ form.amount.id_for_label }}').value = '';
+            })
+            .catch(error => {
+                console.error('Erreur lors de la récupération des étudiants:', error);
+                studentSelect.innerHTML = '<option value="">Erreur lors du chargement des étudiants</option>';
+                studentSelect.disabled = true;
+                studentSelect.classList.add('opacity-50', 'cursor-not-allowed');
+            });
+    } else {
+        // Aucune classe sélectionnée
+        studentSelect.innerHTML = '<option value="">Sélectionner d\'abord une classe...</option>';
+        studentSelect.disabled = true;
+        studentSelect.classList.add('opacity-50', 'cursor-not-allowed');
+    }
+}
+
+// Fonction de recherche d'étudiants
+function searchStudents(query) {
+    const resultsDiv = document.getElementById('student-results');
+    const studentSelect = document.getElementById('{{ form.student.id_for_label }}');
+    
+    if (query.length < 2) {
+        resultsDiv.classList.add('hidden');
+        return;
+    }
+    
+    // Récupérer la classe sélectionnée
+    const classSelect = document.getElementById('{{ form.school_class.id_for_label }}');
+    const classId = classSelect.value;
+    
+    if (!classId) {
+        resultsDiv.classList.add('hidden');
+        return;
+    }
+    
+    // Rechercher les étudiants
+    fetch(`/finances/api/search-students/?query=${encodeURIComponent(query)}&class_id=${classId}`)
+        .then(response => response.json())
+        .then(data => {
+            displayStudentResults(data.students, resultsDiv, studentSelect);
+        })
+        .catch(error => {
+            console.error('Erreur lors de la recherche:', error);
+            resultsDiv.classList.add('hidden');
+        });
+}
+
+// Afficher les résultats de recherche
+function displayStudentResults(students, resultsDiv, studentSelect) {
+    if (students.length === 0) {
+        resultsDiv.innerHTML = '<div class="p-3 text-sm text-slate-500">Aucun étudiant trouvé</div>';
+        resultsDiv.classList.remove('hidden');
+        return;
+    }
+    
+    let html = '';
+    students.forEach(student => {
+        html += `
+            <div class="p-3 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0" 
+                 onclick="selectStudent('${student.id}', '${student.first_name} ${student.last_name}', '${student.matricule || 'N/A'}')">
+                <div class="font-medium text-slate-900">${student.first_name} ${student.last_name}</div>
+                <div class="text-sm text-slate-500">Matricule: ${student.matricule || 'N/A'} | Classe: ${student.current_class_name}</div>
+            </div>
+        `;
+    });
+    
+    resultsDiv.innerHTML = html;
+    resultsDiv.classList.remove('hidden');
+}
+
+// Sélectionner un étudiant
+function selectStudent(studentId, studentName, matricule) {
+    const studentSelect = document.getElementById('{{ form.student.id_for_label }}');
+    const resultsDiv = document.getElementById('student-results');
+    const searchInput = document.getElementById('student-search');
+    
+    // Mettre à jour le select
+    studentSelect.value = studentId;
+    
+    // Mettre à jour le champ de recherche
+    searchInput.value = `${studentName} (${matricule})`;
+    
+    // Cacher les résultats
+    resultsDiv.classList.add('hidden');
+    
+    // Déclencher la mise à jour du montant
+    updateAmount();
+}
+
+function updateAmountFromExtraFee() {
+    const extraFeeSelect = document.getElementById('{{ form.extra_fee.id_for_label }}');
+    const amountField = document.getElementById('{{ form.amount.id_for_label }}');
+    
+    if (extraFeeSelect.value) {
+        // Récupérer le montant directement depuis le frais annexe
+        fetch(`/finances/api/extra-fee-amount/${extraFeeSelect.value}/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.amount) {
+                    amountField.value = data.amount;
+                    console.log('Montant automatiquement rempli:', data.amount);
+                }
+            })
+            .catch(error => {
+                console.error('Erreur lors de la récupération du montant:', error);
+                amountField.value = '';
+            });
+    }
+}
+
+function updateAmount() {
+    const extraFeeSelect = document.getElementById('{{ form.extra_fee.id_for_label }}');
+    const classSelect = document.getElementById('{{ form.school_class.id_for_label }}');
+    const studentSelect = document.getElementById('{{ form.student.id_for_label }}');
+    const amountField = document.getElementById('{{ form.amount.id_for_label }}');
+    
+    if (extraFeeSelect.value && classSelect.value && studentSelect.value) {
+        // Récupérer le montant pour cette combinaison
+        fetch(`/finances/api/amount-for-extra-fee/${extraFeeSelect.value}/${classSelect.value}/${studentSelect.value}/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.amount && data.amount > 0) {
+                    amountField.value = data.amount;
+                    console.log('Montant mis à jour:', data.amount);
+                } else if (data.error) {
+                    console.log('Erreur:', data.error);
+                    // Ne pas vider le montant en cas d'erreur
+                    console.log('Garder le montant actuel en cas d\'erreur');
+                } else {
+                    console.log('Montant non disponible, garder la valeur actuelle');
+                }
+            })
+            .catch(error => {
+                console.error('Erreur lors de la récupération du montant:', error);
+                // Ne pas vider le montant en cas d'erreur
+                console.log('Garder le montant actuel en cas d\'erreur');
+            });
+    }
+}
+</script>
+{% endblock %}

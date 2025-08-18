@@ -1,0 +1,99 @@
+<div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full">
+    <!-- Modal Header -->
+    <div class="flex items-center justify-between p-6 border-b border-slate-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+        <div>
+            <h3 class="text-xl font-bold text-slate-900">
+                {% if school_class.main_teacher %}
+                    Modifier le professeur titulaire
+                {% else %}
+                    Affecter un professeur titulaire
+                {% endif %}
+            </h3>
+            <p class="text-slate-600 text-sm mt-1">
+                Classe : <strong>{{ school_class.name }}</strong> | Année : <strong>{{ school_class.year }}</strong>
+            </p>
+        </div>
+        <button onclick="closeMainTeacherModal()" class="p-2 hover:bg-slate-100 rounded-xl transition-colors duration-200">
+            <i class="fas fa-times text-slate-400"></i>
+        </button>
+    </div>
+
+    <!-- Modal Content -->
+    <div class="p-6">
+        <!-- Professeur titulaire actuel -->
+        {% if school_class.main_teacher %}
+        <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <h4 class="text-sm font-medium text-slate-700 mb-2">Professeur titulaire actuel</h4>
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-full flex items-center justify-center text-white font-semibold text-lg">
+                    {{ school_class.main_teacher.first_name.0 }}{{ school_class.main_teacher.last_name.0 }}
+                </div>
+                <div class="flex-1">
+                    <div class="font-semibold text-slate-900 text-lg">
+                        {{ school_class.main_teacher.last_name|upper }} {{ school_class.main_teacher.first_name }}
+                    </div>
+                    <div class="text-sm text-slate-600">
+                        {% if school_class.main_teacher.main_subject %}
+                            {{ school_class.main_teacher.main_subject.name }}
+                        {% endif %}
+                        {% if school_class.main_teacher.matricule %}
+                            • {{ school_class.main_teacher.matricule }}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Formulaire de sélection -->
+        <form id="main-teacher-form" class="space-y-4">
+            {% csrf_token %}
+            
+            <div>
+                <label for="teacher-select" class="block text-sm font-medium text-slate-700 mb-2">
+                    Sélectionner un professeur
+                </label>
+                <select id="teacher-select" name="teacher" class="w-full border border-slate-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <option value="">-- Choisir un professeur --</option>
+                    {% for teacher in teachers %}
+                        <option value="{{ teacher.id }}" {% if school_class.main_teacher and school_class.main_teacher.id == teacher.id %}selected{% endif %}>
+                            {{ teacher.last_name|upper }} {{ teacher.first_name }}
+                            {% if teacher.main_subject %} - {{ teacher.main_subject.name }}{% endif %}
+                            {% if teacher.matricule %} ({{ teacher.matricule }}){% endif %}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Informations sur le professeur sélectionné -->
+            <div id="teacher-info" class="hidden p-4 bg-slate-50 border border-slate-200 rounded-lg">
+                <h4 class="text-sm font-medium text-slate-700 mb-2">Informations du professeur</h4>
+                <div id="teacher-details" class="text-sm text-slate-600">
+                    <!-- Les détails seront chargés dynamiquement -->
+                </div>
+            </div>
+
+            <!-- Message d'information -->
+            <div class="text-slate-500 text-sm leading-relaxed p-3 bg-slate-50 rounded-lg">
+                <i class="fas fa-info-circle mr-2 text-blue-500"></i>
+                Le professeur titulaire est responsable de la classe et peut accéder à toutes les informations des élèves, 
+                aux notes, à la présence et aux communications avec les parents.
+            </div>
+        </form>
+    </div>
+
+    <!-- Modal Footer -->
+    <div class="flex items-center justify-end gap-3 p-6 border-t border-slate-200 bg-slate-50 rounded-b-2xl">
+        <button onclick="closeMainTeacherModal()" class="px-4 py-2 text-slate-700 hover:bg-slate-200 rounded-xl transition-colors duration-200">
+            Annuler
+        </button>
+        <button onclick="saveMainTeacher()" class="px-6 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl font-medium">
+            <i class="fas fa-save mr-2"></i>
+            {% if school_class.main_teacher %}
+                Modifier
+            {% else %}
+                Affecter
+            {% endif %}
+        </button>
+    </div>
+</div>

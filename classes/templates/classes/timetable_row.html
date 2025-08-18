@@ -1,0 +1,10 @@
+<tr id="timetable-{{ timetable.id }}">
+    <td>{{ timetable.school_class }}</td>
+    <td>{{ timetable.year }}</td>
+    <td>{{ timetable.school }}</td>
+    <td>{{ timetable.created_at|date:'d/m/Y H:i' }}</td>
+    <td>
+        <button hx-get="{% url 'classes:timetable_update_htmx' timetable.id %}" hx-target="#modal-content" hx-swap="innerHTML" class="btn btn-sm btn-primary">Modifier</button>
+        <button hx-get="{% url 'classes:timetable_delete_htmx' timetable.id %}" hx-target="#modal-content" hx-swap="innerHTML" class="btn btn-sm btn-danger">Supprimer</button>
+    </td>
+</tr> 

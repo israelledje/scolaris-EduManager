@@ -1,0 +1,769 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Gestion des Notes - Dashboard{% endblock %}
+
+{% block breadcrumb_current %}Notes{% endblock %}
+
+
+
+{% block extra_css %}
+<style>
+    /* Animations personnalisées pour Tailwind */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes slideInRight {
+        from {
+            opacity: 0;
+            transform: translateX(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    @keyframes pulse-custom {
+        0%, 100% {
+            opacity: 1;
+        }
+        50% {
+            opacity: 0.8;
+        }
+    }
+
+    .animate-fade-in-up {
+        animation: fadeInUp 0.6s ease-out;
+    }
+
+    .animate-slide-in-right {
+        animation: slideInRight 0.6s ease-out;
+    }
+
+    .animate-pulse-custom {
+        animation: pulse-custom 2s infinite;
+    }
+
+    .animation-delay-100 { animation-delay: 0.1s; }
+    .animation-delay-200 { animation-delay: 0.2s; }
+    .animation-delay-300 { animation-delay: 0.3s; }
+    .animation-delay-400 { animation-delay: 0.4s; }
+
+    /* Gradients personnalisés */
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    }
+
+    .bg-gradient-success {
+        background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+    }
+
+    .bg-gradient-warning {
+        background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+    }
+
+    .bg-gradient-danger {
+        background: linear-gradient(135deg, #ef4444 0%, #f87171 100%);
+    }
+
+    .bg-gradient-light {
+        background: linear-gradient(135deg, #f9fafb 0%, #e2e8f0 100%);
+    }
+
+    .bg-gradient-card {
+        background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    }
+
+    .bg-gradient-welcome {
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    }
+
+    /* Effets de survol personnalisés */
+    .hover-lift {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .hover-lift:hover {
+        transform: translateY(-8px) scale(1.02);
+    }
+
+    .hover-glow:hover {
+        box-shadow: 0 20px 40px rgba(59, 130, 246, 0.3);
+    }
+
+    /* Bordures dégradées */
+    .border-gradient-primary {
+        border-image: linear-gradient(90deg, #3b82f6, #60a5fa) 1;
+    }
+
+    .border-gradient-success {
+        border-image: linear-gradient(90deg, #10b981, #34d399) 1;
+    }
+
+    .border-gradient-warning {
+        border-image: linear-gradient(90deg, #f59e0b, #fbbf24) 1;
+    }
+
+    .border-gradient-danger {
+        border-image: linear-gradient(90deg, #ef4444, #f87171) 1;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-light p-4 lg:p-6">
+    <!-- En-tête amélioré -->
+    <div class="relative overflow-hidden bg-gradient-primary text-white rounded-3xl p-8 mb-8 shadow-2xl">
+        <!-- Effets de fond décoratifs -->
+        <div class="absolute top-0 right-0 w-72 h-72 bg-white opacity-10 rounded-full transform translate-x-24 -translate-y-24"></div>
+        <div class="absolute bottom-0 left-0 w-48 h-48 bg-white opacity-5 rounded-full transform -translate-x-12 translate-y-12"></div>
+        
+        <div class="relative z-10 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+            <div>
+                <h1 class="text-3xl lg:text-4xl xl:text-5xl font-black mb-2 text-shadow">
+                    Gestion des Notes
+                </h1>
+                <p class="text-lg lg:text-xl opacity-90">
+                    Dashboard de gestion des évaluations et bulletins
+                </p>
+            </div>
+            <div class="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+                <a href="{% url 'notes:evaluation_create' %}" 
+                   class="inline-flex items-center justify-center px-6 py-3 bg-white bg-opacity-20 backdrop-blur-sm border-2 border-white border-opacity-30 rounded-xl font-semibold text-white hover:bg-opacity-30 hover:-translate-y-1 hover:shadow-lg transition-all duration-300 group">
+                    <i class="fas fa-plus mr-2 group-hover:rotate-90 transition-transform duration-300" aria-hidden="true"></i>
+                    Nouvelle Évaluation
+                </a>
+                <a href="{% url 'notes:bulletin_list' %}" 
+                   class="inline-flex items-center justify-center px-6 py-3 bg-transparent border-2 border-white border-opacity-50 rounded-xl font-semibold text-white hover:bg-white hover:bg-opacity-10 hover:-translate-y-1 transition-all duration-300">
+                    <i class="fas fa-file-alt mr-2" aria-hidden="true"></i>
+                    Bulletins
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques principales -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <!-- Étudiants Actifs -->
+        <div class="group bg-white rounded-2xl p-6 shadow-md border border-gray-100 hover-lift hover:shadow-xl cursor-pointer animate-fade-in-up relative overflow-hidden"
+             tabindex="0" role="button" aria-label="Statistique: {{ total_students|default:0 }} étudiants actifs">
+            <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-primary"></div>
+            <div class="text-4xl lg:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-br from-gray-800 to-gray-600 mb-2">
+                {{ total_students|default:0 }}
+            </div>
+            <div class="text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                Étudiants Actifs
+            </div>
+        </div>
+
+        <!-- Évaluations Créées -->
+        <div class="group bg-white rounded-2xl p-6 shadow-md border border-gray-100 hover-lift hover:shadow-xl cursor-pointer animate-fade-in-up animation-delay-100 relative overflow-hidden"
+             tabindex="0" role="button" aria-label="Statistique: {{ total_evaluations|default:0 }} évaluations créées">
+            <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-success"></div>
+            <div class="text-4xl lg:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-br from-gray-800 to-gray-600 mb-2">
+                {{ total_evaluations|default:0 }}
+            </div>
+            <div class="text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                Évaluations Créées
+            </div>
+        </div>
+
+        <!-- Notes Saisies -->
+        <div class="group bg-white rounded-2xl p-6 shadow-md border border-gray-100 hover-lift hover:shadow-xl cursor-pointer animate-fade-in-up animation-delay-200 relative overflow-hidden"
+             tabindex="0" role="button" aria-label="Statistique: {{ total_grades|default:0 }} notes saisies">
+            <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-warning"></div>
+            <div class="text-4xl lg:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-br from-gray-800 to-gray-600 mb-2">
+                {{ total_grades|default:0 }}
+            </div>
+            <div class="text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                Notes Saisies
+            </div>
+        </div>
+
+        <!-- Évaluations Ouvertes -->
+        <div class="group bg-white rounded-2xl p-6 shadow-md border border-gray-100 hover-lift hover:shadow-xl cursor-pointer animate-fade-in-up animation-delay-300 relative overflow-hidden"
+             tabindex="0" role="button" aria-label="Statistique: {{ open_evaluations.count|default:0 }} évaluations ouvertes">
+            <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-danger"></div>
+            <div class="text-4xl lg:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-br from-gray-800 to-gray-600 mb-2">
+                {{ open_evaluations.count|default:0 }}
+            </div>
+            <div class="text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                Évaluations Ouvertes
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions rapides -->
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+        <!-- Action principale -->
+        {% if open_evaluations %}
+            <a href="{% url 'notes:grade_entry' evaluation_id=open_evaluations.first.id %}" 
+               class="group bg-gradient-primary text-white rounded-2xl p-6 shadow-lg hover-lift hover-glow transition-all duration-300 animate-slide-in-right animation-delay-100 relative overflow-hidden">
+        {% else %}
+            <a href="{% url 'notes:evaluation_create' %}" 
+               class="group bg-gradient-primary text-white rounded-2xl p-6 shadow-lg hover-lift hover-glow transition-all duration-300 animate-slide-in-right animation-delay-100 relative overflow-hidden">
+        {% endif %}
+            <div class="absolute top-0 left-0 right-0 bottom-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
+            <div class="relative z-10">
+                <div class="w-16 h-16 bg-white bg-opacity-20 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
+                    {% if open_evaluations %}
+                        <i class="fas fa-edit text-2xl" aria-hidden="true"></i>
+                    {% else %}
+                        <i class="fas fa-plus text-2xl" aria-hidden="true"></i>
+                    {% endif %}
+                </div>
+                <h3 class="text-xl font-bold mb-2">
+                    {% if open_evaluations %}Saisir des Notes{% else %}Créer une Évaluation{% endif %}
+                </h3>
+                <p class="text-white text-opacity-90 text-sm leading-relaxed">
+                    {% if open_evaluations %}
+                        Accéder à l'interface de saisie des notes pour les évaluations ouvertes
+                    {% else %}
+                        Commencer par créer votre première évaluation
+                    {% endif %}
+                </p>
+            </div>
+        </a>
+
+        <!-- Gérer les Évaluations -->
+        <a href="{% url 'notes:evaluation_list' %}" 
+           class="group bg-white rounded-2xl p-6 shadow-md border border-gray-100 hover-lift hover:shadow-xl hover:border-blue-200 transition-all duration-300 animate-slide-in-right animation-delay-200 relative overflow-hidden">
+            <div class="absolute top-0 left-0 right-0 bottom-0 bg-gradient-card opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div class="relative z-10">
+                <div class="w-16 h-16 bg-gradient-primary rounded-2xl flex items-center justify-center mb-4 text-white group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
+                    <i class="fas fa-list text-2xl" aria-hidden="true"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">Gérer les Évaluations</h3>
+                <p class="text-gray-600 text-sm leading-relaxed">
+                    Créer, modifier et clôturer les évaluations
+                </p>
+            </div>
+        </a>
+
+        <!-- Bulletins ou Trimestres -->
+        {% if current_trimester %}
+            <a href="{% url 'notes:generate_bulletins' trimester_id=current_trimester.id %}" 
+               class="group bg-white rounded-2xl p-6 shadow-md border border-gray-100 hover-lift hover:shadow-xl hover:border-blue-200 transition-all duration-300 animate-slide-in-right animation-delay-300 relative overflow-hidden">
+        {% else %}
+            <a href="{% url 'notes:trimester_list' %}" 
+               class="group bg-white rounded-2xl p-6 shadow-md border border-gray-100 hover-lift hover:shadow-xl hover:border-blue-200 transition-all duration-300 animate-slide-in-right animation-delay-300 relative overflow-hidden">
+        {% endif %}
+            <div class="absolute top-0 left-0 right-0 bottom-0 bg-gradient-card opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div class="relative z-10">
+                <div class="w-16 h-16 bg-gradient-primary rounded-2xl flex items-center justify-center mb-4 text-white group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
+                    {% if current_trimester %}
+                        <i class="fas fa-file-pdf text-2xl" aria-hidden="true"></i>
+                    {% else %}
+                        <i class="fas fa-calendar-alt text-2xl" aria-hidden="true"></i>
+                    {% endif %}
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">
+                    {% if current_trimester %}Générer les Bulletins{% else %}Configurer les Trimestres{% endif %}
+                </h3>
+                <p class="text-gray-600 text-sm leading-relaxed">
+                    {% if current_trimester %}
+                        Créer automatiquement les bulletins pour le trimestre en cours
+                    {% else %}
+                        Définir les périodes d'évaluation pour l'année scolaire
+                    {% endif %}
+                </p>
+            </div>
+        </a>
+
+        <!-- Rapports & Statistiques -->
+        <a href="{% url 'notes:reports_dashboard' %}" 
+           class="group bg-white rounded-2xl p-6 shadow-md border border-gray-100 hover-lift hover:shadow-xl hover:border-blue-200 transition-all duration-300 animate-slide-in-right animation-delay-400 relative overflow-hidden">
+            <div class="absolute top-0 left-0 right-0 bottom-0 bg-gradient-card opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div class="relative z-10">
+                <div class="w-16 h-16 bg-gradient-primary rounded-2xl flex items-center justify-center mb-4 text-white group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
+                    <i class="fas fa-chart-bar text-2xl" aria-hidden="true"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">Rapports & Statistiques</h3>
+                <p class="text-gray-600 text-sm leading-relaxed">
+                    Consulter les analyses de performance et les rapports
+                </p>
+            </div>
+        </a>
+    </div>
+
+    <!-- Contenu principal -->
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+        <!-- Contenu principal -->
+        <main class="xl:col-span-2 bg-white rounded-2xl p-6 lg:p-8 shadow-md border border-gray-100" role="main">
+            <!-- Message d'aide si système vide -->
+            {% if total_students == 0 and total_evaluations == 0 %}
+            <div class="bg-gradient-welcome border-2 border-yellow-400 rounded-2xl p-6 mb-8 relative overflow-hidden" role="alert" aria-live="polite">
+                <div class="absolute top-0 right-0 w-48 h-48 bg-yellow-400 opacity-10 rounded-full transform translate-x-16 -translate-y-16"></div>
+                <div class="relative z-10 flex items-start gap-4">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-lightbulb text-3xl text-yellow-700" aria-hidden="true"></i>
+                    </div>
+                    <div>
+                        <h5 class="text-xl font-bold text-yellow-800 mb-3">
+                            Bienvenue dans le module de gestion des notes !
+                        </h5>
+                        <p class="text-yellow-700 mb-4">
+                            Pour commencer à utiliser le système, suivez ces étapes :
+                        </p>
+                        <ol class="text-yellow-700 font-medium space-y-2 list-decimal list-inside">
+                            <li><strong>Configurer les trimestres</strong> - Définissez les périodes d'évaluation</li>
+                            <li><strong>Créer des évaluations</strong> - Ajoutez vos premiers examens</li>
+                            <li><strong>Saisir les notes</strong> - Entrez les résultats des étudiants</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Trimestre en cours -->
+            {% if current_trimester %}
+            <section class="mb-8" aria-labelledby="current-trimester-title">
+                <div class="flex items-center gap-3 mb-4 pb-3 border-b-2 border-gray-100">
+                    <div class="w-9 h-9 bg-gradient-primary rounded-xl flex items-center justify-center text-white font-semibold">
+                        <i class="fas fa-calendar" aria-hidden="true"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-800" id="current-trimester-title">
+                        Trimestre en cours
+                    </h2>
+                </div>
+                <div class="bg-gradient-card border-l-4 border-blue-500 rounded-lg p-4" role="status">
+                    <div class="font-semibold text-blue-900">
+                        {{ current_trimester.get_trimester_display }}
+                    </div>
+                    <div class="text-blue-700 text-sm mt-1">
+                        {{ current_trimester.start_date|date:"d/m/Y" }} au {{ current_trimester.end_date|date:"d/m/Y" }}
+                    </div>
+                </div>
+            </section>
+            {% endif %}
+
+            <!-- Dernières évaluations -->
+            <section class="mb-8" aria-labelledby="recent-evaluations-title">
+                <div class="flex items-center gap-3 mb-6 pb-3 border-b-2 border-gray-100">
+                    <div class="w-9 h-9 bg-gradient-primary rounded-xl flex items-center justify-center text-white font-semibold">
+                        <i class="fas fa-clock" aria-hidden="true"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-800" id="recent-evaluations-title">
+                        Dernières Évaluations
+                    </h2>
+                </div>
+                
+                {% if recent_evaluations %}
+                    <div class="space-y-4" role="list" aria-label="Liste des dernières évaluations">
+                        {% for evaluation in recent_evaluations %}
+                        <div class="group bg-white border-2 border-gray-100 rounded-xl p-4 hover:border-green-200 hover:translate-x-1 hover:shadow-md transition-all duration-300 relative overflow-hidden" role="listitem">
+                            <div class="absolute left-0 top-0 bottom-0 w-1 bg-gradient-success opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                            <div class="relative z-10">
+                                <h4 class="font-semibold text-gray-800 mb-1">
+                                    {{ evaluation.get_eval_type_display }} - {{ evaluation.subject.name }}
+                                </h4>
+                                <p class="text-sm text-gray-600">
+                                    {{ evaluation.school_class.name }} • {{ evaluation.eval_date|date:"d/m/Y" }}
+                                </p>
+                                <div class="absolute top-4 right-4">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if evaluation.is_open %}bg-green-100 text-green-800{% else %}bg-gray-100 text-gray-800{% endif %}">
+                                        {% if evaluation.is_open %}Ouverte{% else %}Fermée{% endif %}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-16 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl border-2 border-dashed border-gray-300" role="status">
+                        <i class="fas fa-inbox text-6xl text-gray-400 mb-6" aria-hidden="true"></i>
+                        <h5 class="text-xl font-semibold text-gray-700 mb-3">Aucune évaluation récente</h5>
+                        <p class="text-gray-600 mb-6 max-w-md mx-auto">
+                            Les évaluations récentes apparaîtront ici une fois créées.
+                        </p>
+                    </div>
+                {% endif %}
+            </section>
+
+            <!-- Statistiques par matière -->
+            <section aria-labelledby="subject-stats-title">
+                <div class="flex items-center gap-3 mb-6 pb-3 border-b-2 border-gray-100">
+                    <div class="w-9 h-9 bg-gradient-primary rounded-xl flex items-center justify-center text-white font-semibold">
+                        <i class="fas fa-chart-pie" aria-hidden="true"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-800" id="subject-stats-title">
+                        Performance par Matière
+                    </h2>
+                </div>
+                
+                {% if subject_stats %}
+                    <div class="space-y-4" role="list" aria-label="Statistiques par matière">
+                        {% for stat in subject_stats %}
+                        <div class="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md hover:-translate-y-1 transition-all duration-300" role="listitem">
+                            <div class="font-semibold text-gray-800 text-lg mb-4">{{ stat.subject.name }}</div>
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <div class="text-center">
+                                    <div class="text-2xl font-bold text-blue-600 mb-1" aria-label="Moyenne: {{ stat.avg_score }} sur 20">
+                                        {{ stat.avg_score }}/20
+                                    </div>
+                                    <div class="text-xs font-medium text-gray-600 uppercase tracking-wider">Moyenne</div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="text-2xl font-bold text-green-600 mb-1" aria-label="Taux de réussite: {{ stat.success_rate }} pourcent">
+                                        {{ stat.success_rate }}%
+                                    </div>
+                                    <div class="text-xs font-medium text-gray-600 uppercase tracking-wider">Réussite</div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="text-2xl font-bold text-purple-600 mb-1" aria-label="Nombre de notes: {{ stat.grades_count }}">
+                                        {{ stat.grades_count }}
+                                    </div>
+                                    <div class="text-xs font-medium text-gray-600 uppercase tracking-wider">Notes</div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-16 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl border-2 border-dashed border-gray-300" role="status">
+                        <i class="fas fa-book text-6xl text-gray-400 mb-6" aria-hidden="true"></i>
+                        <h5 class="text-xl font-semibold text-gray-700 mb-3">Aucune matière configurée</h5>
+                        <p class="text-gray-600 mb-6 max-w-md mx-auto">
+                            Les statistiques par matière apparaîtront ici une fois que vous aurez créé des évaluations.
+                        </p>
+                        <a href="{% url 'subjects:subject_list' %}" 
+                           class="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 hover:-translate-y-1 transition-all duration-300">
+                            <i class="fas fa-plus mr-2" aria-hidden="true"></i>
+                            Gérer les Matières
+                        </a>
+                    </div>
+                {% endif %}
+            </section>
+        </main>
+
+        <!-- Sidebar -->
+        <aside class="bg-white rounded-2xl p-6 shadow-md border border-gray-100 h-fit sticky top-6" role="complementary" aria-label="Informations complémentaires">
+            <!-- Évaluations ouvertes -->
+            <section class="mb-8" aria-labelledby="open-evaluations-title">
+                <div class="flex items-center gap-3 mb-4 pb-3 border-b-2 border-gray-100">
+                    <div class="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center text-white text-sm font-semibold">
+                        <i class="fas fa-unlock" aria-hidden="true"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-800" id="open-evaluations-title">
+                        Évaluations Ouvertes
+                    </h3>
+                </div>
+                
+                {% if open_evaluations %}
+                    <div class="space-y-3 mb-4" role="list" aria-label="Liste des évaluations ouvertes">
+                        {% for evaluation in open_evaluations|slice:":5" %}
+                        <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 hover:bg-blue-50 hover:border-blue-200 transition-all duration-200" role="listitem">
+                            <h4 class="font-medium text-gray-800 text-sm mb-1">
+                                {{ evaluation.get_eval_type_display }}
+                            </h4>
+                            <p class="text-xs text-gray-600">
+                                {{ evaluation.subject.name }} - {{ evaluation.school_class.name }}
+                            </p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% if open_evaluations.count > 5 %}
+                    <div class="text-center">
+                        <a href="{% url 'notes:evaluation_list' %}?status=open" 
+                           class="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-200 transition-colors duration-200">
+                            Voir toutes ({{ open_evaluations.count }})
+                        </a>
+                    </div>
+                    {% endif %}
+                {% else %}
+                    <div class="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200" role="status">
+                        <i class="fas fa-check-circle text-3xl text-gray-400 mb-3" aria-hidden="true"></i>
+                        <h5 class="font-semibold text-gray-700 mb-2">Aucune évaluation ouverte</h5>
+                        <p class="text-sm text-gray-600">Créez votre première évaluation pour commencer.</p>
+                    </div>
+                {% endif %}
+            </section>
+
+            <!-- Actions rapides -->
+            <section class="mb-8" aria-labelledby="quick-actions-title">
+                <div class="flex items-center gap-3 mb-4 pb-3 border-b-2 border-gray-100">
+                    <div class="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center text-white text-sm font-semibold">
+                        <i class="fas fa-bolt" aria-hidden="true"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-800" id="quick-actions-title">
+                        Actions Rapides
+                    </h3>
+                </div>
+                
+                <div class="space-y-3">
+                    {% if not current_trimester %}
+                        <a href="{% url 'notes:trimester_list' %}" 
+                           class="block w-full px-4 py-3 bg-gradient-primary text-white rounded-lg font-semibold text-center hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+                            <i class="fas fa-calendar-alt mr-2" aria-hidden="true"></i>
+                            Configurer les Trimestres
+                        </a>
+                    {% else %}
+                        <a href="{% url 'notes:trimester_list' %}" 
+                           class="block w-full px-4 py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-lg font-semibold text-center hover:bg-gray-50 hover:border-blue-300 hover:text-blue-600 hover:-translate-y-1 transition-all duration-300">
+                            <i class="fas fa-calendar-alt mr-2" aria-hidden="true"></i>
+                            Gérer les Trimestres
+                        </a>
+                    {% endif %}
+
+                    {% if not open_evaluations %}
+                        <a href="{% url 'notes:evaluation_create' %}" 
+                           class="block w-full px-4 py-3 bg-gradient-primary text-white rounded-lg font-semibold text-center hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+                            <i class="fas fa-plus mr-2" aria-hidden="true"></i>
+                            Créer une Évaluation
+                        </a>
+                    {% endif %}
+
+                    <a href="{% url 'notes:import_export_dashboard' %}" 
+                       class="block w-full px-4 py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-lg font-semibold text-center hover:bg-gray-50 hover:border-blue-300 hover:text-blue-600 hover:-translate-y-1 transition-all duration-300">
+                        <i class="fas fa-file-import mr-2" aria-hidden="true"></i>
+                        Import/Export
+                    </a>
+                    
+                    <a href="{% url 'notes:reports_dashboard' %}" 
+                       class="block w-full px-4 py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-lg font-semibold text-center hover:bg-gray-50 hover:border-blue-300 hover:text-blue-600 hover:-translate-y-1 transition-all duration-300">
+                        <i class="fas fa-chart-line mr-2" aria-hidden="true"></i>
+                        Rapports
+                    </a>
+                </div>
+            </section>
+
+            <!-- Informations système -->
+            <section aria-labelledby="system-info-title">
+                <div class="flex items-center gap-3 mb-4 pb-3 border-b-2 border-gray-100">
+                    <div class="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center text-white text-sm font-semibold">
+                        <i class="fas fa-info-circle" aria-hidden="true"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-800" id="system-info-title">
+                        Informations
+                    </h3>
+                </div>
+                
+                <div class="bg-gradient-to-br from-gray-50 to-white rounded-lg p-4 border border-gray-200 space-y-3">
+                    {% if current_trimester %}
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="font-medium text-gray-800">Année scolaire</span>
+                            <span class="text-gray-600">{{ current_trimester.year.annee }}</span>
+                        </div>
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="font-medium text-gray-800">Trimestres actifs</span>
+                            <span class="text-gray-600">{{ active_trimesters.count|default:0 }}</span>
+                        </div>
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="font-medium text-gray-800">Dernière mise à jour</span>
+                            <span class="text-gray-600">{{ current_trimester.updated_at|date:"d/m/Y H:i" }}</span>
+                        </div>
+                    {% else %}
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="font-medium text-gray-800">Année scolaire</span>
+                            <span class="text-gray-400">Non configurée</span>
+                        </div>
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="font-medium text-gray-800">Trimestres actifs</span>
+                            <span class="text-gray-400">0</span>
+                        </div>
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="font-medium text-gray-800">Dernière mise à jour</span>
+                            <span class="text-gray-400">-</span>
+                        </div>
+                    {% endif %}
+                </div>
+            </section>
+        </aside>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Configuration et utilitaires avec Tailwind
+    const TailwindDashboard = {
+        config: {
+            refreshInterval: 30000,
+            animationDuration: 300,
+            debounceDelay: 250
+        },
+
+        init() {
+            this.setupEventListeners();
+            this.setupAccessibility();
+            this.startAutoRefresh();
+            this.setupIntersectionObserver();
+        },
+
+        setupEventListeners() {
+            // Gestion des cartes statistiques
+            document.querySelectorAll('[role="button"]').forEach(card => {
+                card.addEventListener('click', this.handleStatCardClick.bind(this));
+                card.addEventListener('keydown', this.handleStatCardKeydown.bind(this));
+            });
+
+            // Gestion responsive
+            window.addEventListener('resize', this.debounce(this.handleResize.bind(this), this.config.debounceDelay));
+        },
+
+        setupAccessibility() {
+            // Navigation au clavier améliorée
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    document.activeElement.blur();
+                }
+            });
+        },
+
+        handleStatCardClick(event) {
+            const card = event.currentTarget;
+            
+            // Animation de clic avec Tailwind
+            card.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                card.style.transform = '';
+            }, 150);
+
+            // Logique métier
+            const cardType = this.getCardType(card);
+            this.handleStatCardAction(cardType);
+        },
+
+        handleStatCardKeydown(event) {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                this.handleStatCardClick(event);
+            }
+        },
+
+        getCardType(card) {
+            const text = card.querySelector('.text-4xl, .text-5xl')?.nextElementSibling?.textContent?.toLowerCase();
+            if (text?.includes('étudiants')) return 'students';
+            if (text?.includes('évaluations créées')) return 'evaluations';
+            if (text?.includes('notes')) return 'grades';
+            if (text?.includes('ouvertes')) return 'open_evaluations';
+            return 'unknown';
+        },
+
+        handleStatCardAction(type) {
+            const actions = {
+                students: () => console.log('Navigation vers la liste des étudiants'),
+                evaluations: () => console.log('Navigation vers les évaluations'),
+                grades: () => console.log('Navigation vers les notes'),
+                open_evaluations: () => console.log('Navigation vers les évaluations ouvertes')
+            };
+
+            if (actions[type]) {
+                actions[type]();
+            }
+        },
+
+        startAutoRefresh() {
+            {% if open_evaluations %}
+                const firstEvaluationId = {{ open_evaluations.first.id|default:1 }};
+                
+                const refreshStats = async () => {
+                    try {
+                        const response = await fetch(`/notes/ajax/evaluation-stats/${firstEvaluationId}/`);
+                        if (response.ok) {
+                            const data = await response.json();
+                            this.updateStats(data);
+                        }
+                    } catch (error) {
+                        console.log('Actualisation des statistiques non disponible:', error.message);
+                    }
+                };
+
+                setTimeout(refreshStats, 5000);
+                setInterval(refreshStats, this.config.refreshInterval);
+            {% endif %}
+        },
+
+        updateStats(data) {
+            if (data.total_grades !== undefined) {
+                const gradesCard = document.querySelector('[aria-label*="notes saisies"] .text-4xl, [aria-label*="notes saisies"] .text-5xl');
+                if (gradesCard) {
+                    this.animateNumberChange(gradesCard, data.total_grades);
+                }
+            }
+            console.log('Statistiques mises à jour:', data);
+        },
+
+        animateNumberChange(element, newValue) {
+            const currentValue = parseInt(element.textContent);
+            if (currentValue !== newValue) {
+                element.classList.add('animate-pulse-custom');
+                setTimeout(() => {
+                    element.textContent = newValue;
+                    element.classList.remove('animate-pulse-custom');
+                }, 300);
+            }
+        },
+
+        setupIntersectionObserver() {
+            if ('IntersectionObserver' in window) {
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            entry.target.classList.add('animate-fade-in-up');
+                        }
+                    });
+                }, { threshold: 0.1 });
+
+                document.querySelectorAll('.hover-lift').forEach(element => {
+                    observer.observe(element);
+                });
+            }
+        },
+
+        handleResize() {
+            const width = window.innerWidth;
+            
+            if (width < 768) {
+                document.body.classList.add('mobile-view');
+            } else {
+                document.body.classList.remove('mobile-view');
+            }
+        },
+
+        debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+    };
+
+    // Initialisation
+    document.addEventListener('DOMContentLoaded', () => {
+        TailwindDashboard.init();
+        
+        // Forcer l'activation du lien Notes dans la sidebar
+        const notesLink = document.querySelector('[data-page="notes"]');
+        if (notesLink) {
+            notesLink.classList.add('active');
+        }
+        
+        // Désactiver les autres liens actifs
+        document.querySelectorAll('.sidebar-link.active').forEach(link => {
+            if (link !== notesLink) {
+                link.classList.remove('active');
+            }
+        });
+    });
+
+    // Gestion des erreurs
+    window.addEventListener('error', (event) => {
+        console.error('Erreur dans le dashboard:', event.error);
+    });
+</script>
+{% endblock %}

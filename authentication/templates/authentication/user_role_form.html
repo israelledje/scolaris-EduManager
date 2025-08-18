@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Changer le rôle de l'utilisateur</h1>
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn btn-primary">Changer le rôle</button>
+</form>
+<a href="{% url 'authentication:user_list' %}">Retour à la liste</a>
+{% endblock %} 

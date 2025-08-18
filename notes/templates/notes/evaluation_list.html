@@ -1,0 +1,278 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Gestion des Évaluations{% endblock %}
+
+{% block breadcrumb_current %}Notes{% endblock %}
+{% block breadcrumb %}
+    <span class="text-slate-400">/</span>
+    <span class="text-slate-700 font-medium">Évaluations</span>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Statistics Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200/50">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="text-2xl font-bold text-slate-900">
+                        {{ total_classes|default:0 }}
+                    </div>
+                    <div class="text-blue-700 font-medium">Classes avec évaluations</div>
+                </div>
+                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center text-white">
+                    <i class="fas fa-school text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-6 border border-emerald-200/50">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="text-2xl font-bold text-slate-900">
+                        {{ total_evaluations|default:0 }}
+                    </div>
+                    <div class="text-emerald-700 font-medium">Évaluations totales</div>
+                </div>
+                <div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center text-white">
+                    <i class="fas fa-clipboard-list text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-6 border border-amber-200/50">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="text-2xl font-bold text-slate-900">
+                        {{ total_open_evaluations|default:0 }}
+                    </div>
+                    <div class="text-amber-700 font-medium">Évaluations ouvertes</div>
+                </div>
+                <div class="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center text-white">
+                    <i class="fas fa-unlock text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-6 border border-purple-200/50">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="text-2xl font-bold text-slate-900">
+                        {{ total_grades|default:0 }}
+                    </div>
+                    <div class="text-purple-700 font-medium">Notes saisies</div>
+                </div>
+                <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center text-white">
+                    <i class="fas fa-star text-xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters and Search -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6">
+        <div class="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+            <!-- Search Bar -->
+            <div class="flex-1 max-w-md">
+                <form method="get" class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <i class="fas fa-search text-slate-400"></i>
+                    </div>
+                    <input type="text" name="search" value="{{ search|default:'' }}"
+                        class="w-full pl-11 pr-4 py-3 border border-slate-200 rounded-xl bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 placeholder-slate-400"
+                        placeholder="Rechercher une évaluation..." />
+                </form>
+            </div>
+
+            <!-- Filters -->
+            <div class="flex flex-wrap gap-3">
+                <!-- Classe Filter -->
+                <select name="class" class="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors duration-200">
+                    <option value="">Toutes les classes</option>
+                    {% for class in classes %}
+                    <option value="{{ class.id }}" {% if selected_class == class.id %}selected{% endif %}>
+                        {{ class.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+
+                <!-- Reset Filters -->
+                <a href="{% url 'notes:evaluation_list' %}"
+                    class="flex items-center gap-2 px-4 py-3 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors duration-200">
+                    <i class="fas fa-undo text-slate-500"></i>
+                    <span class="text-slate-700 font-medium">Reset</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Evaluations Content -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">
+        <!-- Header -->
+        <div class="px-6 py-4 border-b border-slate-200 bg-slate-50">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-lg font-semibold text-slate-900">
+                        Classes avec évaluations
+                    </h3>
+                    <p class="text-sm text-slate-500">
+                        {{ classes_data|length }} classe{{ classes_data|length|pluralize }} avec des évaluations
+                    </p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <a href="{% url 'notes:evaluation_create' %}"
+                        class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl">
+                        <i class="fas fa-plus mr-2"></i>
+                        Nouvelle évaluation
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Classes Grid -->
+        <div class="p-6">
+            {% if classes_data %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for class_data in classes_data %}
+                <div class="group bg-white border border-slate-200 rounded-xl p-6 hover:shadow-lg hover:border-indigo-200 transition-all duration-300">
+                    <!-- Classe Header -->
+                    <div class="flex items-center gap-4 mb-6">
+                        <div class="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center text-white font-bold text-2xl">
+                            <span>{{ class_data.class.name|slice:":2" }}</span>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-slate-900">{{ class_data.class.name }}</h3>
+                            <p class="text-slate-600">{{ class_data.total_students }} étudiant{{ class_data.total_students|pluralize }}</p>
+                        </div>
+                    </div>
+
+                    <!-- Statistiques de la classe -->
+                    <div class="grid grid-cols-2 gap-4 mb-6">
+                        <div class="bg-blue-50 rounded-lg p-3">
+                            <div class="text-lg font-bold text-blue-600">{{ class_data.total_evaluations }}</div>
+                            <div class="text-xs text-blue-700">Évaluations</div>
+                        </div>
+                        <div class="bg-emerald-50 rounded-lg p-3">
+                            <div class="text-lg font-bold text-emerald-600">{{ class_data.completed_evaluations }}</div>
+                            <div class="text-xs text-emerald-700">Complètes</div>
+                        </div>
+                        <div class="bg-amber-50 rounded-lg p-3">
+                            <div class="text-lg font-bold text-amber-600">{{ class_data.total_grades }}</div>
+                            <div class="text-xs text-amber-700">Notes</div>
+                        </div>
+                        <div class="bg-purple-50 rounded-lg p-3">
+                            <div class="text-lg font-bold text-purple-600">
+                                {% if class_data.total_evaluations %}
+                                    {% widthratio class_data.completed_evaluations class_data.total_evaluations 100 %}%
+                                {% else %}
+                                    0%
+                                {% endif %}
+                            </div>
+                            <div class="text-xs text-purple-700">Complétion</div>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex items-center gap-2">
+                        <a href="{% url 'notes:class_evaluations_list' class_data.class.id %}"
+                            class="flex-1 px-4 py-2 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-lg font-medium transition-colors duration-200 text-center">
+                            <i class="fas fa-eye mr-2"></i>
+                            Voir évaluations
+                        </a>
+                        {% if class_data.can_generate_bulletins %}
+                        <a href="{% url 'notes:generate_bulletins' class_data.ready_trimester.id %}"
+                            class="px-4 py-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-lg font-medium transition-colors duration-200">
+                            <i class="fas fa-file-alt"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-12">
+                <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-door-open text-2xl text-slate-400"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-slate-900 mb-2">
+                    Aucune classe avec évaluations
+                </h3>
+                <p class="text-slate-500 text-sm mb-4">
+                    {% if request.GET %}
+                        Aucune classe ne correspond à vos critères de recherche
+                    {% else %}
+                        Commencez par créer votre première évaluation
+                    {% endif %}
+                </p>
+                <a href="{% url 'notes:evaluation_create' %}" 
+                   class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all duration-200">
+                    <i class="fas fa-plus mr-2"></i>
+                    Créer une évaluation
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if classes_data.has_other_pages %}
+    <nav aria-label="Pagination des classes" class="flex items-center justify-center">
+        <ul class="flex items-center gap-2">
+            {% if classes_data.has_previous %}
+            <li>
+                <a href="?page={{ classes_data.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
+                    class="px-3 py-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors duration-200">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+            </li>
+            {% endif %}
+            
+            {% for num in classes_data.paginator.page_range %}
+            <li>
+                <a href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
+                    class="px-3 py-2 {% if classes_data.number == num %}bg-indigo-600 text-white{% else %}bg-white border border-slate-200 hover:bg-slate-50{% endif %} rounded-lg transition-colors duration-200">
+                    {{ num }}
+                </a>
+            </li>
+            {% endfor %}
+            
+            {% if classes_data.has_next %}
+            <li>
+                <a href="?page={{ classes_data.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
+                    class="px-3 py-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors duration-200">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Forcer l'activation du lien Notes dans la sidebar
+    const notesLink = document.querySelector('[data-page="notes"]');
+    if (notesLink) {
+        notesLink.classList.add('active');
+    }
+    
+    // Désactiver les autres liens actifs
+    document.querySelectorAll('.sidebar-link.active').forEach(link => {
+        if (link !== notesLink) {
+            link.classList.remove('active');
+        }
+    });
+});
+
+// Fonction de suppression d'évaluation
+function deleteEvaluation(evaluationId) {
+    if (confirm('Êtes-vous sûr de vouloir supprimer cette évaluation ? Cette action est irréversible.')) {
+        window.location.href = `/notes/evaluations/${evaluationId}/delete/`;
+    }
+}
+</script>
+{% endblock %} 

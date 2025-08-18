@@ -1,0 +1,27 @@
+CONFIRMATION DE PAIEMENT - SCOLARIS
+
+Bonjour,
+
+Nous confirmons la réception de votre paiement pour l'élève {{ payment.student_name }}.
+
+DÉTAILS DU PAIEMENT :
+- Élève : {{ payment.student_name }}
+{% if payment.tranche_number %}- Tranche : Tranche {{ payment.tranche_number }}{% endif %}
+- Classe : {{ payment.class_name }}
+- Année scolaire : {{ payment.school_year }}
+- Mode de paiement : {{ payment.payment_mode }}
+- Numéro de reçu : {{ payment.receipt_number }}
+- Date de paiement : {{ payment.payment_date }}
+
+MONTANT PAYÉ : {{ payment.amount }} FCFA
+
+CONTACT :
+Pour toute question concernant ce paiement, veuillez nous contacter :
+- Téléphone : {{ payment.school_phone|default:"Non renseigné" }}
+- Email : {{ payment.school_email|default:"Non renseigné" }}
+
+Merci pour votre confiance et votre collaboration dans l'éducation de votre enfant.
+
+---
+Cet email a été envoyé automatiquement. Merci de ne pas y répondre.
+© {% now "Y" %} SCOLARIS - Tous droits réservés

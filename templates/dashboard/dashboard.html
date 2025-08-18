@@ -1,0 +1,409 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block page_title %}Tableau de bord{% endblock %}
+
+{% block page_actions %}
+<div class="flex items-center gap-3">
+    <button class="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors duration-200">
+        <i class="fas fa-download text-slate-500"></i>
+        <span class="text-slate-700 font-medium">Exporter</span>
+    </button>
+    <button class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl">
+        <i class="fas fa-plus"></i>
+        <span class="font-medium">Nouveau</span>
+    </button>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Stats Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <!-- Élèves Card -->
+    <div class="group bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+        <div class="flex items-center justify-between mb-4">
+            <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg">
+                <i class="fas fa-user-graduate text-xl"></i>
+            </div>
+            <div class="text-right">
+                <div class="text-2xl font-bold text-slate-900">{{ total_students }}</div>
+                <div class="text-slate-500 text-sm font-medium">Élèves inscrits</div>
+            </div>
+        </div>
+        
+        <div class="space-y-2">
+            <div class="flex items-center justify-between text-sm">
+                <span class="flex items-center gap-2 text-emerald-600">
+                    <div class="w-2 h-2 bg-emerald-500 rounded-full"></div>
+                    Actifs
+                </span>
+                <span class="font-semibold">{{ active_students }}</span>
+            </div>
+            <div class="flex items-center justify-between text-sm">
+                <span class="flex items-center gap-2 text-red-500">
+                    <div class="w-2 h-2 bg-red-500 rounded-full"></div>
+                    Inactifs
+                </span>
+                <span class="font-semibold">{{ inactive_students }}</span>
+            </div>
+        </div>
+        
+        <div class="mt-4 pt-4 border-t border-slate-100">
+            <div class="flex items-center justify-between text-sm">
+                <div class="flex items-center gap-3">
+                    <span class="flex items-center gap-1 text-blue-600">
+                        <i class="fas fa-mars text-xs"></i>
+                        {{ male_students }}
+                    </span>
+                    <span class="flex items-center gap-1 text-pink-500">
+                        <i class="fas fa-venus text-xs"></i>
+                        {{ female_students }}
+                    </span>
+                </div>
+                <div class="text-slate-400">
+                    <i class="fas fa-arrow-up text-xs"></i>
+                    +5.2%
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enseignants Card -->
+    <div class="group bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+        <div class="flex items-center justify-between mb-4">
+            <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center text-white shadow-lg">
+                <i class="fas fa-chalkboard-teacher text-xl"></i>
+            </div>
+            <div class="text-right">
+                <div class="text-2xl font-bold text-slate-900">{{ total_teachers }}</div>
+                <div class="text-slate-500 text-sm font-medium">Enseignants</div>
+            </div>
+        </div>
+        
+        <div class="flex items-center justify-between text-sm">
+            <span class="flex items-center gap-2 text-emerald-600">
+                <div class="w-2 h-2 bg-emerald-500 rounded-full"></div>
+                Actifs
+            </span>
+            <span class="font-semibold">{{ active_teachers }}</span>
+        </div>
+        
+        <div class="mt-4 pt-4 border-t border-slate-100">
+            <div class="flex items-center justify-between text-sm">
+                <span class="text-slate-600">Taux d'activité</span>
+                <div class="flex items-center gap-2">
+                    <div class="w-16 h-2 bg-slate-200 rounded-full overflow-hidden">
+                        <div class="h-full bg-gradient-to-r from-purple-500 to-purple-600 rounded-full" style="width: 95%"></div>
+                    </div>
+                    <span class="text-slate-700 font-medium">95%</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Classes Card -->
+    <div class="group bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+        <div class="flex items-center justify-between mb-4">
+            <div class="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center text-white shadow-lg">
+                <i class="fas fa-door-open text-xl"></i>
+            </div>
+            <div class="text-right">
+                <div class="text-2xl font-bold text-slate-900">{{ total_classes }}</div>
+                <div class="text-slate-500 text-sm font-medium">Classes</div>
+            </div>
+        </div>
+        
+        <div class="flex items-center justify-between text-sm">
+            <span class="flex items-center gap-2 text-indigo-600">
+                <i class="fas fa-school text-xs"></i>
+                Salles disponibles
+            </span>
+            <span class="font-semibold">{{ total_classrooms }}</span>
+        </div>
+        
+        <div class="mt-4 pt-4 border-t border-slate-100">
+            <div class="flex items-center justify-between text-sm">
+                <span class="text-slate-600">Occupation</span>
+                <div class="flex items-center gap-2">
+                    <div class="w-16 h-2 bg-slate-200 rounded-full overflow-hidden">
+                        <div class="h-full bg-gradient-to-r from-amber-500 to-orange-500 rounded-full" style="width: 78%"></div>
+                    </div>
+                    <span class="text-slate-700 font-medium">78%</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Matières Card -->
+    <div class="group bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+        <div class="flex items-center justify-between mb-4">
+            <div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center text-white shadow-lg">
+                <i class="fas fa-book text-xl"></i>
+            </div>
+            <div class="text-right">
+                <div class="text-2xl font-bold text-slate-900">{{ total_subjects }}</div>
+                <div class="text-slate-500 text-sm font-medium">Matières</div>
+            </div>
+        </div>
+        
+        <div class="mt-4 pt-4 border-t border-slate-100">
+            <div class="flex items-center justify-between text-sm">
+                <span class="text-slate-600">Programmes actifs</span>
+                <span class="text-emerald-600 font-semibold">{{ total_subjects }}</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Financial Overview -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+    <div class="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-6 border border-emerald-200/50">
+        <div class="flex items-center justify-between mb-4">
+            <div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center text-white shadow-lg">
+                <i class="fas fa-coins text-xl"></i>
+            </div>
+            <div class="text-emerald-600 text-sm font-medium bg-emerald-100 px-3 py-1 rounded-full">
+                +12.5%
+            </div>
+        </div>
+        <div class="text-2xl font-bold text-slate-900 mb-1">{{ total_due|floatformat:0 }} FCFA</div>
+        <div class="text-emerald-700 font-medium">Frais attendus</div>
+        <div class="mt-4">
+            <div class="text-xs text-emerald-600 mb-1">Progression mensuelle</div>
+            <div class="w-full h-2 bg-emerald-200 rounded-full overflow-hidden">
+                <div class="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full" style="width: 85%"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200/50">
+        <div class="flex items-center justify-between mb-4">
+            <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center text-white shadow-lg">
+                <i class="fas fa-hand-holding-usd text-xl"></i>
+            </div>
+            <div class="text-blue-600 text-sm font-medium bg-blue-100 px-3 py-1 rounded-full">
+                +8.3%
+            </div>
+        </div>
+        <div class="text-2xl font-bold text-slate-900 mb-1">{{ total_paid|floatformat:0 }} FCFA</div>
+        <div class="text-blue-700 font-medium">Montant payé</div>
+        <div class="mt-4">
+            <div class="text-xs text-blue-600 mb-1">Taux de recouvrement</div>
+            <div class="w-full h-2 bg-blue-200 rounded-full overflow-hidden">
+                <div class="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full" style="width: {{ recovery_rate }}%"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-gradient-to-br from-red-50 to-rose-50 rounded-2xl p-6 border border-red-200/50">
+        <div class="flex items-center justify-between mb-4">
+            <div class="w-12 h-12 bg-gradient-to-br from-red-500 to-rose-500 rounded-xl flex items-center justify-center text-white shadow-lg">
+                <i class="fas fa-money-bill-wave text-xl"></i>
+            </div>
+            <div class="text-red-600 text-sm font-medium bg-red-100 px-3 py-1 rounded-full">
+                -3.2%
+            </div>
+        </div>
+        <div class="text-2xl font-bold text-slate-900 mb-1">{{ total_remaining|floatformat:0 }} FCFA</div>
+        <div class="text-red-700 font-medium">Reste à payer</div>
+        <div class="mt-4">
+            <div class="text-xs text-red-600 mb-1">Créances en cours</div>
+            <div class="w-full h-2 bg-red-200 rounded-full overflow-hidden">
+                <div class="h-full bg-gradient-to-r from-red-500 to-rose-500 rounded-full" style="width: 28%"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Students Distribution -->
+<div class="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6 mb-8">
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h3 class="text-xl font-bold text-slate-900">Répartition des élèves par classe</h3>
+            <p class="text-slate-500 text-sm">Distribution actuelle des effectifs</p>
+        </div>
+        <button class="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors duration-200">
+            <i class="fas fa-chart-bar text-slate-500"></i>
+            <span class="text-slate-700 font-medium">Voir graphique</span>
+        </button>
+    </div>
+    
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {% for item in students_by_class %}
+        <div class="group bg-gradient-to-br from-slate-50 to-slate-100 hover:from-indigo-50 hover:to-purple-50 rounded-xl p-4 transition-all duration-300 hover:shadow-md border border-slate-200/50 hover:border-indigo-200">
+            <div class="flex items-center justify-between mb-3">
+                <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-lg flex items-center justify-center text-white text-sm font-bold">
+                    {{ item.current_classroom__school_class__name|default:'?'|slice:':2' }}
+                </div>
+                <div class="text-2xl font-bold text-slate-900">{{ item.count }}</div>
+            </div>
+            <div class="font-semibold text-slate-700 mb-1">
+                {{ item.current_classroom__school_class__name|default:'Non affecté' }}
+            </div>
+            <div class="text-xs text-slate-500">
+                {% widthratio item.count total_students 100 %}% du total
+            </div>
+            <div class="mt-3 w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                <div class="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-500" 
+                     style="width: {% widthratio item.count total_students 100 %}%"></div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Recent Payments -->
+<div class="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6">
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h3 class="text-xl font-bold text-slate-900">Derniers paiements enregistrés</h3>
+            <p class="text-slate-500 text-sm">Transactions récentes des 7 derniers jours</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <div class="relative">
+                <input type="text" placeholder="Rechercher..." 
+                       class="pl-10 pr-4 py-2 border border-slate-200 rounded-xl bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm">
+                <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 text-sm"></i>
+            </div>
+            <button class="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors duration-200">
+                <i class="fas fa-filter text-slate-500"></i>
+                <span class="text-slate-700 font-medium">Filtrer</span>
+            </button>
+        </div>
+    </div>
+    
+    <div class="overflow-hidden rounded-xl border border-slate-200">
+        <table class="min-w-full">
+            <thead class="bg-slate-50">
+                <tr>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                        <div class="flex items-center gap-2">
+                            Élève
+                            <i class="fas fa-sort text-slate-400"></i>
+                        </div>
+                    </th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                        <div class="flex items-center gap-2">
+                            Tranche
+                            <i class="fas fa-sort text-slate-400"></i>
+                        </div>
+                    </th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                        <div class="flex items-center gap-2">
+                            Montant
+                            <i class="fas fa-sort text-slate-400"></i>
+                        </div>
+                    </th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                        <div class="flex items-center gap-2">
+                            Date
+                            <i class="fas fa-sort text-slate-400"></i>
+                        </div>
+                    </th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                        Statut
+                    </th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-slate-200">
+                {% for payment in last_payments %}
+                <tr class="hover:bg-slate-50 transition-colors duration-200">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold text-sm mr-3">
+                                {{ payment.student.first_name.0 }}{{ payment.student.last_name.0 }}
+                            </div>
+                            <div>
+                                <div class="text-sm font-semibold text-slate-900">{{ payment.student }}</div>
+                                <div class="text-xs text-slate-500">ID: #{{ payment.student.id }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            {% if payment.tranche %}
+                                Tranche {{ payment.tranche.number }}
+                            {% else %}
+                                Inscription
+                            {% endif %}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-bold text-slate-900">{{ payment.amount|floatformat:0 }} FCFA</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-slate-900">{{ payment.payment_date|date:"d M Y" }}</div>
+                        <div class="text-xs text-slate-500">{{ payment.payment_date|time:"H:i" }}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+                            <div class="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-2"></div>
+                            Confirmé
+                        </span>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="px-6 py-12 text-center">
+                        <div class="flex flex-col items-center">
+                            <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+                                <i class="fas fa-receipt text-2xl text-slate-400"></i>
+                            </div>
+                            <h3 class="text-lg font-semibold text-slate-900 mb-2">Aucun paiement récent</h3>
+                            <p class="text-slate-500 text-sm">Les paiements apparaîtront ici une fois enregistrés</p>
+                                    <a href="{% url 'finances:payment_create' %}" class="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors duration-200">
+            Enregistrer un paiement
+        </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    {% if last_payments %}
+    <div class="flex items-center justify-between mt-6 pt-6 border-t border-slate-200">
+        <div class="text-sm text-slate-600">
+            Affichage de {{ last_payments|length }} paiement{{ last_payments|length|pluralize }}
+        </div>
+        <a href="{% url 'finances:payment_list' %}" class="flex items-center gap-2 px-4 py-2 text-indigo-600 hover:text-indigo-700 font-medium transition-colors duration-200">
+            Voir tous les paiements
+            <i class="fas fa-arrow-right"></i>
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Quick Actions -->
+<div class="fixed bottom-6 right-6 z-30" x-data="{ open: false }">
+    <button @click="open = !open" 
+            class="w-14 h-14 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center">
+        <i class="fas fa-plus text-xl" :class="{ 'rotate-45': open }"></i>
+    </button>
+    
+    <div x-show="open" 
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0 scale-95"
+         x-transition:enter-end="opacity-100 scale-100"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100 scale-100"
+         x-transition:leave-end="opacity-0 scale-95"
+         @click.away="open = false"
+         class="absolute bottom-16 right-0 bg-white rounded-xl shadow-lg border border-slate-200 p-2 min-w-48">
+        <a href="{% url 'students:student_create_htmx' %}" class="flex items-center gap-3 px-4 py-3 text-slate-700 hover:bg-slate-50 rounded-lg transition-colors duration-200">
+            <i class="fas fa-user-plus text-indigo-500"></i>
+            Nouvel élève
+        </a>
+        <a href="{% url 'finances:payment_create' %}" class="flex items-center gap-3 px-4 py-3 text-slate-700 hover:bg-slate-50 rounded-lg transition-colors duration-200">
+            <i class="fas fa-money-bill text-emerald-500"></i>
+            Nouveau paiement
+        </a>
+        <a href="{% url 'classes:schoolclass_create_htmx' %}" class="flex items-center gap-3 px-4 py-3 text-slate-700 hover:bg-slate-50 rounded-lg transition-colors duration-200">
+            <i class="fas fa-door-open text-amber-500"></i>
+            Nouvelle classe
+        </a>
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,605 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load subject_extras %}
+
+{% block title %}Gestion de l'Emploi du Temps - {{ school_class.name }}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- En-tête -->
+        <div class="mb-8">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">
+                        <i class="fas fa-calendar-alt text-blue-600 mr-3"></i>
+                        Gestion de l'Emploi du Temps
+                    </h1>
+                    <p class="text-gray-600 mt-2">{{ school_class.name }} - {{ school_class.year }}</p>
+                </div>
+                <a href="{% url 'classes:schoolclass_detail' pk=school_class.id %}" 
+                   class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    <i class="fas fa-arrow-left mr-2"></i>
+                    Retour à la classe
+                </a>
+            </div>
+        </div>
+
+        <!-- Statistiques -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white overflow-hidden shadow rounded-lg">
+                <div class="p-5">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-clock text-2xl text-blue-600"></i>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Total Heures</dt>
+                                <dd class="text-lg font-medium text-gray-900">{{ total_hours }}h</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white overflow-hidden shadow rounded-lg">
+                <div class="p-5">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-shield-alt text-2xl text-green-600"></i>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Limite Hebdo</dt>
+                                <dd class="text-lg font-medium text-gray-900">{{ max_hours_per_week }}h</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white overflow-hidden shadow rounded-lg">
+                <div class="p-5">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-calendar-check text-2xl text-indigo-600"></i>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Créneaux</dt>
+                                <dd class="text-lg font-medium text-gray-900">{{ timetable_slots.count }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white overflow-hidden shadow rounded-lg">
+                <div class="p-5">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-book text-2xl text-yellow-600"></i>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Matières</dt>
+                                <dd class="text-lg font-medium text-gray-900">{{ programs.count }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alertes -->
+        {% if total_hours > max_hours_per_week %}
+        <div class="mb-6 bg-yellow-50 border border-yellow-200 rounded-md p-4">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-exclamation-triangle text-yellow-400"></i>
+                </div>
+                <div class="ml-3">
+                    <h3 class="text-sm font-medium text-yellow-800">
+                        Attention : Le total des heures demandées ({{ total_hours }}h) dépasse la limite scolaire ({{ max_hours_per_week }}h).
+                    </h3>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Formulaires -->
+            <div class="lg:col-span-1 space-y-6">
+                <!-- Formulaire de création de créneau -->
+                <div class="bg-white shadow rounded-lg">
+                    <div class="px-4 py-5 sm:p-6">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
+                            <i class="fas fa-plus-circle text-green-600 mr-2"></i>
+                            Créer un Créneau
+                        </h3>
+                        <form method="post" class="space-y-4">
+                            {% csrf_token %}
+                            {% for field in form %}
+                            <div>
+                                <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                                    {{ field.label }}
+                                </label>
+                                {{ field }}
+                                {% if field.help_text %}
+                                <p class="mt-1 text-sm text-gray-500">{{ field.help_text }}</p>
+                                {% endif %}
+                                {% if field.errors %}
+                                <div class="mt-1 text-sm text-red-600">
+                                    {% for error in field.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                            <button type="submit" name="create_slot" 
+                                    class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                                <i class="fas fa-plus mr-2"></i>
+                                Créer le Créneau
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Formulaire d'affectation en masse -->
+                <div class="bg-white shadow rounded-lg">
+                    <div class="px-4 py-5 sm:p-6">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
+                            <i class="fas fa-layer-group text-blue-600 mr-2"></i>
+                            Affectation en Masse
+                        </h3>
+                        <form method="post" class="space-y-4">
+                            {% csrf_token %}
+                            {% for field in bulk_form %}
+                            <div>
+                                <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                                    {{ field.label }}
+                                </label>
+                                {{ field }}
+                                {% if field.help_text %}
+                                <p class="mt-1 text-sm text-gray-500">{{ field.help_text }}</p>
+                                {% endif %}
+                                {% if field.errors %}
+                                <div class="mt-1 text-sm text-red-600">
+                                    {% for error in field.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                            <button type="submit" name="bulk_assign" 
+                                    class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                <i class="fas fa-magic mr-2"></i>
+                                Affecter en Masse
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Emploi du temps -->
+            <div class="lg:col-span-2">
+                <div class="bg-white shadow rounded-lg">
+                    <div class="px-4 py-5 sm:p-6">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900">
+                                <i class="fas fa-calendar-week text-indigo-600 mr-2"></i>
+                                Emploi du Temps de la Semaine
+                            </h3>
+                            <button onclick="openTimetableModal()" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                <i class="fas fa-plus mr-2"></i>
+                                Ajouter une matière
+                            </button>
+                        </div>
+
+                        {% if timetable_slots.exists %}
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
+                                            Heure
+                                        </th>
+                                        <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Lundi
+                                        </th>
+                                        <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Mardi
+                                        </th>
+                                        <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Mercredi
+                                        </th>
+                                        <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Jeudi
+                                        </th>
+                                        <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Vendredi
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    {% for period in "12345678" %}
+                                    <tr>
+                                        <td class="px-3 py-4 whitespace-nowrap text-sm font-medium text-gray-900 bg-gray-50">
+                                            {% if period == "1" %}8h-9h
+                                            {% elif period == "2" %}9h-10h
+                                            {% elif period == "3" %}10h-11h
+                                            {% elif period == "4" %}11h-12h
+                                            {% elif period == "5" %}13h30-14h30
+                                            {% elif period == "6" %}14h30-15h30
+                                            {% elif period == "7" %}15h30-16h30
+                                            {% elif period == "8" %}16h30-17h30
+                                            {% endif %}
+                                        </td>
+                                        {% for day in "12345" %}
+                                        <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-900 text-center">
+                                            {% for slot in timetable_by_day|get_item:day %}
+                                                {% if slot.period == period|add:"0" %}
+                                                <div class="inline-block w-full p-2 mb-2 rounded-lg border border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 transition-all duration-200 transform hover:scale-105">
+                                                    <div class="font-medium text-blue-900 text-xs">{{ slot.subject.name }}</div>
+                                                    <div class="text-xs text-blue-700">{{ slot.teacher.get_full_name }}</div>
+                                                    <div class="flex justify-center space-x-1 mt-2">
+                                                        <a href="{% url 'subjects:timetable_slot_edit' slot_id=slot.id %}" 
+                                                           class="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                                            <i class="fas fa-edit"></i>
+                                                        </a>
+                                                        <a href="{% url 'subjects:timetable_slot_delete' slot_id=slot.id %}" 
+                                                           class="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                                                            <i class="fas fa-trash"></i>
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </td>
+                                        {% endfor %}
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-12">
+                            <i class="fas fa-calendar-times text-4xl text-gray-300 mb-4"></i>
+                            <h4 class="text-lg font-medium text-gray-900 mb-2">Aucun créneau programmé</h4>
+                            <p class="text-gray-500">Utilisez les formulaires à gauche pour créer des créneaux ou générer automatiquement l'emploi du temps.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Programmes pédagogiques -->
+        <div class="mt-8">
+            <div class="bg-white shadow rounded-lg">
+                <div class="px-4 py-5 sm:p-6">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900 mb-6">
+                        <i class="fas fa-book text-green-600 mr-2"></i>
+                        Programmes Pédagogiques Disponibles
+                    </h3>
+                    
+                    {% if programs %}
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {% for program in programs %}
+                        <div class="border rounded-lg p-4 {% if program.total_hours <= 4 %}border-green-200 bg-green-50{% elif program.total_hours <= 6 %}border-yellow-200 bg-yellow-50{% else %}border-red-200 bg-red-50{% endif %}">
+                            <h4 class="font-medium text-gray-900 mb-2">{{ program.subject.name }}</h4>
+                            <p class="text-sm text-gray-600 mb-3">{{ program.title|truncatechars:60 }}</p>
+                            <div class="flex items-center justify-between">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if program.total_hours <= 4 %}bg-green-100 text-green-800{% elif program.total_hours <= 6 %}bg-yellow-100 text-yellow-800{% else %}bg-red-100 text-red-800{% endif %}">
+                                    {{ program.total_hours }}h/semaine
+                                </span>
+                                <span class="text-xs text-gray-500">{{ program.difficulty_level }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-8">
+                        <i class="fas fa-exclamation-triangle text-3xl text-yellow-400 mb-4"></i>
+                        <p class="text-gray-500 mb-4">Aucun programme pédagogique trouvé pour cette classe.</p>
+                        <a href="{% url 'subjects:program_create' %}" 
+                           class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            <i class="fas fa-plus mr-2"></i>
+                            Créer un Programme
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modale de gestion de l'emploi du temps -->
+<div id="timetable-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-2xl">
+            <!-- En-tête de la modale -->
+            <div class="flex items-center justify-between p-6 border-b border-slate-200">
+                <h3 class="text-xl font-semibold text-slate-900">
+                    <i class="fas fa-calendar-alt text-blue-600 mr-3"></i>
+                    Gestion de l'Emploi du Temps
+                </h3>
+                <button onclick="closeTimetableModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <!-- Contenu de la modale -->
+            <div class="p-6">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Formulaire de configuration -->
+                    <div class="space-y-6">
+                        <h4 class="text-lg font-medium text-slate-900 mb-4">Configuration de la matière</h4>
+                        
+                        <!-- Sélection de la matière -->
+                        <div>
+                            <label for="subject-select" class="block text-sm font-medium text-slate-700 mb-2">
+                                Matière *
+                            </label>
+                            <select id="subject-select" onchange="updateSubjectHours()" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">Sélectionner une matière</option>
+                                {% for program in programs %}
+                                <option value="{{ program.subject.id }}" data-hours="{{ program.total_hours }}">
+                                    {{ program.subject.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Sélection de l'enseignant -->
+                        <div>
+                            <label for="timetable-teacher-select" class="block text-sm font-medium text-slate-700 mb-2">
+                                Enseignant *
+                            </label>
+                            <select id="timetable-teacher-select" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">Sélectionner un enseignant</option>
+                                {% for teacher in teachers %}
+                                <option value="{{ teacher.id }}">
+                                    {{ teacher.get_full_name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Nombre d'heures -->
+                        <div>
+                            <label for="subject-hours" class="block text-sm font-medium text-slate-700 mb-2">
+                                Heures par semaine *
+                            </label>
+                            <input type="number" id="subject-hours" min="1" max="36" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" readonly>
+                            <p class="text-sm text-slate-500 mt-1">Rempli automatiquement selon le programme pédagogique</p>
+                        </div>
+                        
+                        <!-- Sélection des jours -->
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-2">
+                                Jours de passage *
+                            </label>
+                            <div class="space-y-2">
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="days" value="1" class="mr-3 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                    <span class="text-sm text-slate-700">Lundi</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="days" value="2" class="mr-3 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                    <span class="text-sm text-slate-700">Mardi</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="days" value="3" class="mr-3 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                    <span class="text-sm text-slate-700">Mercredi</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="days" value="4" class="mr-3 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                    <span class="text-sm text-slate-700">Jeudi</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="days" value="5" class="mr-3 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                    <span class="text-sm text-slate-700">Vendredi</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Bouton de validation -->
+                        <button onclick="validateTimetable()" class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                            <i class="fas fa-check mr-2"></i>
+                            Valider et Créer l'Emploi du Temps
+                        </button>
+                    </div>
+                    
+                    <!-- Aperçu de l'emploi du temps actuel -->
+                    <div>
+                        <h4 class="text-lg font-medium text-slate-900 mb-4">Aperçu de l'emploi du temps</h4>
+                        
+                        {% if timetable_slots %}
+                        <div class="bg-slate-50 rounded-lg p-4">
+                            <div class="text-sm text-slate-600 mb-3">
+                                <strong>{{ timetable_slots|length }} créneaux</strong> programmés
+                            </div>
+                            
+                            <!-- Grille simplifiée -->
+                            <div class="grid grid-cols-6 gap-1 text-xs">
+                                <div class="font-medium text-slate-700">Horaire</div>
+                                <div class="font-medium text-slate-700">Lun</div>
+                                <div class="font-medium text-slate-700">Mar</div>
+                                <div class="font-medium text-slate-700">Mer</div>
+                                <div class="font-medium text-slate-700">Jeu</div>
+                                <div class="font-medium text-slate-700">Ven</div>
+                                
+                                {% for period in "12345678" %}
+                                <div class="text-xs text-slate-600 py-1">
+                                    {% if period == "1" %}07h30
+                                    {% elif period == "2" %}08h30
+                                    {% elif period == "3" %}09h30
+                                    {% elif period == "4" %}10h45
+                                    {% elif period == "5" %}11h45
+                                    {% elif period == "6" %}14h15
+                                    {% elif period == "7" %}15h15
+                                    {% elif period == "8" %}16h00
+                                    {% endif %}
+                                </div>
+                                
+                                {% for day_num in "12345" %}
+                                <div class="bg-white border border-slate-200 rounded p-1 min-h-[40px] flex items-center justify-center">
+                                    {% for slot in timetable_slots %}
+                                        {% if slot.day == day_num|add:"0" and slot.period == period|add:"0" %}
+                                            <div class="text-xs text-blue-900 font-medium text-center">
+                                                {{ slot.subject.name|truncatechars:8 }}
+                                            </div>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                                {% endfor %}
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="bg-slate-50 rounded-lg p-8 text-center">
+                            <div class="text-slate-400 mb-3">
+                                <i class="fas fa-calendar-times text-4xl"></i>
+                            </div>
+                            <p class="text-slate-600">Aucun emploi du temps configuré</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Script pour la gestion des formulaires -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Gestion de l'affichage conditionnel des champs de répartition personnalisée
+    const customFields = document.querySelectorAll('[id$="_hours"]');
+    
+    function toggleCustomFields() {
+        const selectedType = document.querySelector('input[name="repartition_type"]:checked');
+        if (!selectedType) return;
+        
+        const isCustom = selectedType.value === 'custom';
+        customFields.forEach(field => {
+            const container = field.closest('.space-y-4 > div');
+            if (container) {
+                container.style.display = isCustom ? 'block' : 'none';
+            }
+        });
+    }
+    
+    // Écouter les changements de type de répartition
+    document.querySelectorAll('input[name="repartition_type"]').forEach(radio => {
+        radio.addEventListener('change', toggleCustomFields);
+    });
+    
+    // Initialiser l'affichage
+    toggleCustomFields();
+    
+    // Validation des heures personnalisées
+    const bulkForm = document.querySelector('form[name="bulk_form"]') || document.querySelector('form');
+    if (bulkForm) {
+        bulkForm.addEventListener('submit', function(e) {
+            const selectedType = document.querySelector('input[name="repartition_type"]:checked');
+            if (selectedType && selectedType.value === 'custom') {
+                const hoursPerWeek = parseInt(document.getElementById('id_hours_per_week').value);
+                let totalCustom = 0;
+                
+                customFields.forEach(field => {
+                    totalCustom += parseInt(field.value) || 0;
+                });
+                
+                if (totalCustom !== hoursPerWeek) {
+                    e.preventDefault();
+                    alert(`La somme des heures par jour (${totalCustom}) doit être égale au total des heures par semaine (${hoursPerWeek})`);
+                }
+            }
+        });
+    }
+});
+
+// Fonction pour ouvrir la modale de gestion de l'emploi du temps
+function openTimetableModal() {
+    document.getElementById('timetable-modal').classList.remove('hidden');
+    document.body.classList.add('overflow-hidden');
+}
+
+// Fonction pour fermer la modale de gestion de l'emploi du temps
+function closeTimetableModal() {
+    document.getElementById('timetable-modal').classList.add('hidden');
+    document.body.classList.remove('overflow-hidden');
+}
+
+// Fonction pour mettre à jour les heures quand une matière est sélectionnée
+function updateSubjectHours() {
+    const subjectSelect = document.getElementById('subject-select');
+    const hoursInput = document.getElementById('subject-hours');
+    const selectedSubjectId = subjectSelect.value;
+    
+    if (selectedSubjectId) {
+        // Récupérer les heures depuis les programmes pédagogiques
+        const selectedOption = subjectSelect.options[subjectSelect.selectedIndex];
+        const hours = selectedOption.getAttribute('data-hours');
+        
+        if (hours) {
+            hoursInput.value = hours;
+        }
+    }
+}
+
+// Fonction pour valider et créer l'emploi du temps
+function validateTimetable() {
+    const subjectId = document.getElementById('subject-select').value;
+    const teacherId = document.getElementById('timetable-teacher-select').value;
+    const hours = document.getElementById('subject-hours').value;
+    const selectedDays = Array.from(document.querySelectorAll('input[name="days"]:checked')).map(cb => cb.value);
+    
+    if (!subjectId || !teacherId || !hours || selectedDays.length === 0) {
+        alert('Veuillez remplir tous les champs obligatoires');
+        return;
+    }
+    
+    // Envoyer la requête pour créer l'emploi du temps
+    const formData = new FormData();
+    formData.append('subject', subjectId);
+    formData.append('hours', hours);
+    formData.append('days', JSON.stringify(selectedDays));
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+    
+    fetch("{% url 'subjects:create_timetable_slots' class_id=school_class.id %}", {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Emploi du temps mis à jour avec succès');
+            closeTimetableModal();
+            // Recharger la page pour afficher les changements
+            location.reload();
+        } else {
+            alert(data.error || 'Erreur lors de la mise à jour');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        alert('Erreur lors de la mise à jour de l\'emploi du temps');
+    });
+}
+
+// Fermer avec Echap
+window.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeTimetableModal();
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Moratoire approuvé - Finances{% endblock %}
+{% block page_title %}Moratoire approuvé{% endblock %}
+{% block breadcrumb_current %}Approuvé{% endblock %}
+
+{% block page_actions %}
+<div class="flex items-center gap-3">
+    <a href="{% url 'finances:moratorium_list' %}" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2 px-4 rounded-xl transition-all duration-200">
+        <i class="fas fa-arrow-left mr-2"></i>Retour
+    </a>
+    <a href="{% url 'finances:moratorium_pdf' moratorium.pk %}" 
+       class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg">
+        <i class="fas fa-print mr-2"></i>Imprimer
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <!-- Message de succès -->
+    <div class="mb-6 card-hover bg-emerald-50 rounded-2xl border border-emerald-200 p-6">
+        <div class="flex items-center">
+            <div class="flex-shrink-0">
+                <i class="fas fa-check-circle text-emerald-600 text-2xl"></i>
+            </div>
+            <div class="ml-4">
+                <h3 class="text-lg font-semibold text-emerald-900">Moratoire approuvé avec succès !</h3>
+                <p class="text-emerald-700 mt-1">Le moratoire a été approuvé et peut maintenant être imprimé.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Détails du moratoire -->
+    <div class="card-hover bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-200/60 bg-emerald-50">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-file-alt text-emerald-600 text-xl"></i>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-lg font-semibold text-emerald-900">Détails du moratoire</h3>
+                    </div>
+                </div>
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-emerald-100 text-emerald-800">
+                    <i class="fas fa-check mr-1"></i>Approuvé
+                </span>
+            </div>
+        </div>
+        
+        <div class="p-6 space-y-6">
+            <!-- Informations de l'étudiant -->
+            <div class="bg-slate-50 rounded-xl p-4">
+                <h4 class="text-sm font-medium text-slate-900 mb-3">Informations de l'étudiant</h4>
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-semibold text-lg">
+                        {{ moratorium.student.first_name.0 }}{{ moratorium.student.last_name.0 }}
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-lg font-medium text-slate-900">
+                            {{ moratorium.student.first_name }} {{ moratorium.student.last_name }}
+                        </p>
+                        <p class="text-sm text-slate-500">Matricule: {{ moratorium.student.matricule }}</p>
+                        <p class="text-sm text-slate-500">Classe: {{ moratorium.student.current_class }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Informations du moratoire -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-slate-50 rounded-xl p-4">
+                    <h4 class="text-sm font-medium text-slate-900 mb-3">Détails de la tranche</h4>
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-slate-600">Tranche :</span>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                Tranche {{ moratorium.tranche.number }}
+                            </span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-slate-600">Montant concerné :</span>
+                            <span class="text-sm font-semibold text-slate-900">{{ moratorium.amount|floatformat:0 }} FCFA</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-slate-600">Nouvelle date d'échéance :</span>
+                            <span class="text-sm text-slate-900">{{ moratorium.new_due_date|date:"d/m/Y" }}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-slate-50 rounded-xl p-4">
+                    <h4 class="text-sm font-medium text-slate-900 mb-3">Informations d'approbation</h4>
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-slate-600">Date d'approbation :</span>
+                            <span class="text-sm text-slate-900">{{ moratorium.approved_at|date:"d/m/Y H:i" }}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-slate-600">Approuvé par :</span>
+                            <span class="text-sm text-slate-900">
+                                {% if moratorium.approved_by %}
+                                    {{ moratorium.approved_by.get_full_name|default:moratorium.approved_by.username }}
+                                {% else %}
+                                    <span class="text-slate-400">Non spécifié</span>
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-slate-600">Date de demande :</span>
+                            <span class="text-sm text-slate-900">{{ moratorium.requested_at|date:"d/m/Y" }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Motif du moratoire -->
+            <div class="bg-slate-50 rounded-xl p-4">
+                <h4 class="text-sm font-medium text-slate-900 mb-3">Motif du moratoire</h4>
+                <p class="text-sm text-slate-700 leading-relaxed">{{ moratorium.reason }}</p>
+            </div>
+            
+            <!-- Actions -->
+            <div class="flex items-center justify-center gap-4 pt-6 border-t border-slate-200">
+                <a href="{% url 'finances:moratorium_list' %}" 
+                   class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 px-6 rounded-xl transition-all duration-200">
+                    <i class="fas fa-list mr-2"></i>Liste des moratoires
+                </a>
+                <a href="{% url 'finances:moratorium_pdf' moratorium.pk %}" 
+                   class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg">
+                    <i class="fas fa-print mr-2"></i>Imprimer le moratoire
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Informations supplémentaires -->
+    <div class="mt-6 card-hover bg-blue-50 rounded-2xl border border-blue-200 p-6">
+        <div class="flex items-start">
+            <div class="flex-shrink-0">
+                <i class="fas fa-info-circle text-blue-600 text-xl"></i>
+            </div>
+            <div class="ml-3">
+                <h4 class="text-sm font-medium text-blue-900">Informations importantes</h4>
+                <div class="mt-2 text-sm text-blue-700 space-y-1">
+                    <p>• Le moratoire approuvé est maintenant effectif</p>
+                    <p>• La nouvelle date d'échéance est : {{ moratorium.new_due_date|date:"d/m/Y" }}</p>
+                    <p>• Le montant concerné : {{ moratorium.amount|floatformat:0 }} FCFA</p>
+                    <p>• Vous pouvez imprimer ce document pour le remettre aux parents</p>
+                    <p>• Ce moratoire sera pris en compte dans les calculs de retard de paiement</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

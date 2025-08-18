@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}
+    {% if document %}Modifier le document{% else %}Nouveau document{% endif %} - {{ student.get_full_name }}
+{% endblock %}
+
+{% block page_title %}
+    {% if document %}Modifier le document{% else %}Nouveau document{% endif %}
+{% endblock %}
+
+{% block breadcrumb_current %}
+    {% if document %}Modifier{% else %}Nouveau{% endif %}
+{% endblock %}
+
+{% block page_actions %}
+<div class="flex items-center gap-3">
+    <a href="{% url 'documents:document_list' student.pk %}" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2 px-4 rounded-xl transition-all duration-200">
+        <i class="fas fa-arrow-left mr-2"></i>Retour
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <!-- En-tête de l'étudiant -->
+    <div class="card-hover bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden mb-6">
+        <div class="px-6 py-4 border-b border-slate-200/60 bg-gradient-to-r from-blue-50 to-indigo-50">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-lg mr-4">
+                    <i class="fas fa-user-graduate"></i>
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold text-slate-900">{{ student.get_full_name }}</h2>
+                    <p class="text-slate-600">
+                        Matricule: {{ student.matricule }} | 
+                        Classe: {{ student.current_class.name|default:"Non assigné" }}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulaire -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-200/60">
+            <h3 class="text-lg font-semibold text-slate-900">
+                {% if document %}Modifier le document{% else %}Ajouter un nouveau document{% endif %}
+            </h3>
+        </div>
+        
+        <form method="post" enctype="multipart/form-data" class="p-6">
+            {% csrf_token %}
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Catégorie -->
+                <div class="md:col-span-2">
+                    <label for="{{ form.category.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                        Catégorie <span class="text-red-500">*</span>
+                    </label>
+                    {% render_field form.category class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" %}
+                    {% if form.category.errors %}
+                        <div class="mt-2 text-sm text-red-600">
+                            {% for error in form.category.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Titre -->
+                <div class="md:col-span-2">
+                    <label for="{{ form.title.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                        Titre du document <span class="text-red-500">*</span>
+                    </label>
+                    {% render_field form.title class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="Ex: Bulletin du 1er trimestre" %}
+                    {% if form.title.errors %}
+                        <div class="mt-2 text-sm text-red-600">
+                            {% for error in form.title.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Fichier -->
+                <div class="md:col-span-2">
+                    <label for="{{ form.file.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                        Fichier <span class="text-red-500">*</span>
+                    </label>
+                    {% render_field form.file class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" %}
+                    <p class="mt-2 text-sm text-slate-500">
+                        Formats acceptés: PDF, DOC, DOCX, JPG, JPEG, PNG (max 10MB)
+                    </p>
+                    {% if form.file.errors %}
+                        <div class="mt-2 text-sm text-red-600">
+                            {% for error in form.file.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Description -->
+                <div class="md:col-span-2">
+                    <label for="{{ form.description.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                        Description
+                    </label>
+                    {% render_field form.description class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="Description optionnelle du document" %}
+                    {% if form.description.errors %}
+                        <div class="mt-2 text-sm text-red-600">
+                            {% for error in form.description.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Date d'expiration -->
+                <div>
+                    <label for="{{ form.expiry_date.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                        Date d'expiration
+                    </label>
+                    {% render_field form.expiry_date class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" %}
+                    <p class="mt-2 text-sm text-slate-500">
+                        Laissez vide si le document n'expire pas
+                    </p>
+                    {% if form.expiry_date.errors %}
+                        <div class="mt-2 text-sm text-red-600">
+                            {% for error in form.expiry_date.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Document valide -->
+                <div class="flex items-center">
+                    <div class="flex items-center h-5">
+                        {% render_field form.is_valid class="w-4 h-4 text-blue-600 bg-slate-100 border-slate-300 rounded focus:ring-blue-500 focus:ring-2" %}
+                    </div>
+                    <label for="{{ form.is_valid.id_for_label }}" class="ml-2 text-sm font-medium text-slate-700">
+                        Document valide
+                    </label>
+                </div>
+                {% if form.is_valid.errors %}
+                    <div class="mt-2 text-sm text-red-600">
+                        {% for error in form.is_valid.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Erreurs générales -->
+            {% if form.non_field_errors %}
+                <div class="mt-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-exclamation-triangle text-red-400"></i>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-sm font-medium text-red-800">
+                                Erreurs de validation
+                            </h3>
+                            <div class="mt-2 text-sm text-red-700">
+                                {% for error in form.non_field_errors %}
+                                    <p>{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Boutons d'action -->
+            <div class="flex items-center justify-end gap-4 mt-8 pt-6 border-t border-slate-200">
+                <a href="{% url 'documents:document_list' student.pk %}" 
+                   class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 px-6 rounded-xl transition-all duration-200">
+                    Annuler
+                </a>
+                <button type="submit" 
+                        class="btn-gradient text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200">
+                    <i class="fas fa-save mr-2"></i>
+                    {% if document %}Modifier{% else %}Enregistrer{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %} 

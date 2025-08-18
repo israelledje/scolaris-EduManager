@@ -1,0 +1,325 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}Liste des Paiements - Finances{% endblock %}
+{% block page_title %}Liste des Paiements{% endblock %}
+{% block breadcrumb_current %}Paiements{% endblock %}
+
+{% block page_actions %}
+<div class="flex items-center gap-3">
+    <a href="{% url 'finances:payment_create' %}" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-xl transition-all duration-200">
+        <i class="fas fa-plus mr-2"></i>Paiement Tranche
+    </a>
+    <a href="{% url 'finances:inscription_payment_create' %}" class="btn-gradient text-white font-semibold py-2 px-4 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg">
+        <i class="fas fa-user-plus mr-2"></i>Paiement Inscription
+    </a>
+    <a href="{% url 'finances:extra_fee_payment_create' %}" class="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-xl transition-all duration-200">
+        <i class="fas fa-receipt mr-2"></i>Paiement Frais Annexes
+    </a>
+    <a href="{% url 'finances:bulk_payment_create' %}" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 px-4 rounded-xl transition-all duration-200">
+        <i class="fas fa-list mr-2"></i>Paiements en Lot
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Statistiques -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="card-hover bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-credit-card text-blue-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-slate-500 text-sm font-medium">Total Paiements</p>
+                    <p class="text-2xl font-bold text-slate-900">{{ total_payments }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card-hover bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-money-bill-wave text-green-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-slate-500 text-sm font-medium">Montant Total</p>
+                    <p class="text-2xl font-bold text-slate-900">{{ total_amount|floatformat:0 }} FCFA</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card-hover bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-user-plus text-amber-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-slate-500 text-sm font-medium">Paiements Inscription</p>
+                    <p class="text-2xl font-bold text-slate-900">{{ total_inscription_payments }}</p>
+                    <p class="text-sm text-slate-500">{{ total_inscription_amount|floatformat:0 }} FCFA</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card-hover bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-layer-group text-purple-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-slate-500 text-sm font-medium">Paiements Tranches</p>
+                    <p class="text-2xl font-bold text-slate-900">{{ total_tranche_payments }}</p>
+                    <p class="text-sm text-slate-500">{{ total_tranche_amount|floatformat:0 }} FCFA</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulaire de recherche -->
+    <div class="card-hover bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6">
+        <h3 class="text-lg font-semibold text-slate-900 mb-4">
+            <i class="fas fa-search mr-2"></i>Recherche et Filtres
+        </h3>
+        
+        <form method="get" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div>
+                <label for="{{ search_form.student_name.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">Recherche par nom</label>
+                {% render_field search_form.student_name class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="Nom, prénom ou matricule" %}
+            </div>
+            
+            <div>
+                <label for="{{ search_form.school_class.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">Classe</label>
+                {% render_field search_form.school_class class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="Sélectionner une classe" %}
+            </div>
+            
+            <div>
+                <label for="{{ search_form.payment_type.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">Type de paiement</label>
+                {% render_field search_form.payment_type class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="Tous les types" %}
+            </div>
+            
+            <div>
+                <label for="{{ search_form.mode.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">Mode de paiement</label>
+                {% render_field search_form.mode class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="Tous les modes" %}
+            </div>
+            
+            <div>
+                <label for="{{ search_form.student.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">Étudiant (sélection)</label>
+                {% render_field search_form.student class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="Sélectionner un étudiant" %}
+            </div>
+            
+            <div>
+                <label for="{{ search_form.tranche.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">Tranche</label>
+                {% render_field search_form.tranche class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="Sélectionner une tranche" %}
+            </div>
+            
+            <div>
+                <label for="{{ search_form.date_from.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">Date début</label>
+                {% render_field search_form.date_from class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" type="date" %}
+            </div>
+            
+            <div>
+                <label for="{{ search_form.date_to.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">Date fin</label>
+                {% render_field search_form.date_to class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" type="date" %}
+            </div>
+            
+            <div class="flex items-end gap-2">
+                <button type="submit" class="btn-gradient text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200">
+                    <i class="fas fa-search mr-2"></i>Rechercher
+                </button>
+                <a href="{% url 'finances:payment_list' %}" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 px-4 rounded-xl transition-all duration-200">
+                    <i class="fas fa-times"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Liste des paiements -->
+    <div class="card-hover bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-200/60">
+            <h3 class="text-lg font-semibold text-slate-900">
+                <i class="fas fa-list mr-2"></i>Liste des Paiements
+            </h3>
+        </div>
+        
+        {% if page_obj %}
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-slate-50 border-b border-slate-200">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Étudiant</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Classe</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Type</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Détails</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Montant</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Mode</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Reçu</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-slate-200">
+                        {% for payment in page_obj %}
+                        <tr class="hover:bg-slate-50 transition-colors duration-200">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                    {{ payment.payment_date|date:"d/m/Y" }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-xs">
+                                        {{ payment.student.first_name.0 }}{{ payment.student.last_name.0 }}
+                                    </div>
+                                    <div class="ml-3">
+                                        <div class="text-sm font-medium text-slate-900">
+                                            {{ payment.student.last_name.upper }} {{ payment.student.first_name }}
+                                        </div>
+                                        <div class="text-sm text-slate-500">{{ payment.student.matricule }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-slate-900">{{ payment.student.current_class.name }}</div>
+                                <div class="text-sm text-slate-500">{{ payment.student.current_class.level.name }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {% if payment.payment_type == 'inscription' %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                                        <i class="fas fa-user-plus mr-1"></i>Inscription
+                                    </span>
+                                {% else %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                        <i class="fas fa-layer-group mr-1"></i>Tranche
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {% if payment.payment_type == 'inscription' %}
+                                    <div class="text-sm font-medium text-slate-900">Frais d'inscription</div>
+                                    <div class="text-sm text-slate-500">{{ payment.fee_structure.year.annee }}</div>
+                                {% else %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                                        Tranche {{ payment.tranche.number }}
+                                    </span>
+                                    <div class="text-sm text-slate-500 mt-1">{{ payment.tranche.fee_structure.year.annee }}</div>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-bold text-slate-900">{{ payment.amount|floatformat:0 }} FCFA</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                    {% if payment.mode == 'cash' %}bg-green-100 text-green-800
+                                    {% elif payment.mode == 'cheque' %}bg-blue-100 text-blue-800
+                                    {% elif payment.mode == 'mobile' %}bg-amber-100 text-amber-800
+                                    {% else %}bg-slate-100 text-slate-800{% endif %}">
+                                    {{ payment.get_mode_display }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <code class="text-sm bg-slate-100 px-2 py-1 rounded">{{ payment.receipt }}</code>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <div class="flex items-center gap-2">
+                                    <a href="{% if payment.payment_type == 'inscription' %}{% url 'finances:payment_detail_typed' 'inscription' payment.pk %}{% else %}{% url 'finances:payment_detail_typed' 'tranche' payment.pk %}{% endif %}" 
+                                       class="text-blue-600 hover:text-blue-900 transition-colors duration-200" title="Voir les détails">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{% if payment.payment_type == 'inscription' %}{% url 'finances:payment_receipt_typed' 'inscription' payment.pk %}{% else %}{% url 'finances:payment_receipt_typed' 'tranche' payment.pk %}{% endif %}" 
+                                       class="text-green-600 hover:text-green-900 transition-colors duration-200" title="Imprimer le reçu">
+                                        <i class="fas fa-print"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+            <div class="px-6 py-4 border-t border-slate-200">
+                <nav class="flex items-center justify-between">
+                    <div class="flex-1 flex justify-between sm:hidden">
+                        {% if page_obj.has_previous %}
+                            <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.student %}&student={{ request.GET.student }}{% endif %}{% if request.GET.tranche %}&tranche={{ request.GET.tranche }}{% endif %}{% if request.GET.mode %}&mode={{ request.GET.mode }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}" 
+                               class="relative inline-flex items-center px-4 py-2 border border-slate-300 text-sm font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50">
+                                Précédent
+                            </a>
+                        {% endif %}
+                        {% if page_obj.has_next %}
+                            <a href="?page={{ page_obj.next_page_number }}{% if request.GET.student %}&student={{ request.GET.student }}{% endif %}{% if request.GET.tranche %}&tranche={{ request.GET.tranche }}{% endif %}{% if request.GET.mode %}&mode={{ request.GET.mode }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}" 
+                               class="ml-3 relative inline-flex items-center px-4 py-2 border border-slate-300 text-sm font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50">
+                                Suivant
+                            </a>
+                        {% endif %}
+                    </div>
+                    <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                        <div>
+                            <p class="text-sm text-slate-700">
+                                Affichage de <span class="font-medium">{{ page_obj.start_index }}</span> à <span class="font-medium">{{ page_obj.end_index }}</span> 
+                                sur <span class="font-medium">{{ page_obj.paginator.count }}</span> résultats
+                            </p>
+                        </div>
+                        <div>
+                            <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                                {% if page_obj.has_previous %}
+                                    <a href="?page=1{% if request.GET.student %}&student={{ request.GET.student }}{% endif %}{% if request.GET.tranche %}&tranche={{ request.GET.tranche }}{% endif %}{% if request.GET.mode %}&mode={{ request.GET.mode }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}" 
+                                       class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-slate-300 bg-white text-sm font-medium text-slate-500 hover:bg-slate-50">
+                                        <i class="fas fa-angle-double-left"></i>
+                                    </a>
+                                    <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.student %}&student={{ request.GET.student }}{% endif %}{% if request.GET.tranche %}&tranche={{ request.GET.tranche }}{% endif %}{% if request.GET.mode %}&mode={{ request.GET.mode }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}" 
+                                       class="relative inline-flex items-center px-2 py-2 border border-slate-300 bg-white text-sm font-medium text-slate-500 hover:bg-slate-50">
+                                        <i class="fas fa-angle-left"></i>
+                                    </a>
+                                {% endif %}
+
+                                {% for num in page_obj.paginator.page_range %}
+                                    {% if page_obj.number == num %}
+                                        <span class="relative inline-flex items-center px-4 py-2 border border-blue-500 bg-blue-50 text-sm font-medium text-blue-600">
+                                            {{ num }}
+                                        </span>
+                                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                        <a href="?page={{ num }}{% if request.GET.student %}&student={{ request.GET.student }}{% endif %}{% if request.GET.tranche %}&tranche={{ request.GET.tranche }}{% endif %}{% if request.GET.mode %}&mode={{ request.GET.mode }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}" 
+                                           class="relative inline-flex items-center px-4 py-2 border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50">
+                                            {{ num }}
+                                        </a>
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% if page_obj.has_next %}
+                                    <a href="?page={{ page_obj.next_page_number }}{% if request.GET.student %}&student={{ request.GET.student }}{% endif %}{% if request.GET.tranche %}&tranche={{ request.GET.tranche }}{% endif %}{% if request.GET.mode %}&mode={{ request.GET.mode }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}" 
+                                       class="relative inline-flex items-center px-2 py-2 border border-slate-300 bg-white text-sm font-medium text-slate-500 hover:bg-slate-50">
+                                        <i class="fas fa-angle-right"></i>
+                                    </a>
+                                    <a href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.student %}&student={{ request.GET.student }}{% endif %}{% if request.GET.tranche %}&tranche={{ request.GET.tranche }}{% endif %}{% if request.GET.mode %}&mode={{ request.GET.mode }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}" 
+                                       class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-slate-300 bg-white text-sm font-medium text-slate-500 hover:bg-slate-50">
+                                        <i class="fas fa-angle-double-right"></i>
+                                    </a>
+                                {% endif %}
+                            </nav>
+                        </div>
+                    </div>
+                </nav>
+            </div>
+            {% endif %}
+
+        {% else %}
+            <div class="px-6 py-12 text-center">
+                <div class="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-exclamation-triangle text-amber-600 text-2xl"></i>
+                </div>
+                <h3 class="text-lg font-medium text-slate-900 mb-2">Aucun paiement trouvé</h3>
+                <p class="text-slate-500 mb-6">Aucun paiement ne correspond à vos critères de recherche.</p>
+                <a href="{% url 'finances:payment_create' %}" class="btn-gradient text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200">
+                    <i class="fas fa-plus mr-2"></i>Enregistrer le premier paiement
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

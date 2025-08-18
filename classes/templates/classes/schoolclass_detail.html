@@ -1,0 +1,1931 @@
+{% extends "base.html" %}
+{% load dict_extras %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+    /* Couleurs des créneaux basées sur l'ID de la matière */
+    .slot-color-1 { background-color: #dbeafe; border-color: #93c5fd; }
+    .slot-color-2 { background-color: #dcfce7; border-color: #86efac; }
+    .slot-color-3 { background-color: #f3e8ff; border-color: #c084fc; }
+    .slot-color-4 { background-color: #fce7f3; border-color: #f9a8d4; }
+    .slot-color-5 { background-color: #e0e7ff; border-color: #a5b4fc; }
+    .slot-color-6 { background-color: #fef3c7; border-color: #fcd34d; }
+    .slot-color-7 { background-color: #fee2e2; border-color: #fca5a5; }
+    .slot-color-8 { background-color: #ccfbf1; border-color: #5eead4; }
+    
+    /* Couleurs de texte correspondantes */
+    .slot-color-1 .text-xs { color: #1e40af; }
+    .slot-color-2 .text-xs { color: #166534; }
+    .slot-color-3 .text-xs { color: #7c3aed; }
+    .slot-color-4 .text-xs { color: #be185d; }
+    .slot-color-5 .text-xs { color: #3730a3; }
+    .slot-color-6 .text-xs { color: #92400e; }
+    .slot-color-7 .text-xs { color: #991b1b; }
+    .slot-color-8 .text-xs { color: #134e4a; }
+</style>
+{% endblock %}
+
+
+{% block page_title %}{{ schoolclass.name }}{% endblock %}
+
+{% block page_actions %}
+<div class="flex items-center gap-3">
+    <button onclick="window.open('{% url 'classes:schoolclass_print_pdf' schoolclass.id %}', '_blank')" class="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors duration-200">
+        <i class="fas fa-print text-slate-500"></i>
+        <span class="text-slate-700 font-medium">Imprimer</span>
+    </button>
+    <button onclick="exportClass()" class="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors duration-200">
+        <i class="fas fa-download text-slate-500"></i>
+        <span class="text-slate-700 font-medium">Exporter</span>
+    </button>
+    <button onclick="openClassModal()" class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl">
+        <i class="fas fa-edit"></i>
+        <span class="font-medium">Modifier</span>
+    </button>
+</div>
+{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+<div class="max-w-7xl mx-auto space-y-6">
+    
+    <!-- Class Header -->
+    <div class="bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 rounded-2xl overflow-hidden shadow-xl">
+        <div class="relative p-8 text-white">
+            <!-- Background Pattern -->
+            <div class="absolute inset-0 bg-black/10"></div>
+            <div class="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent"></div>
+            
+            <div class="relative flex flex-col lg:flex-row items-start lg:items-center gap-6">
+                <!-- Class Icon -->
+                <div class="w-24 h-24 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center border-4 border-white/20 shadow-2xl">
+                    <i class="fas fa-door-open text-4xl text-white/90"></i>
+                </div>
+
+                <!-- Class Info -->
+                <div class="flex-1">
+                    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                        <div>
+                            <h1 class="text-4xl font-bold mb-3">{{ schoolclass.name }}</h1>
+                            <div class="flex flex-wrap gap-4 text-white/90">
+                                <div class="flex items-center gap-2">
+                                    <i class="fas fa-layer-group"></i>
+                                    <span>{{ schoolclass.level }}</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <i class="fas fa-user-tie"></i>
+                                    <span>{{ schoolclass.main_teacher|default:'Non assigné' }}</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <i class="fas fa-calendar"></i>
+                                    <span>{{ schoolclass.year }}</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                    <span>{{ schoolclass.classroom|default:'Salle non définie' }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quick Stats -->
+                        <div class="flex gap-6">
+                            <div class="text-center">
+                                <div class="text-3xl font-bold">{{ students|length }}</div>
+                                <div class="text-sm text-white/80">Élèves</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-3xl font-bold">{{ schoolclass.capacity }}</div>
+                                <div class="text-sm text-white/80">Capacité</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-3xl font-bold">{{ schoolclass.subjects.count|default:0 }}</div>
+                                <div class="text-sm text-white/80">Matières</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Occupation Bar -->
+                    <div class="mt-4">
+                        <div class="flex items-center justify-between text-sm text-white/80 mb-2">
+                            <span>Taux d'occupation</span>
+                            <span>{{ students|length }}/{{ schoolclass.capacity }} ({% widthratio students|length schoolclass.capacity 100 %}%)</span>
+                        </div>
+                        <div class="w-full bg-white/20 rounded-full h-3">
+                            <div class="bg-gradient-to-r from-emerald-400 to-teal-400 h-3 rounded-full transition-all duration-500" 
+                                 style="width: {% widthratio students|length schoolclass.capacity 100 %}%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">
+        <div class="border-b border-slate-200">
+            <nav class="flex overflow-x-auto" id="class-tabs" style="scrollbar-width: thin; scrollbar-color: #cbd5e1 #f1f5f9;">
+                <button data-tab="overview" class="tab-btn flex items-center gap-2 px-6 py-4 border-b-2 border-blue-500 text-blue-600 bg-blue-50 font-medium text-sm transition-all duration-200 whitespace-nowrap">
+                    <i class="fas fa-chart-pie"></i>
+                    Vue d'ensemble
+                </button>
+                <button data-tab="students" class="tab-btn flex items-center gap-2 px-6 py-4 border-b-2 border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50 font-medium text-sm transition-all duration-200 whitespace-nowrap">
+                    <i class="fas fa-user-graduate"></i>
+                    Élèves ({{ students|length }})
+                </button>
+                
+                <button data-tab="subjects" class="tab-btn flex items-center gap-2 px-6 py-4 border-b-2 border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50 font-medium text-sm transition-all duration-200 whitespace-nowrap">
+                    <i class="fas fa-book"></i>
+                    Matières
+                </button>
+                <button data-tab="pedagogy" class="tab-btn flex items-center gap-2 px-6 py-4 border-b-2 border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50 font-medium text-sm transition-all duration-200 whitespace-nowrap">
+                    <i class="fas fa-graduation-cap"></i>
+                    Programme Pédagogique
+                </button>
+                <button data-tab="timetable" class="tab-btn flex items-center gap-2 px-6 py-4 border-b-2 border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50 font-medium text-sm transition-all duration-200 whitespace-nowrap">
+                    <i class="fas fa-calendar-alt"></i>
+                    Emploi du temps
+                </button>
+                <button data-tab="performance" class="tab-btn flex items-center gap-2 px-6 py-4 border-b-2 border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50 font-medium text-sm transition-all duration-200 whitespace-nowrap">
+                    <i class="fas fa-chart-line"></i>
+                    Performance
+                </button>
+            </nav>
+        </div>
+        <div class="p-6">
+            <div class="tab-content" id="tab-overview">
+                <!-- Overview Tab -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Class Statistics -->
+                    <div class="lg:col-span-2 space-y-6">
+                        <!-- General Information -->
+                        <div class="bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl p-6 border border-slate-200/50">
+                            <h3 class="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                                <i class="fas fa-info-circle text-slate-600"></i>
+                                Informations générales
+                            </h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="text-sm font-medium text-slate-600">Niveau</label>
+                                    <div class="text-lg font-semibold text-slate-900">{{ schoolclass.level }}</div>
+                                </div>
+                                <div>
+                                    <label class="text-sm font-medium text-slate-600">Année scolaire</label>
+                                    <div class="text-lg font-semibold text-slate-900">{{ schoolclass.year }}</div>
+                                </div>
+                                <div>
+                                    <label class="text-sm font-medium text-slate-600">Professeur titulaire</label>
+                                    <div id="main-teacher-display">
+                                        {% include 'classes/partials/main_teacher_display.html' with school_class=schoolclass %}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="text-sm font-medium text-slate-600">Salle de classe</label>
+                                    <div class="text-lg font-semibold text-slate-900">{{ schoolclass.classroom|default:"Non définie" }}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Performance Overview -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-4 border border-emerald-200/50">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <div class="text-2xl font-bold text-slate-900">14.2</div>
+                                        <div class="text-emerald-700 text-sm font-medium">Moyenne générale</div>
+                                    </div>
+                                    <div class="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-lg flex items-center justify-center text-white">
+                                        <i class="fas fa-chart-line"></i>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-200/50">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <div class="text-2xl font-bold text-slate-900">87%</div>
+                                        <div class="text-blue-700 text-sm font-medium">Taux de présence</div>
+                                    </div>
+                                    <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-lg flex items-center justify-center text-white">
+                                        <i class="fas fa-user-check"></i>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-4 border border-amber-200/50">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <div class="text-2xl font-bold text-slate-900">92%</div>
+                                        <div class="text-amber-700 text-sm font-medium">Taux de réussite</div>
+                                    </div>
+                                    <div class="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-500 rounded-lg flex items-center justify-center text-white">
+                                        <i class="fas fa-trophy"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions & Info -->
+                    <div class="space-y-6">
+                        <!-- Status Card -->
+                        <div class="bg-white rounded-xl p-6 border border-slate-200">
+                            <h3 class="text-lg font-semibold text-slate-900 mb-4">Statut de la classe</h3>
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-slate-600">État</span>
+                                    {% if schoolclass.is_active %}
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+                                        <div class="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-2"></div>
+                                        Active
+                                    </span>
+                                    {% else %}
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                        <div class="w-1.5 h-1.5 bg-red-500 rounded-full mr-2"></div>
+                                        Inactive
+                                    </span>
+                                    {% endif %}
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-slate-600">Effectif</span>
+                                    <span class="font-semibold text-slate-900">{{ students|length }}/{{ schoolclass.capacity }}</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-slate-600">Places libres</span>
+                                    <span class="font-semibold text-slate-900">{{ free_places }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quick Actions -->
+                        <div class="bg-white rounded-xl p-6 border border-slate-200">
+                            <h3 class="text-lg font-semibold text-slate-900 mb-4">Actions rapides</h3>
+                            <div class="space-y-3">
+                                <button class="w-full flex items-center gap-3 px-4 py-3 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg transition-colors duration-200">
+                                    <i class="fas fa-user-plus"></i>
+                                    Ajouter un élève
+                                </button>
+                                <button class="w-full flex items-center gap-3 px-4 py-3 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-lg transition-colors duration-200">
+                                    <i class="fas fa-calendar-plus"></i>
+                                    Planifier un cours
+                                </button>
+                                <button class="w-full flex items-center gap-3 px-4 py-3 bg-amber-100 hover:bg-amber-200 text-amber-700 rounded-lg transition-colors duration-200">
+                                    <i class="fas fa-chart-bar"></i>
+                                    Voir les notes
+                                </button>
+                                <button class="w-full flex items-center gap-3 px-4 py-3 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-lg transition-colors duration-200">
+                                    <i class="fas fa-envelope"></i>
+                                    Contacter les parents
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="mt-8">
+                    <h3 class="text-xl font-bold text-slate-900 mb-4">Activité récente</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-center gap-4 p-4 bg-slate-50 rounded-xl">
+                            <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                <i class="fas fa-user-plus text-blue-600"></i>
+                            </div>
+                            <div class="flex-1">
+                                <div class="font-semibold text-slate-900">Nouvel élève inscrit</div>
+                                <div class="text-sm text-slate-500">Marie Dubois a rejoint la classe</div>
+                            </div>
+                            <div class="text-sm text-slate-400">Il y a 2 heures</div>
+                        </div>
+                        
+                        <div class="flex items-center gap-4 p-4 bg-slate-50 rounded-xl">
+                            <div class="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
+                                <i class="fas fa-check-circle text-emerald-600"></i>
+                            </div>
+                            <div class="flex-1">
+                                <div class="font-semibold text-slate-900">Notes saisies</div>
+                                <div class="text-sm text-slate-500">Contrôle de mathématiques - 28 élèves</div>
+                            </div>
+                            <div class="text-sm text-slate-400">Hier</div>
+                        </div>
+                        
+                        <div class="flex items-center gap-4 p-4 bg-slate-50 rounded-xl">
+                            <div class="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
+                                <i class="fas fa-calendar text-amber-600"></i>
+                            </div>
+                            <div class="flex-1">
+                                <div class="font-semibold text-slate-900">Conseil de classe programmé</div>
+                                <div class="text-sm text-slate-500">Réunion prévue le 25 janvier à 14h00</div>
+                            </div>
+                            <div class="text-sm text-slate-400">Il y a 3 jours</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="tab-content" id="tab-students" style="display:none;">
+                <div class="bg-white rounded-xl border border-slate-200 p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-lg font-semibold text-slate-900">Liste des élèves</h3>
+                        <button class="text-blue-600 hover:text-blue-700 text-sm font-medium">Ajouter un élève</button>
+                    </div>
+                    {% include 'classes/partials/class_students_list.html' %}
+                </div>
+            </div>
+            
+            <div class="tab-content" id="tab-subjects" style="display:none;">
+                <div class="space-y-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-2xl font-bold text-slate-900">Matières affectées à la classe</h3>
+                        <button 
+                            onclick="openAssignmentModal('{% url 'teachers:teaching_assignment_create_htmx' schoolclass.id %}', 'Affecter une matière à <strong>{{ schoolclass.name }}</strong><br><small>Année : {{ schoolclass.year }}</small>', 'Affecter une matière')"
+                            class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl">
+                            <i class="fas fa-plus"></i>
+                            <span class="font-medium">Affecter une matière</span>
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-slate-200 rounded-xl overflow-hidden bg-white shadow">
+                            <thead class="bg-slate-50">
+                                <tr>
+                                    <th class="px-2 py-3 text-center"><input type="checkbox" id="bulk-select-all-assignment"></th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Matière</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Code</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Coefficient</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Heures/semaine</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Enseignant</th>
+                                    <th class="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                {% for ta in teaching_assignments %}
+                                <tr>
+                                    <td class="px-2 py-2 text-center"><input type="checkbox" class="bulk-checkbox-assignment" value="{{ ta.id }}"></td>
+                                    <td class="px-4 py-2 font-medium text-slate-900">{{ ta.subject.name }}</td>
+                                    <td class="px-4 py-2 text-slate-700 font-mono">{{ ta.subject.code }}</td>
+                                    <td class="px-4 py-2 text-slate-700">{{ ta.coefficient }}</td>
+                                    <td class="px-4 py-2 text-slate-700">{{ ta.hours_per_week }}</td>
+                                    <td class="px-4 py-2 text-slate-700">
+                                        {% if ta.teacher %}
+                                            <span class="inline-block bg-indigo-100 text-indigo-700 rounded px-2 py-1 text-xs font-semibold">
+                                                {{ ta.teacher.last_name|upper }} {{ ta.teacher.first_name|slice:":1" }}.
+                                            </span>
+                                        {% else %}
+                                            <span class="inline-block bg-slate-100 text-slate-400 rounded px-2 py-1 text-xs">Aucun</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-4 py-2 text-right">
+                                        <button onclick="openAssignmentModal('{% url 'teachers:teaching_assignment_full_update_htmx' ta.id %}', 'Modifier l\'affectation : <strong>{{ ta.subject.name }}</strong> dans <strong>{{ schoolclass.name }}</strong><br><small>Enseignant : {{ ta.teacher|default:'Non assigné' }} | Année : {{ ta.year }}</small>', 'Modifier l\'affectation')" class="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200" title="Modifier l'affectation complète"><i class="fas fa-edit"></i></button>
+                                        <button onclick="openAssignmentModal('{% url 'teachers:teaching_assignment_coef_update_htmx' ta.id %}', 'Modifier les coefficients : <strong>{{ ta.subject.name }}</strong> dans <strong>{{ schoolclass.name }}</strong><br><small>Enseignant : {{ ta.teacher|default:'Non assigné' }} | Année : {{ ta.year }}</small>', 'Modifier les coefficients')" class="p-2 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all duration-200" title="Modifier coef/heure"><i class="fas fa-calculator"></i></button>
+                                        <button onclick="openAssignmentModal('{% url 'teachers:teaching_assignment_delete_htmx' ta.id %}', 'Supprimer l\'affectation : <strong>{{ ta.subject.name }}</strong> dans <strong>{{ schoolclass.name }}</strong><br><small>Enseignant : {{ ta.teacher|default:'Non assigné' }} | Année : {{ ta.year }}</small>', 'Confirmer la suppression')" class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200" title="Supprimer"><i class="fas fa-trash"></i></button>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="7" class="text-center text-slate-400 py-8">Aucune matière affectée à cette classe.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="flex items-center gap-3 mt-4">
+                        <button id="btn-bulk-delete-assignment" type="button" class="px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition disabled:opacity-50" disabled>
+                            <i class="fas fa-trash mr-2"></i>Supprimer la sélection
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Onglet Programme Pédagogique -->
+            <div class="tab-content" id="tab-pedagogy" style="display:none;">
+                <div class="space-y-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <h3 class="text-2xl font-bold text-slate-900">Programme Pédagogique de {{ schoolclass.name }}</h3>
+                            <p class="text-slate-600 mt-1">Vue d'ensemble des programmes d'enseignement et de la progression pédagogique</p>
+                        </div>
+                        <div class="flex gap-3">
+                            <a href="{% url 'subjects:pedagogy_dashboard' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl">
+                                <i class="fas fa-graduation-cap"></i>
+                                <span class="font-medium">Tableau de Bord</span>
+                            </a>
+                            <a href="{% url 'admin:subjects_subjectprogram_add' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all duration-200 shadow-lg hover:shadow-xl">
+                                <i class="fas fa-plus"></i>
+                                <span class="font-medium">Nouveau Programme</span>
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Statistiques globales -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                        <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200/50 hover:shadow-lg transition-all duration-300">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <div class="text-3xl font-bold text-slate-900">{{ total_subjects|default:0 }}</div>
+                                    <div class="text-blue-700 font-medium">Matières</div>
+                                </div>
+                                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center text-white">
+                                    <i class="fas fa-book text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border border-green-200/50 hover:shadow-lg transition-all duration-300">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <div class="text-3xl font-bold text-slate-900">{{ total_units|default:0 }}</div>
+                                    <div class="text-green-700 font-medium">Unités d'Apprentissage</div>
+                                </div>
+                                <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center text-white">
+                                    <i class="fas fa-layer-group text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-6 border border-purple-200/50 hover:shadow-lg transition-all duration-300">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <div class="text-3xl font-bold text-slate-900">{{ total_lessons|default:0 }}</div>
+                                    <div class="text-purple-700 font-medium">Leçons</div>
+                                </div>
+                                <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center text-white">
+                                    <i class="fas fa-chalkboard-teacher text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-6 border border-amber-200/50 hover:shadow-lg transition-all duration-300">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <div class="text-3xl font-bold text-slate-900">{{ avg_completion|default:0 }}%</div>
+                                    <div class="text-amber-700 font-medium">Progression Moyenne</div>
+                                </div>
+                                <div class="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center text-white">
+                                    <i class="fas fa-chart-pie text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Programmes par matière -->
+                    {% if subjects_progress %}
+                        <div class="space-y-6">
+                            <div class="flex items-center justify-between">
+                                <h4 class="text-xl font-bold text-slate-900">Progression par Matière</h4>
+                                <span class="text-sm text-slate-500">{{ subjects_progress|length }} matière(s) active(s)</span>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                {% for subject_data in subjects_progress %}
+                                <div class="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+                                    <div class="flex items-start justify-between mb-4">
+                                        <div class="flex items-center gap-4">
+                                            <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center text-white font-bold text-lg">
+                                                {{ subject_data.subject.name|slice:":2"|upper }}
+                                            </div>
+                                            <div>
+                                                <h5 class="text-lg font-bold text-slate-900">{{ subject_data.subject.name }}</h5>
+                                                <p class="text-sm text-slate-600">{{ subject_data.units_count }} unités • {{ subject_data.lessons_count }} leçons</p>
+                                            </div>
+                                        </div>
+                                        <div class="text-right">
+                                            <div class="text-3xl font-bold text-slate-900">{{ subject_data.completion }}%</div>
+                                            <div class="text-sm text-slate-600">Progression</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Barre de progression -->
+                                    <div class="w-full bg-slate-200 rounded-full h-3 mb-4">
+                                        <div class="bg-gradient-to-r from-blue-500 to-indigo-500 h-3 rounded-full transition-all duration-1000 ease-out" 
+                                             style="width: {{ subject_data.completion }}%"></div>
+                                    </div>
+                                    
+                                    <!-- Détails de progression -->
+                                    <div class="grid grid-cols-2 gap-4 mb-4">
+                                        <div class="text-center p-3 bg-slate-50 rounded-lg">
+                                            <div class="text-lg font-bold text-slate-900">{{ subject_data.units_count }}</div>
+                                            <div class="text-xs text-slate-600 uppercase tracking-wide">Unités</div>
+                                        </div>
+                                        <div class="text-center p-3 bg-slate-50 rounded-lg">
+                                            <div class="text-lg font-bold text-slate-900">{{ subject_data.lessons_count }}</div>
+                                            <div class="text-xs text-slate-600 uppercase tracking-wide">Leçons</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Actions -->
+                                    <div class="flex gap-2">
+                                        <a href="{% url 'subjects:subject_detail' subject_data.subject.id %}" class="flex-1 text-center px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors duration-200 text-sm font-medium">
+                                            <i class="fas fa-eye mr-2"></i>Voir la matière
+                                        </a>
+                                        <a href="{% url 'admin:subjects_subjectprogram_add' %}?subject={{ subject_data.subject.id }}&class={{ schoolclass.id }}" class="flex-1 text-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 text-sm font-medium">
+                                            <i class="fas fa-plus mr-2"></i>Ajouter programme
+                                        </a>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <!-- Vue d'ensemble des programmes -->
+                        <div class="bg-white rounded-xl border border-slate-200 p-6">
+                            <h4 class="text-xl font-bold text-slate-900 mb-6">Vue d'Ensemble des Programmes</h4>
+                            <div class="space-y-4">
+                                {% for program in programs %}
+                                <div class="border border-slate-200 rounded-lg p-4 hover:bg-slate-50 transition-colors duration-200">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center gap-4">
+                                            <div class="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg flex items-center justify-center text-white">
+                                                <i class="fas fa-book-open"></i>
+                                            </div>
+                                            <div>
+                                                <h5 class="font-semibold text-slate-900">{{ program.title }}</h5>
+                                                <p class="text-sm text-slate-600">{{ program.subject.name }} • {{ program.school_year }}</p>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center gap-4">
+                                            <div class="text-right">
+                                                <div class="text-lg font-bold text-slate-900">{{ program.get_completion_percentage }}%</div>
+                                                <div class="text-sm text-slate-600">Progression</div>
+                                            </div>
+                                            <a href="{% url 'subjects:program_detail' program.id %}" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 text-sm font-medium">
+                                                <i class="fas fa-eye mr-2"></i>Détails
+                                            </a>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Barre de progression du programme -->
+                                    <div class="mt-4 w-full bg-slate-200 rounded-full h-2">
+                                        <div class="bg-gradient-to-r from-green-500 to-emerald-500 h-2 rounded-full transition-all duration-1000 ease-out" 
+                                             style="width: {{ program.get_completion_percentage }}%"></div>
+                                    </div>
+                                    
+                                    <!-- Statistiques du programme -->
+                                    <div class="mt-4 grid grid-cols-3 gap-4 text-center">
+                                        <div>
+                                            <div class="text-lg font-bold text-slate-900">{{ program.total_hours }}</div>
+                                            <div class="text-xs text-slate-600 uppercase tracking-wide">Heures</div>
+                                        </div>
+                                        <div>
+                                            <div class="text-lg font-bold text-slate-900">{{ program.learning_units.count }}</div>
+                                            <div class="text-xs text-slate-600 uppercase tracking-wide">Unités</div>
+                                        </div>
+                                        <div>
+                                            <div class="text-lg font-bold text-slate-900">{{ program.get_remaining_hours }}</div>
+                                            <div class="text-xs text-slate-600 uppercase tracking-wide">Restantes</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-16 bg-gradient-to-br from-slate-50 to-slate-100 rounded-2xl border-2 border-dashed border-slate-300">
+                            <div class="w-24 h-24 bg-gradient-to-br from-slate-200 to-slate-300 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <i class="fas fa-graduation-cap text-4xl text-slate-400"></i>
+                            </div>
+                            <h4 class="text-2xl font-bold text-slate-900 mb-3">Aucun programme pédagogique</h4>
+                            <p class="text-slate-600 mb-6 max-w-md mx-auto">Cette classe n'a pas encore de programme pédagogique défini. Commencez par créer des programmes pour les matières enseignées.</p>
+                            <div class="flex gap-3 justify-center">
+                                <a href="{% url 'admin:subjects_subjectprogram_add' %}" class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl">
+                                    <i class="fas fa-plus"></i>
+                                    <span class="font-medium">Créer le premier programme</span>
+                                </a>
+                                <a href="{% url 'subjects:pedagogy_dashboard' %}" class="inline-flex items-center gap-2 px-6 py-3 bg-slate-600 text-white rounded-xl hover:bg-slate-700 transition-all duration-200">
+                                    <i class="fas fa-graduation-cap"></i>
+                                    <span class="font-medium">Voir le tableau de bord</span>
+                                </a>
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    <!-- Leçons récentes -->
+                    {% if recent_lessons %}
+                        <div class="bg-white rounded-xl border border-slate-200 p-6">
+                            <div class="flex items-center justify-between mb-6">
+                                <h4 class="text-xl font-bold text-slate-900">Leçons Récentes</h4>
+                                <span class="text-sm text-slate-500">{{ recent_lessons|length }} leçon(s) récente(s)</span>
+                            </div>
+                            <div class="space-y-4">
+                                {% for lesson in recent_lessons %}
+                                <div class="flex items-center justify-between p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors duration-200">
+                                    <div class="flex items-center gap-4">
+                                        <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-lg flex items-center justify-center text-white font-semibold">
+                                            {{ lesson.learning_unit.subject_program.subject.name|slice:":2"|upper }}
+                                        </div>
+                                        <div>
+                                            <div class="font-semibold text-slate-900">{{ lesson.title }}</div>
+                                            <div class="text-sm text-slate-600">
+                                                <i class="fas fa-user mr-1"></i>{{ lesson.teacher.get_full_name }} 
+                                                <i class="fas fa-calendar ml-3 mr-1"></i>{{ lesson.planned_date|date:"d/m/Y" }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-3">
+                                        <span class="px-3 py-1 text-xs font-semibold rounded-full 
+                                            {% if lesson.status == 'COMPLETED' %}bg-green-100 text-green-700
+                                            {% elif lesson.status == 'IN_PROGRESS' %}bg-blue-100 text-blue-700
+                                            {% elif lesson.status == 'PLANNED' %}bg-yellow-100 text-yellow-700
+                                            {% else %}bg-slate-100 text-slate-700{% endif %}">
+                                            {{ lesson.get_status_display }}
+                                        </span>
+                                        <a href="{% url 'subjects:lesson_detail' lesson.pk %}" class="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200" title="Voir les détails">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            
+                            <!-- Lien vers plus de leçons -->
+                            <div class="mt-6 text-center">
+                                <a href="{% url 'subjects:pedagogy_dashboard' %}" class="inline-flex items-center gap-2 px-4 py-2 text-blue-600 hover:text-blue-700 font-medium">
+                                    <span>Voir toutes les leçons</span>
+                                    <i class="fas fa-arrow-right"></i>
+                                </a>
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    <!-- Actions rapides -->
+                    <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6">
+                        <h4 class="text-lg font-bold text-slate-900 mb-4">Actions Rapides</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <a href="{% url 'admin:subjects_subjectprogram_add' %}" class="flex items-center gap-3 p-4 bg-white rounded-lg border border-blue-200 hover:shadow-md transition-all duration-200">
+                                <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white">
+                                    <i class="fas fa-plus"></i>
+                                </div>
+                                <div>
+                                    <div class="font-semibold text-slate-900">Nouveau Programme</div>
+                                    <div class="text-sm text-slate-600">Créer un programme pédagogique</div>
+                                </div>
+                            </a>
+                            
+                            <a href="{% url 'admin:subjects_learningunit_add' %}" class="flex items-center gap-3 p-4 bg-white rounded-lg border border-blue-200 hover:shadow-md transition-all duration-200">
+                                <div class="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center text-white">
+                                    <i class="fas fa-layer-group"></i>
+                                </div>
+                                <div>
+                                    <div class="font-semibold text-slate-900">Nouvelle Unité</div>
+                                    <div class="text-sm text-slate-600">Ajouter une unité d'apprentissage</div>
+                                </div>
+                            </a>
+                            
+                            <a href="{% url 'admin:subjects_lesson_add' %}" class="flex items-center gap-3 p-4 bg-white rounded-lg border border-blue-200 hover:shadow-md transition-all duration-200">
+                                <div class="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center text-white">
+                                    <i class="fas fa-chalkboard-teacher"></i>
+                                </div>
+                                <div>
+                                    <div class="font-semibold text-slate-900">Nouvelle Leçon</div>
+                                    <div class="text-sm text-slate-600">Planifier une nouvelle leçon</div>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="tab-content" id="tab-timetable" style="display:none;">
+                <div class="bg-white rounded-xl border border-slate-200 p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <h3 class="text-lg font-semibold text-slate-900">Emploi du temps</h3>
+                            <p class="text-sm text-slate-600 mt-1">Planification des cours et créneaux horaires</p>
+                        </div>
+                        <div class="flex gap-3">
+                            <!-- Bouton d'actualisation -->
+                            <button onclick="refreshTimetable()" class="inline-flex items-center gap-2 px-3 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors text-sm">
+                                <i class="fas fa-sync-alt"></i>
+                                Actualiser
+                            </button>
+                            
+                            <!-- Bouton de gestion de l'emploi du temps -->
+                            {% if programs %}
+                            <button onclick="openTimetableModal()" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                                <i class="fas fa-edit"></i>
+                                Gérer l'emploi du temps
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+
+                    
+                    <!-- Grille d'emploi du temps -->
+                    <div class="overflow-x-auto">
+                        {% if timetable_slots %}
+                        <div class="bg-slate-50 rounded-lg p-4">
+                            <div class="text-sm text-slate-600 mb-3">
+                                <strong>{{ timetable_slots|length }} créneaux</strong> programmés
+                            </div>
+                            
+                            <!-- Grille de l'emploi du temps -->
+                            <table class="w-full border-collapse border border-slate-200 bg-white rounded-lg">
+                                <thead>
+                                    <tr class="bg-slate-100">
+                                        <th class="border border-slate-200 px-3 py-2 text-left text-sm font-medium text-slate-700">Horaire</th>
+                                        <th class="border border-slate-200 px-3 py-2 text-center text-sm font-medium text-slate-700">Lundi</th>
+                                        <th class="border border-slate-200 px-3 py-2 text-center text-sm font-medium text-slate-700">Mardi</th>
+                                        <th class="border border-slate-200 px-3 py-2 text-center text-sm font-medium text-slate-700">Mercredi</th>
+                                        <th class="border border-slate-200 px-3 py-2 text-center text-sm font-medium text-slate-700">Jeudi</th>
+                                        <th class="border border-slate-200 px-3 py-2 text-center text-sm font-medium text-slate-700">Vendredi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for period in "12345678" %}
+                                    <tr>
+                                        <td class="border border-slate-200 px-3 py-2 text-sm text-slate-600 font-medium">
+                                            {% if period == "1" %}07h30-08h30
+                                            {% elif period == "2" %}08h30-09h30
+                                            {% elif period == "3" %}09h30-10h30
+                                            {% elif period == "4" %}10h45-11h45
+                                            {% elif period == "5" %}11h45-12h45
+                                            {% elif period == "6" %}14h15-15h15
+                                            {% elif period == "7" %}15h15-16h15
+                                            {% elif period == "8" %}16h00-17h00
+                                            {% endif %}
+                                        </td>
+                                        
+                                        {% for day_num in "12345" %}
+                                        <td class="border border-slate-200 px-3 py-2 text-center min-h-[60px] align-top">
+                                            {% for slot in timetable_slots %}
+                                                {% if slot.day == day_num|add:"0" and slot.period == period|add:"0" %}
+                                                    <div onclick="openEditSlotModal({{ slot.id }}, '{{ slot.subject.name }}', '{{ slot.teacher.get_full_name }}', {{ slot.day }}, {{ slot.period }})" 
+                                                         class="timetable-slot border rounded p-2 mb-1 cursor-pointer hover:opacity-80 transition-opacity" 
+                                                         data-subject-id="{{ slot.subject.id }}">
+                                                        <div class="text-xs font-medium">
+                                                            {{ slot.subject.name|truncatechars:15 }}
+                                                        </div>
+                                                        <div class="text-xs">
+                                                            {{ slot.teacher.get_full_name|truncatechars:12 }}
+                                                        </div>
+                                                    </div>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </td>
+                                        {% endfor %}
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Légende et informations -->
+                        <div class="mt-4 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                            <div class="flex items-center gap-2 mb-2">
+                                <i class="fas fa-info-circle text-slate-600"></i>
+                                <span class="text-sm font-medium text-slate-700">Légende de l'emploi du temps</span>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-slate-600">
+                                <div>
+                                    <strong>Créneaux programmés:</strong> {{ timetable_slots|length }} créneaux
+                                </div>
+                                <div>
+                                    <strong>Total heures:</strong> {{ total_hours|default:0 }}h/semaine
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {% else %}
+                        <!-- État vide avec message informatif -->
+                        <div class="text-center py-12 bg-slate-50 rounded-lg border-2 border-dashed border-slate-300">
+                            <div class="text-slate-400 mb-4">
+                                <i class="fas fa-calendar-times text-6xl"></i>
+                            </div>
+                            <h4 class="text-lg font-medium text-slate-600 mb-2">Aucun emploi du temps configuré</h4>
+                            <p class="text-slate-500 mb-6 max-w-md mx-auto">
+                                {% if programs %}
+                                    Cette classe a {{ programs|length }} programme(s) pédagogique(s) mais aucun emploi du temps n'est encore configuré.
+                                    Utilisez le bouton "Gérer l'emploi du temps" pour configurer manuellement l'emploi du temps.
+                                {% else %}
+                                    Cette classe n'a pas encore de programmes pédagogiques ni d'emploi du temps configuré.
+                                    Commencez par créer des programmes pédagogiques.
+                                {% endif %}
+                            </p>
+                            
+                            {% if programs %}
+                            <div class="flex gap-3 justify-center">
+                                <button onclick="openTimetableModal()" class="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium">
+                                    <i class="fas fa-edit"></i>
+                                    Gérer l'emploi du temps
+                                </button>
+
+                            </div>
+                            {% else %}
+                            <div class="flex gap-3 justify-center">
+                                <a href="{% url 'subjects:pedagogy_dashboard' %}" class="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium">
+                                    <i class="fas fa-plus"></i>
+                                    Créer des programmes
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="tab-content" id="tab-performance" style="display:none;">
+                <div class="space-y-6">
+                    <!-- Performance Metrics -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div class="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-6 border border-emerald-200/50">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-lg font-semibold text-slate-900">Moyenne générale</h3>
+                                <div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center text-white">
+                                    <i class="fas fa-chart-line"></i>
+                                </div>
+                            </div>
+                            <div class="text-2xl font-bold text-slate-900 mb-2">14.2/20</div>
+                            <div class="text-emerald-700">Toutes matières</div>
+                        </div>
+
+                        <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200/50">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-lg font-semibold text-slate-900">Présence</h3>
+                                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center text-white">
+                                    <i class="fas fa-user-check"></i>
+                                </div>
+                            </div>
+                            <div class="text-2xl font-bold text-slate-900 mb-2">87%</div>
+                            <div class="text-blue-700">Taux de présence</div>
+                        </div>
+
+                        <div class="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-6 border border-amber-200/50">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-lg font-semibold text-slate-900">Réussite</h3>
+                                <div class="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center text-white">
+                                    <i class="fas fa-trophy"></i>
+                                </div>
+                            </div>
+                            <div class="text-2xl font-bold text-slate-900 mb-2">92%</div>
+                            <div class="text-amber-700">Élèves en réussite</div>
+                        </div>
+
+                        <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-6 border border-purple-200/50">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-lg font-semibold text-slate-900">Discipline</h3>
+                                <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center text-white">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                </div>
+                            </div>
+                            <div class="text-2xl font-bold text-slate-900 mb-2">3</div>
+                            <div class="text-purple-700">Incidents ce mois</div>
+                        </div>
+                    </div>
+
+                    <!-- Performance by Subject -->
+                    <div class="bg-white rounded-xl border border-slate-200 p-6">
+                        <h3 class="text-lg font-semibold text-slate-900 mb-4">Performance par matière</h3>
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                        <i class="fas fa-calculator text-blue-600"></i>
+                                    </div>
+                                    <div>
+                                        <div class="font-semibold text-slate-900">Mathématiques</div>
+                                        <div class="text-sm text-slate-500">M. Dupont</div>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-lg font-bold text-slate-900">15.2/20</div>
+                                    <div class="text-sm text-emerald-600">+0.8</div>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
+                                        <i class="fas fa-book text-emerald-600"></i>
+                                    </div>
+                                    <div>
+                                        <div class="font-semibold text-slate-900">Français</div>
+                                        <div class="text-sm text-slate-500">Mme Martin</div>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-lg font-bold text-slate-900">13.8/20</div>
+                                    <div class="text-sm text-red-600">-0.3</div>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                                        <i class="fas fa-globe text-purple-600"></i>
+                                    </div>
+                                    <div>
+                                        <div class="font-semibold text-slate-900">Histoire-Géographie</div>
+                                        <div class="text-sm text-slate-500">M. Bernard</div>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-lg font-bold text-slate-900">14.5/20</div>
+                                    <div class="text-sm text-emerald-600">+0.5</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Teacher Assignment Modal -->
+<div id="modal-teacher" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="display: none;">
+    <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm" onclick="closeTeacherModal()"></div>
+    <div class="relative bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between p-6 border-b border-slate-200 bg-gradient-to-r from-indigo-50 to-purple-50">
+            <div>
+                <h3 class="text-xl font-bold text-slate-900">Assigner des enseignants</h3>
+                <p class="text-slate-600 text-sm mt-1">Sélectionnez les enseignants pour cette classe</p>
+            </div>
+            <button onclick="closeTeacherModal()" class="p-2 hover:bg-slate-100 rounded-xl transition-colors duration-200">
+                <i class="fas fa-times text-slate-400"></i>
+            </button>
+        </div>
+        <!-- Modal Content -->
+        <div id="modal-content-teacher">
+            <!-- Content will be loaded here -->
+        </div>
+        <!-- Modal Footer -->
+        <div class="flex items-center justify-end gap-3 p-6 border-t border-slate-200 bg-slate-50 rounded-b-2xl">
+            <button onclick="closeTeacherModal()" class="px-4 py-2 text-slate-700 hover:bg-slate-200 rounded-xl transition-colors duration-200">Annuler</button>
+            <button type="submit" class="px-6 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl font-medium"><i class="fas fa-save mr-2"></i>Enregistrer les assignations</button>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- Enhanced Modal for Class Management -->
+<div id="modal-class" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="display: none;">
+    <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm" onclick="closeClassModal()"></div>
+    <div class="relative bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between p-6 border-b border-slate-200">
+            <div>
+                <h3 class="text-xl font-bold text-slate-900">Gestion de la classe</h3>
+                <p class="text-slate-500 text-sm">Modifier les informations de {{ schoolclass.name }}</p>
+            </div>
+            <button onclick="closeClassModal()" class="p-2 hover:bg-slate-100 rounded-xl transition-colors duration-200"><i class="fas fa-times text-slate-400"></i></button>
+        </div>
+        <!-- Modal Content -->
+        <div id="modal-content-class">
+            <!-- Content will be loaded here -->
+        </div>
+    </div>
+</div>
+
+<!--
+    Modale universelle d'affectation/modification d'une matière à une classe
+    Ajoutée le 07/07/2025 :
+    - Design pro (header, contexte, feedback, boutons)
+    - Filtrage dynamique des enseignants selon la matière
+    - Fermeture JS fiable
+-->
+<div id="modal-assignment" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center">
+    <div class="relative bg-white rounded-2xl shadow-2xl max-w-xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between p-6 border-b border-slate-200">
+            <div class="flex items-center gap-2">
+                <i class="fas fa-chalkboard-teacher text-indigo-600 text-xl"></i>
+                <h3 class="text-xl font-bold text-slate-900" id="modal-assignment-title">Affecter ou modifier une matière</h3>
+            </div>
+            <button type="button" onclick="closeAssignmentModal()" class="p-2 hover:bg-slate-100 rounded-xl transition-colors duration-200">
+                <i class="fas fa-times text-slate-400"></i>
+            </button>
+        </div>
+        <div id="modal-assignment-context" class="px-6 pt-4 pb-2 text-slate-600 text-sm">
+            <!-- Contexte dynamique (classe, matière, enseignant) -->
+        </div>
+        <div id="modal-assignment-content" class="p-6">
+            <!-- Formulaire chargé dynamiquement ici via HTMX -->
+        </div>
+    </div>
+</div>
+
+<!-- Modale pour affecter le professeur titulaire -->
+<div id="modal-main-teacher" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="w-full max-w-2xl">
+        <div id="modal-main-teacher-content">
+            <!-- Le contenu de la modale sera chargé ici -->
+        </div>
+    </div>
+</div>
+
+<!-- Modale de gestion de l'emploi du temps -->
+<div id="timetable-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-2xl">
+            <!-- En-tête de la modale -->
+            <div class="flex items-center justify-between p-6 border-b border-slate-200">
+                <h3 class="text-xl font-semibold text-slate-900">
+                    <i class="fas fa-calendar-alt text-blue-600 mr-3"></i>
+                    Gestion de l'Emploi du Temps
+                </h3>
+                <button onclick="closeTimetableModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <!-- Contenu de la modale -->
+            <div class="p-6">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Formulaire de configuration -->
+                    <div class="space-y-6">
+                        <h4 class="text-lg font-medium text-slate-900 mb-4">Configuration de la matière</h4>
+                        
+                        <!-- Sélection de la matière -->
+                        <div>
+                            <label for="subject-select" class="block text-sm font-medium text-slate-700 mb-2">
+                                Matière *
+                            </label>
+                            <select id="subject-select" onchange="updateSubjectHours()" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">Sélectionner une matière</option>
+                                {% for assignment in assigned_subjects %}
+                                <option value="{{ assignment.subject.id }}" data-hours="{{ assignment.hours_per_week }}" data-teacher="{{ assignment.teacher.id|default:'' }}">
+                                    {{ assignment.subject.name }} ({{ assignment.hours_per_week }}h/semaine)
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+
+                        
+                        <!-- Nombre d'heures -->
+                        <div>
+                            <label for="subject-hours" class="block text-sm font-medium text-slate-700 mb-2">
+                                Heures par semaine *
+                            </label>
+                            <input type="number" id="subject-hours" min="1" max="36" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" readonly>
+                            <p class="text-sm text-slate-500 mt-1">Rempli automatiquement selon le programme pédagogique</p>
+                        </div>
+                        
+                        <!-- Sélection des créneaux horaires -->
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-2">
+                                Créneaux horaires *
+                            </label>
+                            <div class="space-y-3">
+                                <!-- Lundi -->
+                                <div class="border border-slate-200 rounded-lg p-3">
+                                    <label class="flex items-center mb-2">
+                                        <input type="checkbox" name="days" value="1" class="mr-3 rounded border-slate-300 text-blue-600 focus:ring-blue-500" onchange="toggleDaySlots(1)">
+                                        <span class="text-sm font-medium text-slate-700">Lundi</span>
+                                    </label>
+                                    <div id="day-1-slots" class="hidden space-y-2">
+                                        <div class="grid grid-cols-2 gap-2">
+                                            <label class="flex items-center">
+                                                <input type="checkbox" name="slots" value="1-1" class="mr-2 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                                <span class="text-xs text-slate-600">07h30-08h30</span>
+                                            </label>
+                                            <label class="flex items-center">
+                                                <input type="checkbox" name="slots" value="1-2" class="mr-2 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                                <span class="text-xs text-slate-600">08h30-09h30</span>
+                                            </label>
+                                            <label class="flex items-center">
+                                                <input type="checkbox" name="slots" value="1-3" class="mr-2 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                                <span class="text-xs text-slate-600">09h30-10h30</span>
+                                            </label>
+                                            <label class="flex items-center">
+                                                <input type="checkbox" name="slots" value="1-4" class="mr-2 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                                <span class="text-xs text-slate-600">10h45-11h45</span>
+                                            </label>
+                                            <label class="flex items-center">
+                                                <input type="checkbox" name="slots" value="1-5" class="mr-2 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                                <span class="text-xs text-slate-600">11h45-12h45</span>
+                                            </label>
+                                            <label class="flex items-center">
+                                                <input type="checkbox" name="slots" value="1-6" class="mr-2 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                                <span class="text-xs text-slate-600">14h15-15h15</span>
+                                            </label>
+                                            <label class="flex items-center">
+                                                <input type="checkbox" name="slots" value="1-7" class="mr-2 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                                <span class="text-xs text-slate-600">15h15-16h00</span>
+                                            </label>
+                                            <label class="flex items-center">
+                                                <input type="checkbox" name="slots" value="1-8" class="mr-2 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                                <span class="text-xs text-slate-600">16h00-17h00</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Mardi -->
+                                <div class="border border-slate-200 rounded-lg p-3">
+                                    <label class="flex items-center mb-2">
+                                        <input type="checkbox" name="days" value="2" class="mr-3 rounded border-slate-300 text-blue-600 focus:ring-blue-500" onchange="toggleDaySlots(2)">
+                                        <span class="text-sm font-medium text-slate-700">Mardi</span>
+                                    </label>
+                                    <div id="day-2-slots" class="hidden space-y-2">
+                                        <div class="grid grid-cols-2 gap-2">
+                                            <label class="flex items-center">
+                                                <input type="checkbox" name="slots" value="2-1" class="mr-2 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                                <span class="text-xs text-slate-600">07h30-08h30</span>
+                                            </label>
+                                            <label class="flex items-center">
+                                                <input type="checkbox" name="slots" value="2-2" class="mr-2 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                                <span class="text-xs text-slate-600">08h30-09h30</span>
+                                            </label>
+                                            <label class="flex items-center">
+                                                <input type="checkbox" name="slots" value="2-3" class="mr-2 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                                <span class="text-xs text-slate-600">09h30-10h30</span>
+                                            </label>
+                                            <label class="flex items-center">
+                                                <input type="checkbox" name="slots" value="2-4" class="mr-2 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                                <span class="text-xs text-slate-600">10h45-11h45</span>
+                                            </label>
+                                            <label class="flex items-center">
+                                                <input type="checkbox" name="slots" value="2-5" class="mr-2 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                                <span class="text-xs text-slate-600">11h45-12h45</span>
+                                            </label>
+                                            <label class="flex items-center">
+                                                <input type="checkbox" name="slots" value="2-6" class="mr-2 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                                <span class="text-xs text-slate-600">14h15-15h15</span>
+                                            </label>
+                                            <label class="flex items-center">
+                                                <input type="checkbox" name="slots" value="2-7" class="mr-2 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                                <span class="text-xs text-slate-600">15h15-16h00</span>
+                                            </label>
+                                            <label class="flex items-center">
+                                                <input type="checkbox" name="slots" value="2-8" class="mr-2 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                                <span class="text-xs text-slate-600">16h00-17h00</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Mercredi -->
+                                <div class="border border-slate-200 rounded-lg p-3">
+                                    <label class="flex items-center mb-2">
+                                        <input type="checkbox" name="days" value="3" class="mr-3 rounded border-slate-300 text-blue-600 focus:ring-blue-500" onchange="toggleDaySlots(3)">
+                                        <span class="text-sm font-medium text-slate-700">Mercredi</span>
+                                    </label>
+                                    <div id="day-3-slots" class="hidden space-y-2">
+                                        <div class="grid grid-cols-2 gap-2">
+                                            <label class="flex items-center">
+                                                <input type="checkbox" name="slots" value="3-1" class="mr-2 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                                <span class="text-xs text-slate-600">07h30-08h30</span>
+                                            </label>
+                                            <label class="flex items-center">
+                                                <input type="checkbox" name="slots" value="3-2" class="mr-2 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                                <span class="text-xs text-slate-600">08h30-09h30</span>
+                                            </label>
+                                            <label class="flex items-center">
+                                                <input type="checkbox" name="slots" value="3-3" class="mr-2 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                                <span class="text-xs text-slate-600">09h30-10h30</span>
+                                            </label>
+                                            <label class="flex items-center">
+                                                <input type="checkbox" name="slots" value="3-4" class="mr-2 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                                <span class="text-xs text-slate-600">10h45-11h45</span>
+                                            </label>
+                                            <label class="flex items-center">
+                                                <input type="checkbox" name="slots" value="3-5" class="mr-2 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                                <span class="text-xs text-slate-600">11h45-12h45</span>
+                                            </label>
+                                            <label class="flex items-center">
+                                                <input type="checkbox" name="slots" value="3-6" class="mr-2 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                                <span class="text-xs text-slate-600">14h15-15h15</span>
+                                            </label>
+                                            <label class="flex items-center">
+                                                <input type="checkbox" name="slots" value="3-7" class="mr-2 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                                <span class="text-xs text-slate-600">15h15-16h00</span>
+                                            </label>
+                                            <label class="flex items-center">
+                                                <input type="checkbox" name="slots" value="3-8" class="mr-2 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                                <span class="text-xs text-slate-600">16h00-17h00</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Jeudi -->
+                                <div class="border border-slate-200 rounded-lg p-3">
+                                    <label class="flex items-center mb-2">
+                                        <input type="checkbox" name="days" value="4" class="mr-3 rounded border-slate-300 text-blue-600 focus:ring-blue-500" onchange="toggleDaySlots(4)">
+                                        <span class="text-sm font-medium text-slate-700">Jeudi</span>
+                                    </label>
+                                    <div id="day-4-slots" class="hidden space-y-2">
+                                        <div class="grid grid-cols-2 gap-2">
+                                            <label class="flex items-center">
+                                                <input type="checkbox" name="slots" value="4-1" class="mr-2 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                                <span class="text-xs text-slate-600">07h30-08h30</span>
+                                            </label>
+                                            <label class="flex items-center">
+                                                <input type="checkbox" name="slots" value="4-2" class="mr-2 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                                <span class="text-xs text-slate-600">08h30-09h30</span>
+                                            </label>
+                                            <label class="flex items-center">
+                                                <input type="checkbox" name="slots" value="4-3" class="mr-2 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                                <span class="text-xs text-slate-600">09h30-10h30</span>
+                                            </label>
+                                            <label class="flex items-center">
+                                                <input type="checkbox" name="slots" value="4-4" class="mr-2 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                                <span class="text-xs text-slate-600">10h45-11h45</span>
+                                            </label>
+                                            <label class="flex items-center">
+                                                <input type="checkbox" name="slots" value="4-5" class="mr-2 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                                <span class="text-xs text-slate-600">11h45-12h45</span>
+                                            </label>
+                                            <label class="flex items-center">
+                                                <input type="checkbox" name="slots" value="4-6" class="mr-2 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                                <span class="text-xs text-slate-600">14h15-15h15</span>
+                                            </label>
+                                            <label class="flex items-center">
+                                                <input type="checkbox" name="slots" value="4-7" class="mr-2 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                                <span class="text-xs text-slate-600">15h15-16h00</span>
+                                            </label>
+                                            <label class="flex items-center">
+                                                <input type="checkbox" name="slots" value="4-8" class="mr-2 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                                <span class="text-xs text-slate-600">16h00-17h00</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Vendredi -->
+                                <div class="border border-slate-200 rounded-lg p-3">
+                                    <label class="flex items-center mb-2">
+                                        <input type="checkbox" name="days" value="5" class="mr-3 rounded border-slate-300 text-blue-600 focus:ring-blue-500" onchange="toggleDaySlots(5)">
+                                        <span class="text-sm font-medium text-slate-700">Vendredi</span>
+                                    </label>
+                                    <div id="day-5-slots" class="hidden space-y-2">
+                                        <div class="grid grid-cols-2 gap-2">
+                                            <label class="flex items-center">
+                                                <input type="checkbox" name="slots" value="5-1" class="mr-2 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                                <span class="text-xs text-slate-600">07h30-08h30</span>
+                                            </label>
+                                            <label class="flex items-center">
+                                                <input type="checkbox" name="slots" value="5-2" class="mr-2 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                                <span class="text-xs text-slate-600">08h30-09h30</span>
+                                            </label>
+                                            <label class="flex items-center">
+                                                <input type="checkbox" name="slots" value="5-3" class="mr-2 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                                <span class="text-xs text-slate-600">09h30-10h30</span>
+                                            </label>
+                                            <label class="flex items-center">
+                                                <input type="checkbox" name="slots" value="5-4" class="mr-2 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                                <span class="text-xs text-slate-600">10h45-11h45</span>
+                                            </label>
+                                            <label class="flex items-center">
+                                                <input type="checkbox" name="slots" value="5-5" class="mr-2 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                                <span class="text-xs text-slate-600">11h45-12h45</span>
+                                            </label>
+                                            <label class="flex items-center">
+                                                <input type="checkbox" name="slots" value="5-6" class="mr-2 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                                <span class="text-xs text-slate-600">14h15-15h15</span>
+                                            </label>
+                                            <label class="flex items-center">
+                                                <input type="checkbox" name="slots" value="5-7" class="mr-2 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                                <span class="text-xs text-slate-600">15h15-16h00</span>
+                                            </label>
+                                            <label class="flex items-center">
+                                                <input type="checkbox" name="slots" value="5-8" class="mr-2 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                                <span class="text-xs text-slate-600">16h00-17h00</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Bouton de validation -->
+                        <button onclick="validateTimetable()" class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                            <i class="fas fa-check mr-2"></i>
+                            Valider et Créer l'Emploi du Temps
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modale d'édition des créneaux -->
+<div id="edit-slot-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div class="flex items-center justify-between p-6 border-b border-slate-200">
+                <h3 class="text-lg font-semibold text-slate-900">Modifier le créneau</h3>
+                <button onclick="closeEditSlotModal()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="p-6">
+                <form id="edit-slot-form">
+                    {% csrf_token %}
+                    <input type="hidden" id="edit-slot-id" name="slot_id">
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Matière</label>
+                        <input type="text" id="edit-slot-subject" class="w-full px-3 py-2 border border-slate-300 rounded-lg bg-slate-50" readonly>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Enseignant</label>
+                        <input type="text" id="edit-slot-teacher" class="w-full px-3 py-2 border border-slate-300 rounded-lg bg-slate-50" readonly>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-2">Jour</label>
+                            <select id="edit-slot-day" name="day" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
+                                <option value="1">Lundi</option>
+                                <option value="2">Mardi</option>
+                                <option value="3">Mercredi</option>
+                                <option value="4">Jeudi</option>
+                                <option value="5">Vendredi</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-2">Période</label>
+                            <select id="edit-slot-period" name="period" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
+                                <option value="1">07h30-08h30</option>
+                                <option value="2">08h30-09h30</option>
+                                <option value="3">09h30-10h30</option>
+                                <option value="4">10h45-11h45</option>
+                                <option value="5">11h45-12h45</option>
+                                <option value="6">14h15-15h15</option>
+                                <option value="7">15h15-16h15</option>
+                                <option value="8">16h00-17h00</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-3">
+                        <button type="button" onclick="updateTimetableSlot()" class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-save mr-2"></i>
+                            Modifier
+                        </button>
+                        <button type="button" onclick="deleteTimetableSlot()" class="flex-1 bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors">
+                            <i class="fas fa-trash mr-2"></i>
+                            Supprimer
+                        </button>
+                        <button type="button" onclick="closeEditSlotModal()" class="flex-1 bg-slate-600 text-white py-2 px-4 rounded-lg hover:bg-slate-700 transition-colors">
+                            Annuler
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Gestion des onglets en JS natif
+function initializeTabs() {
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    const tabContents = document.querySelectorAll('.tab-content');
+    
+    console.log('Initialisation des onglets...');
+    console.log('Boutons trouvés:', tabBtns.length);
+    console.log('Contenus trouvés:', tabContents.length);
+    
+    if (tabBtns.length === 0 || tabContents.length === 0) {
+        console.log('Onglets non trouvés, réessai dans 100ms...');
+        setTimeout(initializeTabs, 100);
+        return;
+    }
+    
+    let activeTab = 'overview';
+    
+    function showTab(tab) {
+        console.log('Changement vers l\'onglet:', tab);
+        
+        // Masquer tous les contenus
+        tabContents.forEach(content => {
+            content.style.display = 'none';
+        });
+        
+        // Afficher le contenu sélectionné
+        const selectedContent = document.getElementById('tab-' + tab);
+        if (selectedContent) {
+            selectedContent.style.display = '';
+            console.log('Affichage de:', selectedContent.id);
+        } else {
+            console.error('Contenu non trouvé pour l\'onglet:', tab);
+        }
+        
+        // Mettre à jour les styles des boutons
+        tabBtns.forEach(btn => {
+            const btnTab = btn.getAttribute('data-tab');
+            if (btnTab === tab) {
+                btn.classList.add('border-blue-500', 'text-blue-600', 'bg-blue-50');
+                btn.classList.remove('border-transparent', 'text-slate-500', 'hover:text-slate-700', 'hover:bg-slate-50');
+            } else {
+                btn.classList.remove('border-blue-500', 'text-blue-600', 'bg-blue-50');
+                btn.classList.add('border-transparent', 'text-slate-500', 'hover:text-slate-700', 'hover:bg-slate-50');
+            }
+        });
+        
+        activeTab = tab;
+        
+        // Ajouter un indicateur visuel
+        const nav = document.getElementById('class-tabs');
+        if (nav) {
+            nav.setAttribute('data-active-tab', tab);
+        }
+    }
+    
+    // Ajouter les événements de clic
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const tabName = btn.getAttribute('data-tab');
+            console.log('Clic sur l\'onglet:', tabName);
+            showTab(tabName);
+        });
+        
+        // Ajouter un indicateur de survol
+        btn.addEventListener('mouseenter', () => {
+            if (btn.getAttribute('data-tab') !== activeTab) {
+                btn.classList.add('hover:bg-slate-100');
+            }
+        });
+        
+        btn.addEventListener('mouseleave', () => {
+            if (btn.getAttribute('data-tab') !== activeTab) {
+                btn.classList.remove('hover:bg-slate-100');
+            }
+        });
+    });
+    
+    // Initialiser avec l'onglet par défaut
+    showTab(activeTab);
+    console.log('Onglets initialisés avec succès. Onglet actif:', activeTab);
+    
+    // Appliquer les couleurs aux créneaux
+    applySlotColors();
+}
+
+// Initialiser les onglets quand le DOM est prêt
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeTabs);
+} else {
+    initializeTabs();
+}
+
+// Fonction de test pour déboguer les onglets
+window.testTabs = function() {
+    console.log('=== TEST DES ONGLETS ===');
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    const tabContents = document.querySelectorAll('.tab-content');
+    
+    console.log('Boutons d\'onglets:', tabBtns.length);
+    tabBtns.forEach((btn, index) => {
+        console.log(`Onglet ${index + 1}:`, btn.getAttribute('data-tab'), btn.className);
+    });
+    
+    console.log('Contenus d\'onglets:', tabContents.length);
+    tabContents.forEach((content, index) => {
+        console.log(`Contenu ${index + 1}:`, content.id, content.style.display);
+    });
+    
+    // Tester le changement d'onglet
+    if (tabBtns.length > 1) {
+        console.log('Test de changement vers l\'onglet "students"...');
+        const studentsTab = document.querySelector('[data-tab="students"]');
+        if (studentsTab) {
+            studentsTab.click();
+        }
+    }
+};
+
+// Gestion des modaux natifs
+function openClassModal() {
+    document.getElementById('modal-class').style.display = 'flex';
+    htmx.ajax('GET', '{% url "classes:schoolclass_update_htmx" schoolclass.id %}', {
+        target: '#modal-content-class',
+        swap: 'innerHTML'
+    });
+}
+function closeClassModal() {
+    document.getElementById('modal-class').style.display = 'none';
+}
+function openTeacherModal() {
+    document.getElementById('modal-teacher').style.display = 'flex';
+    htmx.ajax('GET', '{% url "teachers:teaching_assignment_create_htmx" schoolclass.id %}', {
+        target: '#modal-content-teacher',
+        swap: 'innerHTML'
+    });
+}
+function closeTeacherModal() {
+    document.getElementById('modal-teacher').style.display = 'none';
+}
+
+
+// Gestion des cases à cocher et suppression groupée
+function updateBulkDeleteBtn() {
+    document.getElementById('btn-bulk-delete-assignment').disabled = document.querySelectorAll('.bulk-checkbox-assignment:checked').length === 0;
+}
+document.getElementById('bulk-select-all-assignment').addEventListener('change', function() {
+    let checked = this.checked;
+    document.querySelectorAll('.bulk-checkbox-assignment').forEach(cb => cb.checked = checked);
+    updateBulkDeleteBtn();
+});
+document.querySelectorAll('.bulk-checkbox-assignment').forEach(cb => {
+    cb.addEventListener('change', updateBulkDeleteBtn);
+});
+document.getElementById('btn-bulk-delete-assignment').onclick = function() {
+    let ids = Array.from(document.querySelectorAll('.bulk-checkbox-assignment:checked')).map(cb => cb.value);
+    if (!ids.length) return;
+    if (!confirm('Supprimer les matières sélectionnées ?')) return;
+    fetch("{% url 'teachers:teaching_assignment_bulk_delete_htmx' %}", {
+        method: 'POST',
+        headers: {'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value},
+        body: new URLSearchParams(ids.map(id => ['ids[]', id]))
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) window.location.reload();
+        else alert('Erreur : ' + (data.error || 'Suppression échouée'));
+    });
+};
+
+
+
+// 07/07/2025 - JS pour ouverture/fermeture de la modale universelle
+function openAssignmentModal(url, contextHtml, title) {
+    document.getElementById('modal-assignment').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    document.getElementById('modal-assignment-title').textContent = title || 'Affecter ou modifier une matière';
+    document.getElementById('modal-assignment-context').innerHTML = contextHtml || '';
+    // Charger le formulaire via fetch
+    fetch(url, {headers: {'X-Requested-With': 'XMLHttpRequest'}})
+        .then(r => r.text())
+        .then(html => {
+            document.getElementById('modal-assignment-content').innerHTML = html;
+        })
+        .catch(error => {
+            console.error('Erreur lors du chargement:', error);
+            document.getElementById('modal-assignment-content').innerHTML = '<div class="text-red-600">Erreur lors du chargement du formulaire</div>';
+        });
+}
+function closeAssignmentModal() {
+    document.getElementById('modal-assignment').classList.add('hidden');
+    document.body.style.overflow = 'auto';
+    document.getElementById('modal-assignment-content').innerHTML = '';
+    document.getElementById('modal-assignment-context').innerHTML = '';
+}
+
+// Modale pour le professeur titulaire
+function openMainTeacherModal() {
+    document.getElementById('modal-main-teacher').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    
+    // Charger le contenu de la modale via AJAX
+    fetch("{% url 'classes:assign_main_teacher_htmx' schoolclass.id %}", {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.text())
+    .then(html => {
+        document.getElementById('modal-main-teacher-content').innerHTML = html;
+        
+        // Réattacher les événements après le chargement du contenu
+        attachMainTeacherModalEvents();
+    })
+    .catch(error => {
+        console.error('Erreur lors du chargement de la modale:', error);
+        document.getElementById('modal-main-teacher-content').innerHTML = 
+            '<div class="text-red-600 p-6">Erreur lors du chargement de la modale</div>';
+    });
+}
+
+function closeMainTeacherModal() {
+    document.getElementById('modal-main-teacher').classList.add('hidden');
+    document.body.style.overflow = 'auto';
+    document.getElementById('modal-main-teacher-content').innerHTML = '';
+}
+
+// Fonction pour attacher les événements de la modale
+function attachMainTeacherModalEvents() {
+    const teacherSelect = document.getElementById('teacher-select');
+    const teacherInfo = document.getElementById('teacher-info');
+    const teacherDetails = document.getElementById('teacher-details');
+    
+    if (teacherSelect) {
+        // Afficher les informations du professeur sélectionné
+        teacherSelect.addEventListener('change', function() {
+            const teacherId = this.value;
+            
+            if (teacherId) {
+                // Trouver le professeur sélectionné dans la liste
+                const selectedOption = this.options[this.selectedIndex];
+                const teacherName = selectedOption.text;
+                
+                // Afficher les informations de base
+                teacherDetails.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                            ${teacherName.split(' ')[1] ? teacherName.split(' ')[1][0] : ''}${teacherName.split(' ')[0] ? teacherName.split(' ')[0][0] : ''}
+                        </div>
+                        <div>
+                            <div class="font-semibold text-slate-900">${teacherName}</div>
+                            <div class="text-slate-600">Professeur sélectionné</div>
+                        </div>
+                    </div>
+                `;
+                teacherInfo.classList.remove('hidden');
+            } else {
+                teacherInfo.classList.add('hidden');
+            }
+        });
+        
+        // Initialiser l'affichage si un professeur est déjà sélectionné
+        if (teacherSelect.value) {
+            teacherSelect.dispatchEvent(new Event('change'));
+        }
+    }
+}
+
+// Fonction pour sauvegarder le professeur titulaire
+function saveMainTeacher() {
+    const teacherId = document.getElementById('teacher-select')?.value;
+    
+    if (!teacherId) {
+        showNotification('Veuillez sélectionner un professeur', 'error');
+        return;
+    }
+    
+    // Envoyer la requête AJAX
+    fetch("{% url 'classes:assign_main_teacher_htmx' schoolclass.id %}", {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `teacher=${teacherId}`
+    })
+    .then(response => response.text())
+    .then(html => {
+        // Mettre à jour l'affichage principal
+        document.getElementById('main-teacher-display').outerHTML = html;
+        
+        // Fermer la modale
+        closeMainTeacherModal();
+        
+        // Afficher la notification de succès
+        showNotification('Professeur titulaire mis à jour avec succès', 'success');
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        showNotification('Erreur lors de la mise à jour du professeur titulaire', 'error');
+    });
+}
+
+// Fonction utilitaire pour afficher des notifications
+function showNotification(message, type = 'info') {
+    // Créer une notification simple
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
+        type === 'success' ? 'bg-green-500 text-white' : 
+        type === 'error' ? 'bg-red-500 text-white' : 
+        'bg-blue-500 text-white'
+    }`;
+    notification.textContent = message;
+    
+    document.body.appendChild(notification);
+    
+    // Supprimer après 3 secondes
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
+}
+
+// Fermer avec Echap
+window.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeAssignmentModal();
+        closeMainTeacherModal();
+        closeTimetableModal();
+    }
+});
+
+// Fonction pour ouvrir la modale de gestion de l'emploi du temps
+function openTimetableModal() {
+    document.getElementById('timetable-modal').classList.remove('hidden');
+    document.body.classList.add('overflow-hidden');
+}
+
+// Fonction pour fermer la modale de gestion de l'emploi du temps
+function closeTimetableModal() {
+    document.getElementById('timetable-modal').classList.add('hidden');
+    document.body.classList.remove('overflow-hidden');
+}
+
+// Fonction pour mettre à jour les heures quand une matière est sélectionnée
+function updateSubjectHours() {
+    const subjectSelect = document.getElementById('subject-select');
+    const hoursInput = document.getElementById('subject-hours');
+    const selectedSubjectId = subjectSelect.value;
+    
+    if (selectedSubjectId) {
+        // Récupérer les heures depuis les matières affectées
+        const selectedOption = subjectSelect.options[subjectSelect.selectedIndex];
+        const hours = selectedOption.getAttribute('data-hours');
+        
+        if (hours) {
+            hoursInput.value = hours;
+        }
+    }
+}
+
+// Fonction pour afficher/masquer les créneaux d'un jour
+function toggleDaySlots(day) {
+    const dayCheckbox = document.querySelector(`input[name="days"][value="${day}"]`);
+    const slotsContainer = document.getElementById(`day-${day}-slots`);
+    
+    if (dayCheckbox.checked) {
+        slotsContainer.classList.remove('hidden');
+    } else {
+        slotsContainer.classList.add('hidden');
+        // Décocher tous les créneaux de ce jour
+        const slots = slotsContainer.querySelectorAll('input[name="slots"]');
+        slots.forEach(slot => slot.checked = false);
+    }
+}
+
+// Fonction pour valider et créer l'emploi du temps
+function validateTimetable() {
+    const subjectId = document.getElementById('subject-select').value;
+    const hours = document.getElementById('subject-hours').value;
+    const selectedSlots = Array.from(document.querySelectorAll('input[name="slots"]:checked')).map(cb => cb.value);
+    
+    if (!subjectId || !hours || selectedSlots.length === 0) {
+        alert('Veuillez sélectionner une matière et au moins un créneau horaire');
+        return;
+    }
+    
+    // Vérifier que le nombre de créneaux correspond aux heures
+    // Convertir les heures en nombre (gérer les valeurs décimales comme "1.0")
+    const hoursNumber = parseFloat(hours);
+    if (selectedSlots.length !== hoursNumber) {
+        alert(`Vous avez sélectionné ${selectedSlots.length} créneaux pour ${hoursNumber} heures. Le nombre de créneaux doit correspondre au nombre d'heures.`);
+        return;
+    }
+    
+    // Récupérer l'enseignant depuis l'option sélectionnée
+    const subjectSelect = document.getElementById('subject-select');
+    const selectedOption = subjectSelect.options[subjectSelect.selectedIndex];
+    const teacherId = selectedOption.getAttribute('data-teacher');
+    
+    if (!teacherId) {
+        alert('Aucun enseignant trouvé pour cette matière. Veuillez vérifier l\'affectation matière-enseignant.');
+        return;
+    }
+    
+    // Envoyer la requête pour créer l'emploi du temps
+    const formData = new FormData();
+    formData.append('subject', subjectId);
+    formData.append('teacher', teacherId);
+    formData.append('hours', hours);
+    formData.append('slots', JSON.stringify(selectedSlots));
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+    
+    fetch("{% url 'subjects:create_timetable_slots' class_id=schoolclass.id %}", {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Emploi du temps mis à jour avec succès', 'success');
+            closeTimetableModal();
+            // Recharger la page pour afficher les changements
+            location.reload();
+        } else {
+            showNotification(data.error || 'Erreur lors de la mise à jour', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        showNotification('Erreur lors de la mise à jour de l\'emploi du temps', 'error');
+    });
+}
+
+// Fonction pour rafraîchir l'affichage de l'emploi du temps
+function refreshTimetable() {
+    // Recharger la page pour afficher les nouveaux créneaux
+    location.reload();
+}
+
+// Fonction pour appliquer les couleurs aux créneaux
+function applySlotColors() {
+    const colors = [
+        { bg: '#dbeafe', border: '#93c5fd', text: '#1e40af' },  // bleu
+        { bg: '#dcfce7', border: '#86efac', text: '#166534' },  // vert
+        { bg: '#f3e8ff', border: '#c084fc', text: '#7c3aed' },  // violet
+        { bg: '#fce7f3', border: '#f9a8d4', text: '#be185d' },  // rose
+        { bg: '#e0e7ff', border: '#a5b4fc', text: '#3730a3' },  // indigo
+        { bg: '#fef3c7', border: '#fcd34d', text: '#92400e' },  // jaune
+        { bg: '#fee2e2', border: '#fca5a5', text: '#991b1b' },  // rouge
+        { bg: '#ccfbf1', border: '#5eead4', text: '#134e4a' }   // teal
+    ];
+    
+    const slots = document.querySelectorAll('.timetable-slot');
+    slots.forEach(slot => {
+        const subjectId = parseInt(slot.getAttribute('data-subject-id'));
+        const colorIndex = (subjectId - 1) % colors.length;
+        const color = colors[colorIndex];
+        
+        slot.style.backgroundColor = color.bg;
+        slot.style.borderColor = color.border;
+        
+        // Appliquer la couleur du texte aux éléments enfants
+        const textElements = slot.querySelectorAll('.text-xs');
+        textElements.forEach(text => {
+            text.style.color = color.text;
+        });
+    });
+}
+
+// Fonctions pour la modale d'édition des créneaux
+function openEditSlotModal(slotId, subjectName, teacherName, day, period) {
+    // Remplir les champs de la modale
+    document.getElementById('edit-slot-id').value = slotId;
+    document.getElementById('edit-slot-subject').value = subjectName;
+    document.getElementById('edit-slot-teacher').value = teacherName;
+    document.getElementById('edit-slot-day').value = day;
+    document.getElementById('edit-slot-period').value = period;
+    
+    // Afficher la modale
+    document.getElementById('edit-slot-modal').classList.remove('hidden');
+    document.body.classList.add('overflow-hidden');
+}
+
+function closeEditSlotModal() {
+    document.getElementById('edit-slot-modal').classList.add('hidden');
+    document.body.classList.remove('overflow-hidden');
+}
+
+function updateTimetableSlot() {
+    const slotId = document.getElementById('edit-slot-id').value;
+    const day = document.getElementById('edit-slot-day').value;
+    const period = document.getElementById('edit-slot-period').value;
+    
+    if (!slotId || !day || !period) {
+        alert('Tous les champs sont obligatoires');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('slot_id', slotId);
+    formData.append('day', day);
+    formData.append('period', period);
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+    
+    fetch("{% url 'classes:update_timetable_slot' %}", {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Créneau modifié avec succès', 'success');
+            closeEditSlotModal();
+            // Recharger la page pour afficher les changements
+            location.reload();
+        } else {
+            showNotification(data.error || 'Erreur lors de la modification', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        showNotification('Erreur lors de la modification du créneau', 'error');
+    });
+}
+
+function deleteTimetableSlot() {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer ce créneau ?')) {
+        return;
+    }
+    
+    const slotId = document.getElementById('edit-slot-id').value;
+    
+    const formData = new FormData();
+    formData.append('slot_id', slotId);
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+    
+    fetch("{% url 'classes:delete_timetable_slot' %}", {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Créneau supprimé avec succès', 'success');
+            closeEditSlotModal();
+            // Recharger la page pour afficher les changements
+            location.reload();
+        } else {
+            showNotification(data.error || 'Erreur lors de la suppression', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        showNotification('Erreur lors de la suppression du créneau', 'error');
+    });
+}
+</script>
+{% endblock %}

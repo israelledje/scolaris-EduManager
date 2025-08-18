@@ -1,0 +1,931 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Saisie des Notes - {{ evaluation.get_eval_type_display }}{% endblock %}
+
+{% block breadcrumb_current %}Notes{% endblock %}
+
+{% block breadcrumb %}
+    <span class="text-slate-400">/</span>
+    <a href="{% url 'notes:evaluation_list' %}" class="text-slate-600 hover:text-slate-800">Évaluations</a>
+    <span class="text-slate-400">/</span>
+    <span class="text-slate-700 font-medium">Saisie</span>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Animations personnalisées pour interface de saisie */
+    @keyframes slideInDown {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes scaleIn {
+        from {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    @keyframes pulse-success {
+        0%, 100% {
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+        }
+        50% {
+            box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
+        }
+    }
+
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-5px); }
+        75% { transform: translateX(5px); }
+    }
+
+    .animate-slide-in-down {
+        animation: slideInDown 0.6s ease-out;
+    }
+
+    .animate-fade-in-up {
+        animation: fadeInUp 0.5s ease-out;
+    }
+
+    .animate-scale-in {
+        animation: scaleIn 0.4s ease-out;
+    }
+
+    .animate-pulse-success {
+        animation: pulse-success 2s infinite;
+    }
+
+    .animate-shake {
+        animation: shake 0.5s ease-in-out;
+    }
+
+    .animation-delay-100 { animation-delay: 0.1s; }
+    .animation-delay-200 { animation-delay: 0.2s; }
+    .animation-delay-300 { animation-delay: 0.3s; }
+    .animation-delay-400 { animation-delay: 0.4s; }
+    .animation-delay-500 { animation-delay: 0.5s; }
+
+    /* Gradients professionnels */
+    .bg-gradient-header {
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    }
+
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #1e40af 0%, #1d4ed8 100%);
+    }
+
+    .bg-gradient-success {
+        background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+    }
+
+    .bg-gradient-warning {
+        background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+    }
+
+    .bg-gradient-danger {
+        background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+    }
+
+    .bg-gradient-info {
+        background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
+    }
+
+    .bg-gradient-card {
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    }
+
+    /* Focus ring professionnel */
+    .focus-ring:focus {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+        border-color: #1e40af;
+    }
+
+    /* États des champs de saisie */
+    .grade-input {
+        transition: all 0.3s ease;
+    }
+
+    .grade-input:focus {
+        transform: scale(1.05);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .grade-valid {
+        border-color: #10b981;
+        background-color: #f0fdf4;
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+    }
+
+    .grade-invalid {
+        border-color: #ef4444;
+        background-color: #fef2f2;
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+    }
+
+    .grade-pending {
+        border-color: #f59e0b;
+        background-color: #fffbeb;
+        box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+    }
+
+    /* Hover effects pour les lignes */
+    .student-row {
+        transition: all 0.3s ease;
+    }
+
+    .student-row:hover {
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        transform: translateX(4px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Badges personnalisés */
+    .status-badge {
+        position: relative;
+        overflow: hidden;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-size: 0.75rem;
+    }
+
+    .status-badge::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+        transition: left 0.5s;
+    }
+
+    .status-badge:hover::before {
+        left: 100%;
+    }
+
+    /* Statistiques en temps réel */
+    .stats-card {
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        border: 2px solid #e2e8f0;
+        transition: all 0.3s ease;
+    }
+
+    .stats-card:hover {
+        border-color: #3b82f6;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Progress bar personnalisée */
+    .progress-custom {
+        height: 8px;
+        background: #e2e8f0;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .progress-bar-custom {
+        height: 100%;
+        background: linear-gradient(90deg, #10b981, #34d399);
+        border-radius: 4px;
+        transition: width 0.5s ease;
+    }
+
+    /* Avatar amélioré */
+    .student-avatar {
+        width: 48px;
+        height: 48px;
+        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+        border: 3px solid #ffffff;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        transition: all 0.3s ease;
+    }
+
+    .student-avatar:hover {
+        transform: scale(1.1) rotate(5deg);
+        box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+    }
+
+    /* Textarea améliorée */
+    .remarks-input {
+        resize: vertical;
+        min-height: 60px;
+        transition: all 0.3s ease;
+    }
+
+    .remarks-input:focus {
+        min-height: 80px;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    /* Boutons d'action */
+    .action-btn {
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .action-btn::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        transition: width 0.3s, height 0.3s;
+    }
+
+    .action-btn:hover::before {
+        width: 100px;
+        height: 100px;
+    }
+
+    /* Notifications toast personnalisées */
+    .toast-custom {
+        backdrop-filter: blur(10px);
+        border: none;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Séparateurs élégants */
+    .section-divider {
+        background: linear-gradient(90deg, transparent, #e5e7eb, transparent);
+        height: 1px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-header">
+    <!-- En-tête principal -->
+    <div class="bg-white border-b border-gray-200 shadow-sm">
+        <div class="max-w-7xl mx-auto px-6 py-8">
+            <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 animate-slide-in-down">
+                <div class="flex items-center gap-4">
+                    <div class="w-16 h-16 bg-gradient-primary rounded-2xl flex items-center justify-center text-white shadow-lg">
+                        <i class="fas fa-edit text-2xl" aria-hidden="true"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-4xl font-black text-gray-900 mb-2">
+                            Saisie des Notes
+                        </h1>
+                        <p class="text-lg text-gray-600 font-medium">
+                            {{ evaluation.get_eval_type_display }} - {{ evaluation.subject.name }}
+                        </p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <button onclick="saveAllGrades()" 
+                            class="inline-flex items-center px-6 py-3 bg-gradient-success text-white rounded-xl font-bold hover:shadow-lg hover:-translate-y-1 transition-all duration-300 action-btn">
+                        <i class="fas fa-save mr-3" aria-hidden="true"></i>
+                        Sauvegarder Tout
+                    </button>
+                    <a href="{% url 'notes:evaluation_list' %}" 
+                       class="inline-flex items-center px-6 py-3 bg-gray-100 border border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 hover:border-gray-400 hover:-translate-y-1 transition-all duration-300">
+                        <i class="fas fa-arrow-left mr-3" aria-hidden="true"></i>
+                        Retour
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contenu principal -->
+    <div class="max-w-7xl mx-auto px-6 py-12">
+        <!-- Informations de l'évaluation -->
+        <div class="mb-12 animate-fade-in-up animation-delay-100">
+            <div class="bg-white rounded-3xl shadow-xl border border-gray-200 overflow-hidden">
+                <div class="px-8 py-6 bg-gradient-info text-white">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 bg-white bg-opacity-20 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-info-circle text-2xl" aria-hidden="true"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-2xl font-bold">{{ evaluation.get_eval_type_display }}</h2>
+                            <p class="text-blue-100 mt-1">{{ evaluation.subject.name }}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="p-8">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div class="text-center p-6 bg-blue-50 rounded-2xl border border-blue-200">
+                            <div class="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center text-white mx-auto mb-3">
+                                <i class="fas fa-users" aria-hidden="true"></i>
+                            </div>
+                            <div class="text-2xl font-black text-blue-600 mb-1">
+                                {{ evaluation.school_class.name }}
+                            </div>
+                            <div class="text-sm font-semibold text-blue-700 uppercase tracking-wider">
+                                Classe
+                            </div>
+                        </div>
+                        
+                        <div class="text-center p-6 bg-green-50 rounded-2xl border border-green-200">
+                            <div class="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center text-white mx-auto mb-3">
+                                <i class="fas fa-calendar-alt" aria-hidden="true"></i>
+                            </div>
+                            <div class="text-2xl font-black text-green-600 mb-1">
+                                {{ evaluation.eval_date|date:"d/m/Y" }}
+                            </div>
+                            <div class="text-sm font-semibold text-green-700 uppercase tracking-wider">
+                                Date
+                            </div>
+                        </div>
+                        
+                        <div class="text-center p-6 bg-purple-50 rounded-2xl border border-purple-200">
+                            <div class="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center text-white mx-auto mb-3">
+                                <i class="fas fa-clock" aria-hidden="true"></i>
+                            </div>
+                            <div class="text-2xl font-black text-purple-600 mb-1">
+                                {{ evaluation.duration }} min
+                            </div>
+                            <div class="text-sm font-semibold text-purple-700 uppercase tracking-wider">
+                                Durée
+                            </div>
+                        </div>
+                        
+                        <div class="text-center p-6 bg-amber-50 rounded-2xl border border-amber-200">
+                            <div class="w-12 h-12 bg-amber-500 rounded-xl flex items-center justify-center text-white mx-auto mb-3">
+                                <i class="fas fa-weight-hanging" aria-hidden="true"></i>
+                            </div>
+                            <div class="text-2xl font-black text-amber-600 mb-1">
+                                {{ evaluation.coefficient }}
+                            </div>
+                            <div class="text-sm font-semibold text-amber-700 uppercase tracking-wider">
+                                Coefficient
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistiques en temps réel -->
+        <div class="mb-12 animate-fade-in-up animation-delay-200">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="stats-card rounded-2xl p-6 text-center">
+                    <div class="text-3xl font-black text-gray-800 mb-2" id="total-students">
+                        {{ students.count }}
+                    </div>
+                    <div class="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-3">
+                        Total Étudiants
+                    </div>
+                    <div class="progress-custom">
+                        <div class="progress-bar-custom" style="width: 100%"></div>
+                    </div>
+                </div>
+                
+                <div class="stats-card rounded-2xl p-6 text-center">
+                    <div class="text-3xl font-black text-green-600 mb-2" id="saved-count">
+                        0
+                    </div>
+                    <div class="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-3">
+                        Notes Sauvegardées
+                    </div>
+                    <div class="progress-custom">
+                        <div class="progress-bar-custom bg-gradient-to-r from-green-500 to-green-400" style="width: 0%" id="saved-progress"></div>
+                    </div>
+                </div>
+                
+                <div class="stats-card rounded-2xl p-6 text-center">
+                    <div class="text-3xl font-black text-amber-600 mb-2" id="pending-count">
+                        0
+                    </div>
+                    <div class="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-3">
+                        En Attente
+                    </div>
+                    <div class="progress-custom">
+                        <div class="progress-bar-custom bg-gradient-to-r from-amber-500 to-amber-400" style="width: 0%" id="pending-progress"></div>
+                    </div>
+                </div>
+                
+                <div class="stats-card rounded-2xl p-6 text-center">
+                    <div class="text-3xl font-black text-blue-600 mb-2" id="average-grade">
+                        0.00
+                    </div>
+                    <div class="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-3">
+                        Moyenne /20
+                    </div>
+                    <div class="progress-custom">
+                        <div class="progress-bar-custom bg-gradient-to-r from-blue-500 to-blue-400" style="width: 0%" id="average-progress"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tableau de saisie -->
+        <div class="animate-scale-in animation-delay-300">
+            <div class="bg-white rounded-3xl shadow-xl border border-gray-200 overflow-hidden">
+                <div class="px-8 py-6 bg-gradient-card border-b border-gray-100">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 bg-gradient-primary rounded-xl flex items-center justify-center text-white shadow-md">
+                            <i class="fas fa-edit text-lg" aria-hidden="true"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-900">Saisie des Notes</h2>
+                            <p class="text-gray-600 mt-1">{{ students.count }} étudiant{{ students.count|pluralize }} à évaluer</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50 border-b border-gray-200">
+                            <tr>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-800 uppercase tracking-wider w-16">
+                                    #
+                                </th>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-800 uppercase tracking-wider min-w-80">
+                                    Étudiant
+                                </th>
+                                <th class="px-6 py-4 text-center text-xs font-bold text-gray-800 uppercase tracking-wider w-32">
+                                    Note /20
+                                </th>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-800 uppercase tracking-wider min-w-64">
+                                    Remarques
+                                </th>
+                                <th class="px-6 py-4 text-center text-xs font-bold text-gray-800 uppercase tracking-wider w-32">
+                                    Statut
+                                </th>
+                                <th class="px-6 py-4 text-center text-xs font-bold text-gray-800 uppercase tracking-wider w-24">
+                                    Actions
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for student in students %}
+                            <tr class="student-row" data-student-id="{{ student.id }}">
+                                <td class="px-6 py-6 whitespace-nowrap text-sm font-bold text-gray-900">
+                                    {{ forloop.counter }}
+                                </td>
+                                <td class="px-6 py-6 whitespace-nowrap">
+                                    <div class="flex items-center gap-4">
+                                        <div class="student-avatar rounded-full flex items-center justify-center text-white font-bold text-lg">
+                                            {{ student.first_name|first }}{{ student.last_name|first }}
+                                        </div>
+                                        <div>
+                                            <div class="text-lg font-bold text-gray-900">
+                                                {{ student.last_name.upper }} {{ student.first_name }}
+                                            </div>
+                                            <div class="text-sm text-gray-500 font-medium">
+                                                Matricule: {{ student.matricule }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-6 whitespace-nowrap text-center">
+                                    <input type="number"
+                                           class="grade-input w-24 px-4 py-3 border-2 border-gray-300 rounded-xl text-center text-lg font-bold focus-ring transition-all duration-300"
+                                           id="grade-{{ student.id }}"
+                                           data-student-id="{{ student.id }}"
+                                           min="0"
+                                           max="20"
+                                           step="0.25"
+                                           value="{% for grade in grades_dict.values %}{% if grade.student_id == student.id %}{{ grade.score }}{% endif %}{% endfor %}"
+                                           onchange="validateGrade(this)"
+                                           onblur="saveGrade({{ student.id }})"
+                                           placeholder="0.00">
+                                </td>
+                                <td class="px-6 py-6">
+                                    <textarea class="remarks-input w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus-ring transition-all duration-300 resize-none"
+                                              id="remarks-{{ student.id }}"
+                                              data-student-id="{{ student.id }}"
+                                              placeholder="Commentaires et observations..."
+                                              onblur="saveGrade({{ student.id }})"
+                                              rows="2">{% for grade in grades_dict.values %}{% if grade.student_id == student.id %}{{ grade.remarks }}{% endif %}{% endfor %}</textarea>
+                                </td>
+                                <td class="px-6 py-6 whitespace-nowrap text-center">
+                                    <div class="grade-status" id="status-{{ student.id }}">
+                                        <span class="status-badge inline-flex items-center px-3 py-1 rounded-full text-xs bg-gray-100 text-gray-800">
+                                            <i class="fas fa-clock mr-1" aria-hidden="true"></i>
+                                            En attente
+                                        </span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-6 whitespace-nowrap text-center">
+                                    <button onclick="saveGrade({{ student.id }})" 
+                                            class="action-btn inline-flex items-center justify-center w-10 h-10 bg-blue-100 text-blue-600 rounded-xl hover:bg-blue-200 hover:text-blue-700 hover:scale-110 transition-all duration-300">
+                                        <i class="fas fa-save" aria-hidden="true"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Footer avec actions -->
+                <div class="px-8 py-6 bg-gray-50 border-t border-gray-200">
+                    <div class="flex flex-col lg:flex-row justify-between items-center gap-6">
+                        <div class="flex flex-wrap items-center gap-6 text-sm text-gray-600">
+                            <div class="flex items-center gap-2">
+                                <i class="fas fa-users text-blue-500" aria-hidden="true"></i>
+                                <span class="font-semibold">Total: {{ students.count }} étudiants</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <i class="fas fa-check-circle text-green-500" aria-hidden="true"></i>
+                                <span class="font-semibold">Sauvegardées: <span id="saved-count-footer">0</span></span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <i class="fas fa-clock text-amber-500" aria-hidden="true"></i>
+                                <span class="font-semibold">En attente: <span id="pending-count-footer">0</span></span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <i class="fas fa-chart-line text-purple-500" aria-hidden="true"></i>
+                                <span class="font-semibold">Moyenne: <span id="average-grade-footer">0.00</span>/20</span>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center gap-4">
+                            <button onclick="saveAllGrades()" 
+                                    class="action-btn inline-flex items-center px-8 py-4 bg-gradient-success text-white rounded-xl font-bold hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+                                <i class="fas fa-save mr-3" aria-hidden="true"></i>
+                                Sauvegarder Tout
+                            </button>
+                            {% if evaluation.is_open %}
+                            <button onclick="closeEvaluation()" 
+                                    class="action-btn inline-flex items-center px-8 py-4 bg-gradient-danger text-white rounded-xl font-bold hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+                                <i class="fas fa-lock mr-3" aria-hidden="true"></i>
+                                Clôturer l'Évaluation
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Container pour les notifications -->
+<div class="fixed top-4 right-4 z-50 space-y-4" id="toast-container"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Gestionnaire de saisie des notes professionnel
+    class GradeEntryManager {
+        constructor() {
+            this.pendingSaves = new Set();
+            this.savedGrades = new Set();
+            this.totalStudents = {{ students.count }};
+            
+            this.init();
+        }
+
+        init() {
+            this.updateCounters();
+            this.setupKeyboardShortcuts();
+            this.setupAutoSave();
+            this.loadExistingGrades();
+        }
+
+        // Charger les notes existantes
+        loadExistingGrades() {
+            document.querySelectorAll('.grade-input').forEach(input => {
+                if (input.value) {
+                    this.savedGrades.add(parseInt(input.dataset.studentId));
+                    this.updateStatus(parseInt(input.dataset.studentId), 'saved');
+                }
+            });
+            this.updateCounters();
+        }
+
+        // Mettre à jour les compteurs
+        updateCounters() {
+            const saved = this.savedGrades.size;
+            const pending = this.pendingSaves.size;
+            
+            // Mettre à jour les compteurs principaux
+            document.getElementById('saved-count').textContent = saved;
+            document.getElementById('pending-count').textContent = pending;
+            document.getElementById('saved-count-footer').textContent = saved;
+            document.getElementById('pending-count-footer').textContent = pending;
+            
+            // Mettre à jour les barres de progression
+            const savedPercent = (saved / this.totalStudents) * 100;
+            const pendingPercent = (pending / this.totalStudents) * 100;
+            
+            document.getElementById('saved-progress').style.width = `${savedPercent}%`;
+            document.getElementById('pending-progress').style.width = `${pendingPercent}%`;
+            
+            // Calculer et afficher la moyenne
+            this.updateAverage();
+        }
+
+        // Calculer la moyenne
+        updateAverage() {
+            let totalGrade = 0;
+            let gradeCount = 0;
+            
+            document.querySelectorAll('.grade-input').forEach(input => {
+                if (input.value && !isNaN(input.value)) {
+                    totalGrade += parseFloat(input.value);
+                    gradeCount++;
+                }
+            });
+            
+            const average = gradeCount > 0 ? (totalGrade / gradeCount).toFixed(2) : '0.00';
+            const averagePercent = gradeCount > 0 ? (average / 20) * 100 : 0;
+            
+            document.getElementById('average-grade').textContent = average;
+            document.getElementById('average-grade-footer').textContent = average;
+            document.getElementById('average-progress').style.width = `${averagePercent}%`;
+        }
+
+        // Valider une note
+        validateGrade(input) {
+            const value = parseFloat(input.value);
+            
+            // Réinitialiser les classes
+            input.classList.remove('grade-valid', 'grade-invalid', 'grade-pending');
+            
+            if (input.value === '') {
+                return true;
+            }
+            
+            if (isNaN(value) || value < 0 || value > 20) {
+                input.classList.add('grade-invalid', 'animate-shake');
+                this.showToast('Note invalide. Doit être entre 0 et 20.', 'error');
+                
+                // Retirer l'animation après un délai
+                setTimeout(() => {
+                    input.classList.remove('animate-shake');
+                }, 500);
+                
+                return false;
+            }
+            
+            input.classList.add('grade-valid');
+            return true;
+        }
+
+        // Sauvegarder une note
+        async saveGrade(studentId) {
+            const gradeInput = document.getElementById(`grade-${studentId}`);
+            const remarksInput = document.getElementById(`remarks-${studentId}`);
+            
+            if (!this.validateGrade(gradeInput)) {
+                return;
+            }
+            
+            const data = {
+                evaluation_id: {{ evaluation.id }},
+                student_id: studentId,
+                score: gradeInput.value,
+                remarks: remarksInput.value
+            };
+            
+            // Marquer comme en attente
+            this.pendingSaves.add(studentId);
+            gradeInput.classList.add('grade-pending');
+            this.updateStatus(studentId, 'pending');
+            this.updateCounters();
+            
+            try {
+                const response = await fetch('{% url "notes:save_grade_ajax" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    this.savedGrades.add(studentId);
+                    this.pendingSaves.delete(studentId);
+                    gradeInput.classList.remove('grade-pending');
+                    gradeInput.classList.add('grade-valid');
+                    this.updateStatus(studentId, 'saved');
+                    this.showToast('Note sauvegardée avec succès.', 'success');
+                } else {
+                    this.pendingSaves.delete(studentId);
+                    gradeInput.classList.remove('grade-pending');
+                    gradeInput.classList.add('grade-invalid');
+                    this.updateStatus(studentId, 'error');
+                    this.showToast('Erreur lors de la sauvegarde: ' + result.error, 'error');
+                }
+            } catch (error) {
+                this.pendingSaves.delete(studentId);
+                gradeInput.classList.remove('grade-pending');
+                gradeInput.classList.add('grade-invalid');
+                this.updateStatus(studentId, 'error');
+                this.showToast('Erreur de connexion.', 'error');
+            }
+            
+            this.updateCounters();
+        }
+
+        // Sauvegarder toutes les notes
+        async saveAllGrades() {
+            const unsavedInputs = Array.from(document.querySelectorAll('.grade-input')).filter(input => {
+                const studentId = parseInt(input.dataset.studentId);
+                return input.value && !this.savedGrades.has(studentId) && !this.pendingSaves.has(studentId);
+            });
+            
+            if (unsavedInputs.length === 0) {
+                this.showToast('Toutes les notes sont déjà sauvegardées.', 'success');
+                return;
+            }
+            
+            this.showToast(`Sauvegarde de ${unsavedInputs.length} notes en cours...`, 'info');
+            
+            // Sauvegarder toutes les notes en parallèle
+            const savePromises = unsavedInputs.map(input => {
+                const studentId = parseInt(input.dataset.studentId);
+                return this.saveGrade(studentId);
+            });
+            
+            await Promise.all(savePromises);
+            this.showToast('Toutes les notes ont été sauvegardées.', 'success');
+        }
+
+        // Mettre à jour le statut
+        updateStatus(studentId, status) {
+            const statusDiv = document.getElementById(`status-${studentId}`);
+            
+            let badgeClass, icon, text;
+            
+            switch (status) {
+                case 'saved':
+                    badgeClass = 'bg-green-100 text-green-800';
+                    icon = 'fas fa-check-circle';
+                    text = 'Sauvegardé';
+                    break;
+                case 'pending':
+                    badgeClass = 'bg-amber-100 text-amber-800';
+                    icon = 'fas fa-clock';
+                    text = 'En cours...';
+                    break;
+                case 'error':
+                    badgeClass = 'bg-red-100 text-red-800';
+                    icon = 'fas fa-exclamation-circle';
+                    text = 'Erreur';
+                    break;
+                default:
+                    badgeClass = 'bg-gray-100 text-gray-800';
+                    icon = 'fas fa-clock';
+                    text = 'En attente';
+            }
+            
+            statusDiv.innerHTML = `
+                <span class="status-badge inline-flex items-center px-3 py-1 rounded-full text-xs ${badgeClass}">
+                    <i class="${icon} mr-1" aria-hidden="true"></i>
+                    ${text}
+                </span>
+            `;
+        }
+
+        // Afficher une notification toast
+        showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            let bgClass, iconClass;
+            switch (type) {
+                case 'success':
+                    bgClass = 'bg-green-500';
+                    iconClass = 'fas fa-check-circle';
+                    break;
+                case 'error':
+                    bgClass = 'bg-red-500';
+                    iconClass = 'fas fa-exclamation-circle';
+                    break;
+                case 'info':
+                    bgClass = 'bg-blue-500';
+                    iconClass = 'fas fa-info-circle';
+                    break;
+                default:
+                    bgClass = 'bg-gray-500';
+                    iconClass = 'fas fa-bell';
+            }
+            
+            toast.className = `toast-custom ${bgClass} text-white rounded-xl p-4 shadow-2xl transform transition-all duration-300 translate-x-full`;
+            toast.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <i class="${iconClass} text-lg" aria-hidden="true"></i>
+                    <span class="font-medium">${message}</span>
+                    <button onclick="this.parentElement.parentElement.remove()" class="ml-auto text-white hover:text-gray-200">
+                        <i class="fas fa-times" aria-hidden="true"></i>
+                    </button>
+                </div>
+            `;
+            
+            container.appendChild(toast);
+            
+            // Animation d'entrée
+            setTimeout(() => toast.classList.remove('translate-x-full'), 100);
+            
+            // Suppression automatique
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    toast.classList.add('translate-x-full');
+                    setTimeout(() => toast.remove(), 300);
+                }
+            }, 5000);
+        }
+
+        // Configuration des raccourcis clavier
+        setupKeyboardShortcuts() {
+            document.addEventListener('keydown', (e) => {
+                // Ctrl+S pour sauvegarder tout
+                if (e.ctrlKey && e.key === 's') {
+                    e.preventDefault();
+                    this.saveAllGrades();
+                }
+                
+                // Échap pour annuler le focus
+                if (e.key === 'Escape') {
+                    document.activeElement.blur();
+                }
+            });
+        }
+
+        // Sauvegarde automatique
+        setupAutoSave() {
+            let autoSaveTimeout;
+            
+            document.querySelectorAll('.grade-input, .remarks-input').forEach(input => {
+                input.addEventListener('input', () => {
+                    clearTimeout(autoSaveTimeout);
+                    autoSaveTimeout = setTimeout(() => {
+                        const studentId = parseInt(input.dataset.studentId);
+                        if (!this.pendingSaves.has(studentId)) {
+                            this.saveGrade(studentId);
+                        }
+                    }, 2000); // Auto-save après 2 secondes d'inactivité
+                });
+            });
+        }
+
+        // Clôturer l'évaluation
+        closeEvaluation() {
+            if (this.pendingSaves.size > 0) {
+                this.showToast('Veuillez d\'abord sauvegarder toutes les notes en attente.', 'error');
+                return;
+            }
+            
+            if (confirm('Êtes-vous sûr de vouloir clôturer cette évaluation ? Cette action est irréversible.')) {
+                window.location.href = '{% url "notes:evaluation_close" pk=evaluation.id %}';
+            }
+        }
+    }
+
+    // Fonctions globales pour la compatibilité
+    let gradeManager;
+
+    function validateGrade(input) {
+        return gradeManager.validateGrade(input);
+    }
+
+    function saveGrade(studentId) {
+        return gradeManager.saveGrade(studentId);
+    }
+
+    function saveAllGrades() {
+        return gradeManager.saveAllGrades();
+    }
+
+    function closeEvaluation() {
+        return gradeManager.closeEvaluation();
+    }
+
+    // Initialisation
+    document.addEventListener('DOMContentLoaded', function() {
+        gradeManager = new GradeEntryManager();
+    });
+</script>
+{% endblock %}

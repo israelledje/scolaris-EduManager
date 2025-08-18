@@ -1,0 +1,23 @@
+<div class="text-center py-12">
+  <!-- Icône de succès -->
+  <div class="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+    <i class="fas fa-check-circle text-4xl text-green-600"></i>
+  </div>
+  
+  <!-- Message de succès -->
+  <h3 class="text-2xl font-bold text-slate-900 mb-4">Opération réussie !</h3>
+  <p class="text-slate-600 text-lg mb-8">{{ message }}</p>
+  
+  <!-- Bouton pour fermer la modale -->
+  <button onclick="closeGuardianModal()" 
+          class="px-8 py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-200 shadow-lg hover:shadow-xl font-medium">
+    <i class="fas fa-check mr-2"></i>
+    Continuer
+  </button>
+  
+  <!-- Message d'information -->
+  <p class="text-sm text-slate-500 mt-4">
+    <i class="fas fa-info-circle mr-1"></i>
+    La liste des parents sera mise à jour lors du prochain rechargement de la page
+  </p>
+</div>

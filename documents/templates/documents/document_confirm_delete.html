@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Supprimer le document - {{ document.title }}{% endblock %}
+{% block page_title %}Supprimer le document{% endblock %}
+{% block breadcrumb_current %}Supprimer{% endblock %}
+
+{% block page_actions %}
+<div class="flex items-center gap-3">
+    <a href="{% url 'documents:document_list' student.pk %}" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2 px-4 rounded-xl transition-all duration-200">
+        <i class="fas fa-arrow-left mr-2"></i>Retour
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <!-- En-tête de l'étudiant -->
+    <div class="card-hover bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden mb-6">
+        <div class="px-6 py-4 border-b border-slate-200/60 bg-gradient-to-r from-blue-50 to-indigo-50">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-lg mr-4">
+                    <i class="fas fa-user-graduate"></i>
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold text-slate-900">{{ student.get_full_name }}</h2>
+                    <p class="text-slate-600">
+                        Matricule: {{ student.matricule }} | 
+                        Classe: {{ student.current_class.name|default:"Non assigné" }}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation de suppression -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-200/60 bg-red-50">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-exclamation-triangle text-red-400 text-xl"></i>
+                </div>
+                <div class="ml-3">
+                    <h3 class="text-lg font-semibold text-red-800">
+                        Confirmer la suppression
+                    </h3>
+                </div>
+            </div>
+        </div>
+        
+        <div class="p-6">
+            <!-- Informations du document -->
+            <div class="mb-6">
+                <div class="flex items-center gap-4 p-4 bg-slate-50 rounded-xl">
+                    <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                        {% if document.file_extension == '.pdf' %}
+                            <i class="fas fa-file-pdf text-red-600 text-xl"></i>
+                        {% elif document.file_extension in '.doc,.docx' %}
+                            <i class="fas fa-file-word text-blue-600 text-xl"></i>
+                        {% elif document.file_extension in '.jpg,.jpeg,.png' %}
+                            <i class="fas fa-file-image text-green-600 text-xl"></i>
+                        {% else %}
+                            <i class="fas fa-file text-slate-600 text-xl"></i>
+                        {% endif %}
+                    </div>
+                    <div class="flex-1">
+                        <h4 class="text-lg font-semibold text-slate-900">{{ document.title }}</h4>
+                        <p class="text-sm text-slate-600">{{ document.category.name }} - {{ document.file_size_mb }} MB</p>
+                        <p class="text-sm text-slate-500">Uploadé le {{ document.uploaded_at|date:"d/m/Y" }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Message d'avertissement -->
+            <div class="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-exclamation-triangle text-amber-400"></i>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-medium text-amber-800">
+                            Attention
+                        </h3>
+                        <div class="mt-2 text-sm text-amber-700">
+                            <p>Êtes-vous sûr de vouloir supprimer ce document ?</p>
+                            <p class="mt-1">Cette action est irréversible et supprimera définitivement le fichier du serveur.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Formulaire de confirmation -->
+            <form method="post">
+                {% csrf_token %}
+                <div class="flex items-center justify-end gap-4">
+                    <a href="{% url 'documents:document_list' student.pk %}" 
+                       class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 px-6 rounded-xl transition-all duration-200">
+                        Annuler
+                    </a>
+                    <button type="submit" 
+                            class="bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200">
+                        <i class="fas fa-trash mr-2"></i>Supprimer définitivement
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %} 

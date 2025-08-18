@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block page_title %}Emplois du temps{% endblock %}
+
+{% block page_actions %}
+<div class="flex items-center gap-3">
+    <button
+        hx-get="{% url 'classes:timetable_create_htmx' %}"
+        hx-target="#modal-content"
+        hx-trigger="click"
+        hx-swap="innerHTML"
+        onclick="openClassModal()"
+        type="button"
+        class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl">
+        <i class="fas fa-plus"></i>
+        <span class="font-medium">Ajouter un emploi du temps</span>
+    </button>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden mt-6">
+    <table class="min-w-full">
+        <thead class="bg-slate-50 border-b border-slate-200">
+            <tr>
+                <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Classe</th>
+                <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Année</th>
+                <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">École</th>
+                <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Créé le</th>
+                <th class="px-6 py-4 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">Actions</th>
+            </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-slate-200">
+            {% for timetable in timetables %}
+                {% include "classes/timetable_row.html" with timetable=timetable %}
+            {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center py-8 text-slate-500">Aucun emploi du temps trouvé.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal pour les formulaires htmx -->
+<div id="modal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
+    <div id="modal-content" class="bg-white rounded-xl shadow-lg p-6 w-full max-w-lg relative">
+        <!-- Le contenu du formulaire htmx sera injecté ici -->
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'js/htmx.min.js' %}"></script>
+    <script src="{% static 'js/gestion_classes.js' %}"></script>
+{% endblock %} 

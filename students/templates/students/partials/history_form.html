@@ -1,0 +1,21 @@
+<form id="history-form" method="post" hx-post="" hx-target="#history-list" hx-swap="outerHTML" class="space-y-4">
+  {% csrf_token %}
+  {{ form.non_field_errors }}
+  <div>
+    <label class="block text-gray-700 text-sm font-medium mb-1">Classe</label>
+    {{ form.school_class }}
+  </div>
+  <div>
+    <label class="block text-gray-700 text-sm font-medium mb-1">Année</label>
+    {{ form.year }}
+  </div>
+  <div class="flex items-center gap-2">
+    {{ form.is_repeating }}
+    <label class="text-gray-700 text-sm">Redoublant</label>
+  </div>
+  {{ form.student }}
+  <div class="flex justify-end gap-2 mt-4">
+    <button type="submit" class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg shadow">Enregistrer</button>
+    <button type="button" class="inline-flex items-center px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-semibold rounded-lg shadow" @click="open = false">Annuler</button>
+  </div>
+</form> 

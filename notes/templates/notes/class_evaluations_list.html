@@ -1,0 +1,336 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Évaluations - {{ school_class.name }}{% endblock %}
+
+{% block breadcrumb_current %}Notes{% endblock %}
+{% block breadcrumb %}
+    <span class="text-slate-400">/</span>
+    <a href="{% url 'notes:evaluation_list' %}" class="text-slate-600 hover:text-slate-800">Évaluations</a>
+    <span class="text-slate-400">/</span>
+    <span class="text-slate-700 font-medium">{{ school_class.name }}</span>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- En-tête de la classe -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6">
+        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+            <div class="flex items-center gap-4">
+                <div class="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center text-white font-bold text-2xl">
+                    <span>{{ school_class.name|slice:":2" }}</span>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-bold text-slate-900">{{ school_class.name }}</h1>
+                    <p class="text-slate-600">{{ total_students }} étudiant{{ total_students|pluralize }}</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                {% if can_generate_bulletins %}
+                <a href="{% url 'notes:generate_bulletins' ready_trimester.id %}"
+                    class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-semibold hover:from-emerald-700 hover:to-teal-700 transition-all duration-200 shadow-lg hover:shadow-xl">
+                    <i class="fas fa-file-alt mr-2"></i>
+                    Générer bulletins
+                </a>
+                {% endif %}
+                <a href="{% url 'notes:evaluation_create' %}"
+                    class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-all duration-200">
+                    <i class="fas fa-plus mr-2"></i>
+                    Nouvelle évaluation
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques de la classe -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200/50">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="text-2xl font-bold text-slate-900">{{ total_evaluations }}</div>
+                    <div class="text-blue-700 font-medium">Évaluations totales</div>
+                </div>
+                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center text-white">
+                    <i class="fas fa-clipboard-list text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-6 border border-emerald-200/50">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="text-2xl font-bold text-slate-900">{{ completed_evaluations }}</div>
+                    <div class="text-emerald-700 font-medium">Évaluations complètes</div>
+                </div>
+                <div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center text-white">
+                    <i class="fas fa-check-circle text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-6 border border-amber-200/50">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="text-2xl font-bold text-slate-900">{{ total_grades }}</div>
+                    <div class="text-amber-700 font-medium">Notes saisies</div>
+                </div>
+                <div class="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center text-white">
+                    <i class="fas fa-star text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-6 border border-purple-200/50">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="text-2xl font-bold text-slate-900">
+                        {% if total_evaluations %}
+                            {% widthratio completed_evaluations total_evaluations 100 %}%
+                        {% else %}
+                            0%
+                        {% endif %}
+                    </div>
+                    <div class="text-purple-700 font-medium">Taux de complétion</div>
+                </div>
+                <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center text-white">
+                    <i class="fas fa-chart-pie text-xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtres -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6">
+        <div class="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+            <!-- Search Bar -->
+            <div class="flex-1 max-w-md">
+                <form method="get" class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <i class="fas fa-search text-slate-400"></i>
+                    </div>
+                    <input type="text" name="search" value="{{ search|default:'' }}"
+                        class="w-full pl-11 pr-4 py-3 border border-slate-200 rounded-xl bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 placeholder-slate-400"
+                        placeholder="Rechercher une évaluation..." />
+                </form>
+            </div>
+
+            <!-- Filters -->
+            <div class="flex flex-wrap gap-3">
+                <!-- Trimestre Filter -->
+                <select name="trimester" class="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors duration-200">
+                    <option value="">Tous les trimestres</option>
+                    {% for trimester in trimesters %}
+                    <option value="{{ trimester.id }}" {% if selected_trimester == trimester.id %}selected{% endif %}>
+                        {{ trimester.get_trimester_display }}
+                    </option>
+                    {% endfor %}
+                </select>
+                
+                <!-- Matière Filter -->
+                <select name="subject" class="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors duration-200">
+                    <option value="">Toutes les matières</option>
+                    {% for subject in subjects %}
+                    <option value="{{ subject.id }}" {% if selected_subject == subject.id %}selected{% endif %}>
+                        {{ subject.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+                
+                <!-- Status Filter -->
+                <select name="status" class="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors duration-200">
+                    <option value="">Tous les statuts</option>
+                    <option value="open" {% if status_filter == 'open' %}selected{% endif %}>Ouvertes</option>
+                    <option value="closed" {% if status_filter == 'closed' %}selected{% endif %}>Fermées</option>
+                </select>
+
+                <!-- Reset Filters -->
+                <a href="{% url 'notes:class_evaluations_list' school_class.id %}"
+                    class="flex items-center gap-2 px-4 py-3 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors duration-200">
+                    <i class="fas fa-undo text-slate-500"></i>
+                    <span class="text-slate-700 font-medium">Reset</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des évaluations -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">
+        <!-- Header -->
+        <div class="px-6 py-4 border-b border-slate-200 bg-slate-50">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-lg font-semibold text-slate-900">
+                        Évaluations de {{ school_class.name }}
+                    </h3>
+                    <p class="text-sm text-slate-500">
+                        {{ evaluations|length }} évaluation{{ evaluations|length|pluralize }}
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Evaluations Grid -->
+        <div class="p-6">
+            {% if evaluations %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for evaluation in evaluations %}
+                <div class="group bg-slate-50 border border-slate-200 rounded-xl p-6 hover:shadow-lg hover:border-indigo-200 transition-all duration-300">
+                    <!-- Evaluation Header -->
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center text-white font-bold text-lg">
+                                <span>{{ evaluation.get_eval_type_display|slice:":2" }}</span>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-900">{{ evaluation.get_eval_type_display }}</h4>
+                                <p class="text-sm text-slate-600">{{ evaluation.subject.name }}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            {% if evaluation.is_open %}
+                                <span class="w-3 h-3 bg-emerald-500 rounded-full"></span>
+                                <span class="text-xs text-emerald-600 font-medium">Ouverte</span>
+                            {% else %}
+                                <span class="w-3 h-3 bg-red-500 rounded-full"></span>
+                                <span class="text-xs text-red-600 font-medium">Fermée</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Evaluation Info -->
+                    <div class="space-y-3 mb-4">
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-slate-600">Date</span>
+                            <span class="font-medium text-slate-900">{{ evaluation.eval_date|date:"d/m/Y" }}</span>
+                        </div>
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-slate-600">Trimestre</span>
+                            <span class="font-medium text-slate-900">{{ evaluation.trimester.get_trimester_display }}</span>
+                        </div>
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-slate-600">Coefficient</span>
+                            <span class="font-medium text-slate-900">{{ evaluation.coefficient }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div class="mb-4">
+                        <div class="flex items-center justify-between text-sm text-slate-600 mb-2">
+                            <span>Notes saisies</span>
+                            <span>{{ evaluation.grades.count }}/{{ total_students }}</span>
+                        </div>
+                        <div class="w-full bg-slate-200 rounded-full h-2">
+                            <div class="bg-gradient-to-r from-indigo-500 to-purple-500 h-2 rounded-full transition-all duration-500"
+                                style="width: {% if total_students %}{% widthratio evaluation.grades.count total_students 100 %}{% else %}0{% endif %}%">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex items-center gap-2">
+                        <a href="{% url 'notes:evaluation_detail' evaluation.pk %}"
+                            class="flex-1 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition-colors duration-200 text-center">
+                            <i class="fas fa-eye mr-1"></i>
+                            Voir
+                        </a>
+                        {% if evaluation.is_open %}
+                        <a href="{% url 'notes:grade_entry' evaluation.pk %}"
+                            class="flex-1 px-3 py-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-lg text-sm font-medium transition-colors duration-200 text-center">
+                            <i class="fas fa-edit mr-1"></i>
+                            Saisir
+                        </a>
+                        {% endif %}
+                        <button onclick="deleteEvaluation({{ evaluation.pk }})"
+                            class="px-3 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-sm transition-colors duration-200">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-12">
+                <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-clipboard-list text-2xl text-slate-400"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-slate-900 mb-2">
+                    Aucune évaluation trouvée
+                </h3>
+                <p class="text-slate-500 text-sm mb-4">
+                    {% if request.GET %}
+                        Aucune évaluation ne correspond à vos critères de recherche
+                    {% else %}
+                        Commencez par créer votre première évaluation pour cette classe
+                    {% endif %}
+                </p>
+                <a href="{% url 'notes:evaluation_create' %}" 
+                   class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all duration-200">
+                    <i class="fas fa-plus mr-2"></i>
+                    Créer une évaluation
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if evaluations.has_other_pages %}
+    <nav aria-label="Pagination des évaluations" class="flex items-center justify-center">
+        <ul class="flex items-center gap-2">
+            {% if evaluations.has_previous %}
+            <li>
+                <a href="?page={{ evaluations.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
+                    class="px-3 py-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors duration-200">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+            </li>
+            {% endif %}
+            
+            {% for num in evaluations.paginator.page_range %}
+            <li>
+                <a href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
+                    class="px-3 py-2 {% if evaluations.number == num %}bg-indigo-600 text-white{% else %}bg-white border border-slate-200 hover:bg-slate-50{% endif %} rounded-lg transition-colors duration-200">
+                    {{ num }}
+                </a>
+            </li>
+            {% endfor %}
+            
+            {% if evaluations.has_next %}
+            <li>
+                <a href="?page={{ evaluations.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
+                    class="px-3 py-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors duration-200">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Forcer l'activation du lien Notes dans la sidebar
+    const notesLink = document.querySelector('[data-page="notes"]');
+    if (notesLink) {
+        notesLink.classList.add('active');
+    }
+    
+    // Désactiver les autres liens actifs
+    document.querySelectorAll('.sidebar-link.active').forEach(link => {
+        if (link !== notesLink) {
+            link.classList.remove('active');
+        }
+    });
+});
+
+// Fonction de suppression d'évaluation
+function deleteEvaluation(evaluationId) {
+    if (confirm('Êtes-vous sûr de vouloir supprimer cette évaluation ? Cette action est irréversible.')) {
+        window.location.href = `/notes/evaluations/${evaluationId}/delete/`;
+    }
+}
+</script>
+{% endblock %} 

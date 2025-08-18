@@ -1,0 +1,892 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if evaluation %}Modifier l'Évaluation{% else %}Nouvelle Évaluation{% endif %}{% endblock %}
+
+{% block breadcrumb_current %}Notes{% endblock %}
+{% block breadcrumb %}
+    <span class="text-slate-400">/</span>
+    <a href="{% url 'notes:evaluation_list' %}" class="text-slate-600 hover:text-slate-800">Évaluations</a>
+    <span class="text-slate-400">/</span>
+    <span class="text-slate-700 font-medium">{% if evaluation %}Modifier{% else %}Nouvelle{% endif %}</span>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Animations personnalisées pour une interface solennelle */
+    @keyframes slideInDown {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes scaleIn {
+        from {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    .animate-slide-in-down {
+        animation: slideInDown 0.6s ease-out;
+    }
+
+    .animate-fade-in-up {
+        animation: fadeInUp 0.5s ease-out;
+    }
+
+    .animate-scale-in {
+        animation: scaleIn 0.4s ease-out;
+    }
+
+    .animation-delay-100 { animation-delay: 0.1s; }
+    .animation-delay-200 { animation-delay: 0.2s; }
+    .animation-delay-300 { animation-delay: 0.3s; }
+    .animation-delay-400 { animation-delay: 0.4s; }
+    .animation-delay-500 { animation-delay: 0.5s; }
+
+    /* Gradients professionnels */
+    .bg-gradient-header {
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    }
+
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #1e40af 0%, #1d4ed8 100%);
+    }
+
+    .bg-gradient-section {
+        background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+    }
+
+    .bg-gradient-card {
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    }
+
+    /* Focus ring professionnel */
+    .focus-ring:focus {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+        border-color: #1e40af;
+    }
+
+    /* Hover effects subtils */
+    .hover-lift {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .hover-lift:hover {
+        transform: translateY(-1px);
+    }
+
+    .hover-shadow:hover {
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    /* États de validation */
+    .field-valid {
+        border-color: #059669;
+        background-color: #f0fdf4;
+    }
+
+    .field-invalid {
+        border-color: #dc2626;
+        background-color: #fef2f2;
+    }
+
+    .field-invalid:focus {
+        box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+    }
+
+    /* Séparateurs élégants */
+    .section-divider {
+        background: linear-gradient(90deg, transparent, #e5e7eb, transparent);
+        height: 1px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-header">
+    <!-- En-tête principal -->
+    <div class="bg-white border-b border-gray-200 shadow-sm">
+        <div class="max-w-7xl mx-auto px-6 py-8">
+            <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 animate-slide-in-down">
+                <div class="flex items-center gap-4">
+                    <div class="w-16 h-16 bg-gradient-primary rounded-2xl flex items-center justify-center text-white shadow-lg">
+                        {% if evaluation %}
+                            <i class="fas fa-edit text-2xl" aria-hidden="true"></i>
+                        {% else %}
+                            <i class="fas fa-plus text-2xl" aria-hidden="true"></i>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <h1 class="text-4xl font-black text-gray-900 mb-2">
+                            {% if evaluation %}
+                                Modification d'Évaluation
+                            {% else %}
+                                Création d'Évaluation
+                            {% endif %}
+                        </h1>
+                        <p class="text-lg text-gray-600 font-medium">
+                            {% if evaluation %}
+                                Modifier les paramètres de l'évaluation existante
+                            {% else %}
+                                Définir les paramètres d'une nouvelle évaluation
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <a href="{% url 'notes:evaluation_list' %}" 
+                       class="inline-flex items-center px-6 py-3 bg-gray-100 border border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 hover:border-gray-400 hover-lift transition-all duration-300">
+                        <i class="fas fa-arrow-left mr-3" aria-hidden="true"></i>
+                        Retour à la liste
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulaire principal -->
+    <div class="max-w-7xl mx-auto px-6 py-12">
+        <div class="bg-white rounded-3xl shadow-2xl border border-gray-200 overflow-hidden animate-scale-in">
+            <form method="post" id="evaluationForm" novalidate>
+                {% csrf_token %}
+                
+                <!-- Section 1: Identification de l'évaluation -->
+                <div class="px-12 py-10 border-b border-gray-100 animate-fade-in-up animation-delay-100">
+                    <div class="mb-8">
+                        <div class="flex items-center gap-4 mb-6">
+                            <div class="w-12 h-12 bg-gradient-primary rounded-xl flex items-center justify-center text-white shadow-md">
+                                <i class="fas fa-id-card text-lg" aria-hidden="true"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-2xl font-bold text-gray-900">Identification de l'Évaluation</h2>
+                                <p class="text-gray-600 mt-1">Définissez le type et la date de l'évaluation</p>
+                            </div>
+                        </div>
+                        <div class="section-divider mb-8"></div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <!-- Type d'évaluation -->
+                        <div class="lg:col-span-1">
+                            <div class="form-group">
+                                <label for="eval_type" class="block text-sm font-bold text-gray-800 mb-3 uppercase tracking-wide">
+                                    Type d'Évaluation <span class="text-red-600">*</span>
+                                </label>
+                                <select name="eval_type" id="eval_type" 
+                                        class="w-full px-5 py-4 border-2 border-gray-300 rounded-xl focus-ring transition-all duration-300 bg-white hover:border-gray-400 text-lg font-medium" 
+                                        required>
+                                    <option value="">Sélectionner un type</option>
+                                                                    <option value="EVAL1" {% if evaluation and evaluation.eval_type == 'EVAL1' %}selected{% endif %}>Évaluation 1</option>
+                                <option value="EVAL2" {% if evaluation and evaluation.eval_type == 'EVAL2' %}selected{% endif %}>Évaluation 2</option>
+                                <option value="EVAL3" {% if evaluation and evaluation.eval_type == 'EVAL3' %}selected{% endif %}>Évaluation 3</option>
+                                <option value="EVAL4" {% if evaluation and evaluation.eval_type == 'EVAL4' %}selected{% endif %}>Évaluation 4</option>
+                                <option value="EVAL5" {% if evaluation and evaluation.eval_type == 'EVAL5' %}selected{% endif %}>Évaluation 5</option>
+                                <option value="EVAL6" {% if evaluation and evaluation.eval_type == 'EVAL6' %}selected{% endif %}>Évaluation 6</option>
+                                </select>
+                                <p class="text-sm text-gray-500 mt-2 font-medium">Numéro séquentiel de l'évaluation</p>
+                                <div class="error-message hidden text-red-600 text-sm mt-2 font-medium"></div>
+                            </div>
+                        </div>
+
+                        <!-- Date d'évaluation -->
+                        <div class="lg:col-span-1">
+                            <div class="form-group">
+                                <label for="eval_date" class="block text-sm font-bold text-gray-800 mb-3 uppercase tracking-wide">
+                                    Date d'Évaluation <span class="text-red-600">*</span>
+                                </label>
+                                <input type="date" name="eval_date" id="eval_date"
+                                       class="w-full px-5 py-4 border-2 border-gray-300 rounded-xl focus-ring transition-all duration-300 hover:border-gray-400 text-lg font-medium"
+                                       value="{% if evaluation and evaluation.eval_date %}{{ evaluation.eval_date|date:'Y-m-d' }}{% endif %}" required>
+                                <p class="text-sm text-gray-500 mt-2 font-medium">Date de passation de l'évaluation</p>
+                                <div class="error-message hidden text-red-600 text-sm mt-2 font-medium"></div>
+                            </div>
+                        </div>
+
+                        <!-- Statut -->
+                        <div class="lg:col-span-1">
+                            <div class="form-group">
+                                <label class="block text-sm font-bold text-gray-800 mb-3 uppercase tracking-wide">
+                                    Statut de l'Évaluation
+                                </label>
+                                <div class="bg-gray-50 border-2 border-gray-300 rounded-xl p-5">
+                                    <div class="flex items-center gap-4">
+                                        <input type="checkbox" name="is_open" id="is_open" 
+                                               class="w-5 h-5 text-blue-600 border-2 border-gray-400 rounded focus:ring-blue-500 focus:ring-2"
+                                               {% if evaluation and evaluation.is_open or not evaluation %}checked{% endif %}>
+                                        <div>
+                                            <label for="is_open" class="text-lg font-semibold text-gray-900 cursor-pointer">
+                                                Évaluation Ouverte
+                                            </label>
+                                            <p class="text-sm text-gray-600 mt-1">
+                                                Permet la saisie des notes
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 2: Affectation pédagogique -->
+                <div class="px-12 py-10 border-b border-gray-100 bg-gradient-section animate-fade-in-up animation-delay-200">
+                    <div class="mb-8">
+                        <div class="flex items-center gap-4 mb-6">
+                            <div class="w-12 h-12 bg-gradient-primary rounded-xl flex items-center justify-center text-white shadow-md">
+                                <i class="fas fa-graduation-cap text-lg" aria-hidden="true"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-2xl font-bold text-gray-900">Affectation Pédagogique</h2>
+                                <p class="text-gray-600 mt-1">L'évaluation sera créée pour toutes les matières enseignées dans la classe sélectionnée</p>
+                            </div>
+                        </div>
+                        <div class="section-divider mb-8"></div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 gap-8">
+                        <!-- Classe -->
+                        <div>
+                            <div class="form-group">
+                                <label for="school_class" class="block text-sm font-bold text-gray-800 mb-3 uppercase tracking-wide">
+                                    Classe Concernée <span class="text-red-600">*</span>
+                                </label>
+                                <select name="school_class" id="school_class" 
+                                        class="w-full px-5 py-4 border-2 border-gray-300 rounded-xl focus-ring transition-all duration-300 bg-white hover:border-gray-400 text-lg font-medium" 
+                                        required>
+                                    <option value="">Sélectionner une classe</option>
+                                    {% for class in classes %}
+                                    <option value="{{ class.id }}" {% if evaluation and evaluation.school_class == class %}selected{% endif %}>
+                                        {{ class.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <p class="text-sm text-gray-500 mt-2 font-medium">Groupe d'étudiants évalués</p>
+                                <div class="error-message hidden text-red-600 text-sm mt-2 font-medium"></div>
+                            </div>
+                        </div>
+
+                        <!-- Informations sur les matières -->
+                        <div id="subjects-info" class="hidden">
+                            <div class="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
+                                <div class="flex items-center gap-3 mb-4">
+                                    <div class="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center text-white">
+                                        <i class="fas fa-info-circle" aria-hidden="true"></i>
+                                    </div>
+                                    <h3 class="text-lg font-bold text-blue-900">Matières concernées</h3>
+                                </div>
+                                <div id="subjects-list" class="text-blue-800">
+                                    <!-- Les matières seront chargées dynamiquement ici -->
+                                </div>
+                                <p class="text-sm text-blue-600 mt-3 font-medium">
+                                    <i class="fas fa-lightbulb mr-2" aria-hidden="true"></i>
+                                    Une évaluation sera créée pour chacune de ces matières avec le coefficient approprié.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 3: Période et paramètres -->
+                <div class="px-12 py-10 border-b border-gray-100 animate-fade-in-up animation-delay-300">
+                    <div class="mb-8">
+                        <div class="flex items-center gap-4 mb-6">
+                            <div class="w-12 h-12 bg-gradient-primary rounded-xl flex items-center justify-center text-white shadow-md">
+                                <i class="fas fa-cogs text-lg" aria-hidden="true"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-2xl font-bold text-gray-900">Période et Paramètres</h2>
+                                <p class="text-gray-600 mt-1">Définissez la période et les paramètres de notation</p>
+                            </div>
+                        </div>
+                        <div class="section-divider mb-8"></div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <!-- Trimestre -->
+                        <div class="lg:col-span-1">
+                            <div class="form-group">
+                                <label for="trimester" class="block text-sm font-bold text-gray-800 mb-3 uppercase tracking-wide">
+                                    Trimestre <span class="text-red-600">*</span>
+                                </label>
+                                <select name="trimester" id="trimester" 
+                                        class="w-full px-5 py-4 border-2 border-gray-300 rounded-xl focus-ring transition-all duration-300 bg-white hover:border-gray-400 text-lg font-medium" 
+                                        required>
+                                    <option value="">Sélectionner un trimestre</option>
+                                    {% for trimester in trimesters %}
+                                    <option value="{{ trimester.id }}" {% if evaluation and evaluation.trimester == trimester %}selected{% endif %}>
+                                        {{ trimester.get_trimester_display }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <p class="text-sm text-gray-500 mt-2 font-medium">Période d'évaluation</p>
+                                <div class="error-message hidden text-red-600 text-sm mt-2 font-medium"></div>
+                            </div>
+                        </div>
+
+                        <!-- Note maximale -->
+                        <div class="lg:col-span-1">
+                            <div class="form-group">
+                                <label for="max_score" class="block text-sm font-bold text-gray-800 mb-3 uppercase tracking-wide">
+                                    Note Maximale <span class="text-red-600">*</span>
+                                </label>
+                                <input type="number" name="max_score" id="max_score"
+                                       class="w-full px-5 py-4 border-2 border-gray-300 rounded-xl focus-ring transition-all duration-300 hover:border-gray-400 text-lg font-medium text-center"
+                                       value="{% if evaluation and evaluation.max_score %}{{ evaluation.max_score }}{% else %}20{% endif %}"
+                                       min="1" max="100" required>
+                                <p class="text-sm text-gray-500 mt-2 font-medium">Barème de notation</p>
+                                <div class="error-message hidden text-red-600 text-sm mt-2 font-medium"></div>
+                            </div>
+                        </div>
+
+                        <!-- Durée -->
+                        <div class="lg:col-span-1">
+                            <div class="form-group">
+                                <label for="duration" class="block text-sm font-bold text-gray-800 mb-3 uppercase tracking-wide">
+                                    Durée (minutes) <span class="text-red-600">*</span>
+                                </label>
+                                <input type="number" name="duration" id="duration"
+                                       class="w-full px-5 py-4 border-2 border-gray-300 rounded-xl focus-ring transition-all duration-300 hover:border-gray-400 text-lg font-medium text-center"
+                                       value="{% if evaluation and evaluation.duration %}{{ evaluation.duration }}{% else %}60{% endif %}"
+                                       min="15" max="480" required>
+                                <p class="text-sm text-gray-500 mt-2 font-medium">Durée de l'évaluation</p>
+                                <div class="error-message hidden text-red-600 text-sm mt-2 font-medium"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Information sur les coefficients -->
+                    <div class="mt-6 bg-amber-50 border-2 border-amber-200 rounded-xl p-6">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center text-white">
+                                <i class="fas fa-info-circle" aria-hidden="true"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-bold text-amber-900">Coefficients automatiques</h3>
+                                <p class="text-amber-800 mt-1">
+                                    Les coefficients seront automatiquement définis selon les assignations pédagogiques de chaque matière dans la classe sélectionnée.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 4: Description et commentaires -->
+                <div class="px-12 py-10 bg-gradient-section animate-fade-in-up animation-delay-400">
+                    <div class="mb-8">
+                        <div class="flex items-center gap-4 mb-6">
+                            <div class="w-12 h-12 bg-gradient-primary rounded-xl flex items-center justify-center text-white shadow-md">
+                                <i class="fas fa-file-alt text-lg" aria-hidden="true"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-2xl font-bold text-gray-900">Description et Commentaires</h2>
+                                <p class="text-gray-600 mt-1">Ajoutez des informations complémentaires sur l'évaluation</p>
+                            </div>
+                        </div>
+                        <div class="section-divider mb-8"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="instructions" class="block text-sm font-bold text-gray-800 mb-3 uppercase tracking-wide">
+                            Instructions de l'Évaluation
+                        </label>
+                        <textarea name="instructions" id="instructions" rows="6"
+                                  class="w-full px-5 py-4 border-2 border-gray-300 rounded-xl focus-ring transition-all duration-300 hover:border-gray-400 text-lg resize-none"
+                                  placeholder="Décrivez le contenu, les objectifs pédagogiques et les modalités de cette évaluation...">{% if evaluation and evaluation.instructions %}{{ evaluation.instructions }}{% endif %}</textarea>
+                        <p class="text-sm text-gray-500 mt-2 font-medium">Informations complémentaires pour les enseignants et étudiants</p>
+                    </div>
+                </div>
+
+                <!-- Actions finales -->
+                <div class="px-12 py-10 bg-gray-50 border-t border-gray-200 animate-fade-in-up animation-delay-500">
+                    <div class="flex flex-col lg:flex-row justify-between items-center gap-6">
+                        <div class="flex items-center gap-4 text-gray-600">
+                            <i class="fas fa-info-circle text-lg" aria-hidden="true"></i>
+                            <span class="font-medium">
+                                Les champs marqués d'un astérisque (<span class="text-red-600">*</span>) sont obligatoires
+                            </span>
+                        </div>
+                        
+                        <div class="flex items-center gap-4">
+                            <a href="{% url 'notes:evaluation_list' %}" 
+                               class="inline-flex items-center px-8 py-4 bg-white border-2 border-gray-300 text-gray-700 rounded-xl font-bold hover:bg-gray-50 hover:border-gray-400 hover-lift transition-all duration-300 shadow-sm">
+                                <i class="fas fa-times mr-3" aria-hidden="true"></i>
+                                Annuler
+                            </a>
+                            
+                            <button type="submit" 
+                                    class="inline-flex items-center px-10 py-4 bg-gradient-primary text-white rounded-xl font-bold hover-lift hover-shadow transition-all duration-300 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                                    id="submitBtn">
+                                <i class="fas fa-save mr-3" aria-hidden="true"></i>
+                                <span class="submit-text">
+                                    {% if evaluation %}Enregistrer les Modifications{% else %}Créer l'Évaluation{% endif %}
+                                </span>
+                                <div class="loading-spinner hidden ml-3">
+                                    <div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Panneau d'informations -->
+        <div class="mt-12 grid grid-cols-1 lg:grid-cols-3 gap-8 animate-fade-in-up animation-delay-500">
+            <!-- Conseils -->
+            <div class="bg-blue-50 border-2 border-blue-200 rounded-2xl p-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center text-white">
+                        <i class="fas fa-lightbulb" aria-hidden="true"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-blue-900">Conseils</h3>
+                </div>
+                <ul class="text-blue-800 space-y-2 text-sm">
+                    <li class="flex items-start gap-2">
+                        <i class="fas fa-check-circle text-blue-600 mt-0.5 flex-shrink-0" aria-hidden="true"></i>
+                        <span>Vérifiez la cohérence entre la date et le trimestre</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <i class="fas fa-check-circle text-blue-600 mt-0.5 flex-shrink-0" aria-hidden="true"></i>
+                        <span>Le coefficient influence le poids dans la moyenne</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <i class="fas fa-check-circle text-blue-600 mt-0.5 flex-shrink-0" aria-hidden="true"></i>
+                        <span>Une description claire aide les enseignants</span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Rappels -->
+            <div class="bg-amber-50 border-2 border-amber-200 rounded-2xl p-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center text-white">
+                        <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-amber-900">Rappels</h3>
+                </div>
+                <ul class="text-amber-800 space-y-2 text-sm">
+                    <li class="flex items-start gap-2">
+                        <i class="fas fa-info-circle text-amber-600 mt-0.5 flex-shrink-0" aria-hidden="true"></i>
+                        <span>Une évaluation fermée ne permet pas la saisie</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <i class="fas fa-info-circle text-amber-600 mt-0.5 flex-shrink-0" aria-hidden="true"></i>
+                        <span>Maximum 6 évaluations par trimestre</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <i class="fas fa-info-circle text-amber-600 mt-0.5 flex-shrink-0" aria-hidden="true"></i>
+                        <span>La modification affecte les notes existantes</span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Aide -->
+            <div class="bg-green-50 border-2 border-green-200 rounded-2xl p-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center text-white">
+                        <i class="fas fa-question-circle" aria-hidden="true"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-green-900">Aide</h3>
+                </div>
+                <ul class="text-green-800 space-y-2 text-sm">
+                    <li class="flex items-start gap-2">
+                        <i class="fas fa-phone text-green-600 mt-0.5 flex-shrink-0" aria-hidden="true"></i>
+                        <span>Support technique : ext. 1234</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <i class="fas fa-envelope text-green-600 mt-0.5 flex-shrink-0" aria-hidden="true"></i>
+                        <span>Email : support@ecole.fr</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <i class="fas fa-book text-green-600 mt-0.5 flex-shrink-0" aria-hidden="true"></i>
+                        <span>Guide utilisateur disponible</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Gestionnaire de formulaire professionnel
+    class ProfessionalFormManager {
+        constructor() {
+            this.form = document.getElementById('evaluationForm');
+            this.submitBtn = document.getElementById('submitBtn');
+            this.submitText = this.submitBtn.querySelector('.submit-text');
+            this.loadingSpinner = this.submitBtn.querySelector('.loading-spinner');
+            this.isSubmitting = false;
+            
+            this.init();
+        }
+
+        init() {
+            this.setupValidation();
+            this.setupFormSubmission();
+            this.setupFieldInteractions();
+            this.setupAccessibility();
+            this.setupAutoSave();
+        }
+
+        setupValidation() {
+            const requiredFields = this.form.querySelectorAll('[required]');
+            
+            requiredFields.forEach(field => {
+                field.addEventListener('blur', () => this.validateField(field));
+                field.addEventListener('input', () => this.clearFieldError(field));
+                field.addEventListener('change', () => this.validateField(field));
+            });
+
+            // Validation spéciale pour les champs numériques
+            const numberFields = this.form.querySelectorAll('input[type="number"]');
+            numberFields.forEach(field => {
+                field.addEventListener('input', () => this.validateNumberField(field));
+            });
+
+            // Validation croisée date/trimestre
+            this.setupCrossValidation();
+        }
+
+        validateField(field) {
+            const value = field.value.trim();
+            const fieldGroup = field.closest('.form-group');
+            const errorElement = fieldGroup.querySelector('.error-message');
+            
+            let isValid = true;
+            let errorMessage = '';
+
+            if (field.hasAttribute('required') && !value) {
+                isValid = false;
+                errorMessage = 'Ce champ est obligatoire pour valider le formulaire';
+            }
+
+            if (value && field.type === 'number') {
+                const numValue = parseFloat(value);
+                const min = parseFloat(field.getAttribute('min'));
+                const max = parseFloat(field.getAttribute('max'));
+                
+                if (min !== null && numValue < min) {
+                    isValid = false;
+                    errorMessage = `La valeur doit être supérieure ou égale à ${min}`;
+                }
+                
+                if (max !== null && numValue > max) {
+                    isValid = false;
+                    errorMessage = `La valeur doit être inférieure ou égale à ${max}`;
+                }
+            }
+
+            this.updateFieldState(field, isValid, errorMessage);
+            return isValid;
+        }
+
+        validateNumberField(field) {
+            const value = field.value;
+            if (value && !/^\d*\.?\d*$/.test(value)) {
+                field.value = value.replace(/[^\d.]/g, '');
+            }
+        }
+
+        updateFieldState(field, isValid, errorMessage) {
+            const fieldGroup = field.closest('.form-group');
+            const errorElement = fieldGroup.querySelector('.error-message');
+            
+            field.classList.remove('field-valid', 'field-invalid');
+            
+            if (isValid) {
+                field.classList.add('field-valid');
+                errorElement.classList.add('hidden');
+                errorElement.textContent = '';
+            } else {
+                field.classList.add('field-invalid');
+                errorElement.classList.remove('hidden');
+                errorElement.textContent = errorMessage;
+            }
+        }
+
+        clearFieldError(field) {
+            field.classList.remove('field-invalid');
+            const fieldGroup = field.closest('.form-group');
+            const errorElement = fieldGroup.querySelector('.error-message');
+            errorElement.classList.add('hidden');
+        }
+
+        setupCrossValidation() {
+            const dateField = document.getElementById('eval_date');
+            const trimesterField = document.getElementById('trimester');
+            
+            const validateDateTrimester = () => {
+                if (dateField.value && trimesterField.value) {
+                    // Validation logique métier
+                    console.log('Validation croisée:', dateField.value, trimesterField.value);
+                }
+            };
+            
+            dateField.addEventListener('change', validateDateTrimester);
+            trimesterField.addEventListener('change', validateDateTrimester);
+        }
+
+        setupFormSubmission() {
+            this.form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                if (this.isSubmitting) return;
+                
+                if (this.validateForm()) {
+                    this.submitForm();
+                } else {
+                    this.showValidationErrors();
+                }
+            });
+        }
+
+        validateForm() {
+            const requiredFields = this.form.querySelectorAll('[required]');
+            let isValid = true;
+            
+            requiredFields.forEach(field => {
+                if (!this.validateField(field)) {
+                    isValid = false;
+                }
+            });
+            
+            return isValid;
+        }
+
+        showValidationErrors() {
+            const firstInvalidField = this.form.querySelector('.field-invalid');
+            if (firstInvalidField) {
+                firstInvalidField.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'center' 
+                });
+                firstInvalidField.focus();
+            }
+            
+            this.showNotification('Veuillez corriger les erreurs dans le formulaire', 'error');
+        }
+
+        async submitForm() {
+            this.isSubmitting = true;
+            this.updateSubmitButton(true);
+            
+            try {
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                this.form.submit();
+                
+            } catch (error) {
+                console.error('Erreur lors de la soumission:', error);
+                this.showNotification('Une erreur est survenue lors de la sauvegarde', 'error');
+                this.isSubmitting = false;
+                this.updateSubmitButton(false);
+            }
+        }
+
+        updateSubmitButton(loading) {
+            if (loading) {
+                this.submitBtn.disabled = true;
+                this.submitText.classList.add('hidden');
+                this.loadingSpinner.classList.remove('hidden');
+                this.submitBtn.classList.add('opacity-75');
+            } else {
+                this.submitBtn.disabled = false;
+                this.submitText.classList.remove('hidden');
+                this.loadingSpinner.classList.add('hidden');
+                this.submitBtn.classList.remove('opacity-75');
+            }
+        }
+
+        setupFieldInteractions() {
+            const fields = this.form.querySelectorAll('input, select, textarea');
+            
+            fields.forEach(field => {
+                field.addEventListener('focus', () => {
+                    field.closest('.form-group').classList.add('focused');
+                });
+                
+                field.addEventListener('blur', () => {
+                    field.closest('.form-group').classList.remove('focused');
+                });
+            });
+        }
+
+        setupAccessibility() {
+            const requiredFields = this.form.querySelectorAll('[required]');
+            requiredFields.forEach(field => {
+                const fieldGroup = field.closest('.form-group');
+                const errorElement = fieldGroup.querySelector('.error-message');
+                
+                if (errorElement) {
+                    const errorId = `error-${field.id || field.name}`;
+                    errorElement.id = errorId;
+                    field.setAttribute('aria-describedby', errorId);
+                }
+            });
+        }
+
+        setupAutoSave() {
+            // Sauvegarde automatique en brouillon (simulation)
+            let autoSaveTimeout;
+            const fields = this.form.querySelectorAll('input, select, textarea');
+            
+            fields.forEach(field => {
+                field.addEventListener('input', () => {
+                    clearTimeout(autoSaveTimeout);
+                    autoSaveTimeout = setTimeout(() => {
+                        this.autoSave();
+                    }, 5000);
+                });
+            });
+        }
+
+        autoSave() {
+            // Simulation de sauvegarde automatique
+            console.log('Sauvegarde automatique en cours...');
+            
+            // Afficher un indicateur discret
+            const indicator = document.createElement('div');
+            indicator.className = 'fixed bottom-4 right-4 bg-gray-800 text-white px-4 py-2 rounded-lg text-sm opacity-0 transition-opacity duration-300';
+            indicator.textContent = 'Brouillon sauvegardé';
+            document.body.appendChild(indicator);
+            
+            setTimeout(() => indicator.classList.remove('opacity-0'), 100);
+            setTimeout(() => {
+                indicator.classList.add('opacity-0');
+                setTimeout(() => document.body.removeChild(indicator), 300);
+            }, 2000);
+        }
+
+        showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 z-50 p-6 rounded-xl shadow-2xl max-w-sm transform transition-all duration-300 translate-x-full border-l-4`;
+            
+            if (type === 'error') {
+                notification.classList.add('bg-red-50', 'text-red-800', 'border-red-500');
+            } else if (type === 'success') {
+                notification.classList.add('bg-green-50', 'text-green-800', 'border-green-500');
+            } else {
+                notification.classList.add('bg-blue-50', 'text-blue-800', 'border-blue-500');
+            }
+            
+            notification.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-${type === 'error' ? 'exclamation-circle' : type === 'success' ? 'check-circle' : 'info-circle'} text-lg"></i>
+                    <span class="font-medium">${message}</span>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => notification.classList.remove('translate-x-full'), 100);
+            setTimeout(() => {
+                notification.classList.add('translate-x-full');
+                setTimeout(() => document.body.removeChild(notification), 300);
+            }, 5000);
+        }
+    }
+
+    // Initialisation
+    document.addEventListener('DOMContentLoaded', () => {
+        new ProfessionalFormManager();
+        
+        // Logique pour charger les matières enseignées dans une classe
+        const classSelect = document.querySelector('select[name="school_class"]');
+        const subjectsInfo = document.getElementById('subjects-info');
+        const subjectsList = document.getElementById('subjects-list');
+        
+        // Fonction pour charger et afficher les matières d'une classe
+        function loadSubjectsForClass(classId) {
+            if (!classId) {
+                subjectsInfo.classList.add('hidden');
+                return;
+            }
+            
+            fetch(`{% url 'notes:get_subjects_for_class' 0 %}`.replace('0', classId))
+                .then(response => response.json())
+                .then(data => {
+                    if (data.subjects && data.subjects.length > 0) {
+                        subjectsList.innerHTML = '';
+                        data.subjects.forEach(subject => {
+                            const subjectItem = document.createElement('div');
+                            subjectItem.className = 'flex items-center justify-between py-2 border-b border-blue-200 last:border-b-0';
+                            subjectItem.innerHTML = `
+                                <div class="flex items-center gap-3">
+                                    <i class="fas fa-book text-blue-600" aria-hidden="true"></i>
+                                    <span class="font-medium">${subject.name}</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-sm text-blue-600">Coefficient:</span>
+                                    <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-lg text-sm font-bold">${subject.coefficient}</span>
+                                </div>
+                            `;
+                            subjectsList.appendChild(subjectItem);
+                        });
+                        subjectsInfo.classList.remove('hidden');
+                    } else {
+                        subjectsInfo.classList.add('hidden');
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur lors du chargement des matières:', error);
+                    subjectsInfo.classList.add('hidden');
+                });
+        }
+        
+        // Écouter les changements de classe
+        if (classSelect) {
+            classSelect.addEventListener('change', function() {
+                loadSubjectsForClass(this.value);
+            });
+        }
+        
+        // Charger les matières si une classe est déjà sélectionnée (cas d'édition)
+        if (classSelect && classSelect.value) {
+            loadSubjectsForClass(classSelect.value);
+        }
+    });
+
+    // Protection contre la perte de données
+    window.addEventListener('beforeunload', (e) => {
+        const form = document.getElementById('evaluationForm');
+        const formData = new FormData(form);
+        let hasData = false;
+        
+        for (let [key, value] of formData.entries()) {
+            if (value && key !== 'csrfmiddlewaretoken') {
+                hasData = true;
+                break;
+            }
+        }
+        
+        if (hasData && !form.submitted) {
+            e.preventDefault();
+            e.returnValue = 'Vous avez des modifications non sauvegardées. Êtes-vous sûr de vouloir quitter cette page ?';
+        }
+    });
+</script>
+{% endblock %}

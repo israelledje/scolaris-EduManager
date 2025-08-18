@@ -1,0 +1,872 @@
+{% extends 'base.html' %}
+
+{% block title %}Emplois du temps - Classes{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --primary-color: #6366f1;
+        --primary-dark: #4f46e5;
+        --primary-light: #a5b4fc;
+        --secondary-color: #64748b;
+        --success-color: #10b981;
+        --success-light: #d1fae5;
+        --warning-color: #f59e0b;
+        --warning-light: #fef3c7;
+        --danger-color: #ef4444;
+        --danger-light: #fee2e2;
+        --background-main: #ffffff;
+        --background-alt: #fafafb;
+        --background-accent: #f8fafc;
+        --text-primary: #0f172a;
+        --text-secondary: #475569;
+        --text-muted: #94a3b8;
+        --border-color: #e2e8f0;
+        --border-light: #f1f5f9;
+        --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+        --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+        --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+        --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+        --radius-sm: 6px;
+        --radius-md: 8px;
+        --radius-lg: 12px;
+        --radius-xl: 16px;
+        --radius-2xl: 20px;
+        --spacing-xs: 4px;
+        --spacing-sm: 8px;
+        --spacing-md: 16px;
+        --spacing-lg: 24px;
+        --spacing-xl: 32px;
+        --spacing-2xl: 48px;
+        --transition-fast: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+        --transition-normal: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+        --transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Layout principal */
+    .page-container {
+        min-height: 100vh;
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        padding: var(--spacing-xl) 0;
+    }
+
+    .content-wrapper {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 0 var(--spacing-lg);
+    }
+
+    /* En-tête épuré */
+    .page-header {
+        text-align: center;
+        margin-bottom: var(--spacing-2xl);
+    }
+
+    .page-title {
+        font-size: 3rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: var(--spacing-sm);
+        letter-spacing: -0.02em;
+    }
+
+    .page-subtitle {
+        font-size: 1.125rem;
+        color: var(--text-secondary);
+        max-width: 600px;
+        margin: 0 auto var(--spacing-xl);
+        line-height: 1.6;
+    }
+
+    .stats-row {
+        display: flex;
+        justify-content: center;
+        gap: var(--spacing-xl);
+        margin-bottom: var(--spacing-xl);
+    }
+
+    .stat-item {
+        text-align: center;
+    }
+
+    .stat-number {
+        display: block;
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: var(--primary-color);
+        line-height: 1;
+    }
+
+    .stat-label {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-top: var(--spacing-xs);
+    }
+
+    /* Contrôles simplifiés */
+    .controls-bar {
+        display: flex;
+        justify-content: center;
+        gap: var(--spacing-md);
+        margin-bottom: var(--spacing-2xl);
+        flex-wrap: wrap;
+    }
+
+    .search-box {
+        position: relative;
+        min-width: 300px;
+    }
+
+    .search-input {
+        width: 100%;
+        padding: var(--spacing-md) var(--spacing-lg) var(--spacing-md) 50px;
+        border: 2px solid transparent;
+        border-radius: var(--radius-2xl);
+        font-size: 1rem;
+        background: var(--background-main);
+        box-shadow: var(--shadow-md);
+        transition: all var(--transition-fast);
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1), var(--shadow-lg);
+    }
+
+    .search-icon {
+        position: absolute;
+        left: var(--spacing-md);
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-muted);
+        font-size: 1.125rem;
+    }
+
+    .filter-chip {
+        padding: var(--spacing-sm) var(--spacing-lg);
+        border: 2px solid var(--border-color);
+        border-radius: var(--radius-2xl);
+        background: var(--background-main);
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all var(--transition-fast);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .filter-chip:hover,
+    .filter-chip.active {
+        border-color: var(--primary-color);
+        background: var(--primary-color);
+        color: white;
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-md);
+    }
+
+    /* Grille des classes repensée */
+    .classes-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+        gap: var(--spacing-xl);
+        margin-bottom: var(--spacing-xl);
+    }
+
+    /* Nouvelle conception des cartes */
+    .class-card {
+        background: var(--background-main);
+        border-radius: var(--radius-2xl);
+        overflow: hidden;
+        transition: all var(--transition-normal);
+        position: relative;
+        border: 1px solid var(--border-light);
+        cursor: pointer;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .class-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, transparent 50%);
+        opacity: 0;
+        transition: opacity var(--transition-fast);
+        pointer-events: none;
+    }
+
+    .class-card:hover {
+        transform: translateY(-8px) scale(1.02);
+        box-shadow: var(--shadow-2xl);
+        border-color: var(--primary-light);
+    }
+
+    .class-card:hover::before {
+        opacity: 1;
+    }
+
+    /* En-tête de carte moderne */
+    .card-header {
+        padding: var(--spacing-xl);
+        background: linear-gradient(135deg, var(--background-main) 0%, var(--background-accent) 100%);
+        border-bottom: 1px solid var(--border-light);
+        position: relative;
+    }
+
+    .class-badge {
+        position: absolute;
+        top: var(--spacing-md);
+        right: var(--spacing-md);
+        padding: var(--spacing-xs) var(--spacing-sm);
+        border-radius: var(--radius-lg);
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .class-badge.active {
+        background: linear-gradient(135deg, var(--success-color) 0%, #059669 100%);
+        color: white;
+        box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+    }
+
+    .class-badge.inactive {
+        background: linear-gradient(135deg, var(--danger-color) 0%, #dc2626 100%);
+        color: white;
+        box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+    }
+
+    .class-identity {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-lg);
+        margin-bottom: var(--spacing-lg);
+    }
+
+    .class-avatar {
+        width: 70px;
+        height: 70px;
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+        border-radius: var(--radius-xl);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 800;
+        font-size: 1.5rem;
+        box-shadow: var(--shadow-lg);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .class-avatar::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.3) 50%, transparent 70%);
+        transform: rotate(45deg);
+        animation: shimmer 3s infinite;
+    }
+
+    @keyframes shimmer {
+        0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+        100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+    }
+
+    .class-name {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: var(--spacing-xs);
+        letter-spacing: -0.01em;
+    }
+
+    .class-level {
+        font-size: 1rem;
+        color: var(--text-secondary);
+        font-weight: 500;
+    }
+
+    .class-year {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+        background: var(--background-accent);
+        padding: var(--spacing-xs) var(--spacing-sm);
+        border-radius: var(--radius-md);
+        display: inline-block;
+        margin-top: var(--spacing-xs);
+    }
+
+    /* Corps de carte élégant */
+    .card-body {
+        padding: var(--spacing-xl);
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .class-metrics {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--spacing-lg);
+        margin-bottom: var(--spacing-xl);
+    }
+
+    .metric-item {
+        text-align: center;
+        padding: var(--spacing-md);
+        background: var(--background-accent);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border-light);
+        transition: all var(--transition-fast);
+    }
+
+    .metric-item:hover {
+        background: var(--primary-light);
+        border-color: var(--primary-color);
+        transform: translateY(-2px);
+    }
+
+    .metric-number {
+        display: block;
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: var(--primary-color);
+        line-height: 1;
+    }
+
+    .metric-label {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-top: var(--spacing-xs);
+    }
+
+    .class-details {
+        flex: 1;
+        margin-bottom: var(--spacing-lg);
+    }
+
+    .detail-row {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        margin-bottom: var(--spacing-sm);
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+    }
+
+    .detail-icon {
+        width: 18px;
+        height: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--background-accent);
+        border-radius: var(--radius-sm);
+        color: var(--primary-color);
+        font-size: 0.75rem;
+    }
+
+    .detail-text {
+        flex: 1;
+    }
+
+    .detail-value {
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    /* Actions de carte modernes */
+    .card-actions {
+        display: flex;
+        gap: var(--spacing-sm);
+        margin-top: auto;
+    }
+
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--spacing-sm);
+        padding: var(--spacing-md) var(--spacing-lg);
+        border-radius: var(--radius-xl);
+        font-weight: 600;
+        font-size: 0.875rem;
+        text-decoration: none;
+        transition: all var(--transition-fast);
+        cursor: pointer;
+        border: none;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .btn::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        transition: left var(--transition-normal);
+    }
+
+    .btn:hover::before {
+        left: 100%;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+        color: white;
+        flex: 1;
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
+    }
+
+    .btn-secondary {
+        background: var(--background-accent);
+        color: var(--text-secondary);
+        border: 1px solid var(--border-color);
+        width: 48px;
+        height: 48px;
+        padding: 0;
+    }
+
+    .btn-secondary:hover {
+        background: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+
+    /* État vide redesigné */
+    .empty-state {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: var(--spacing-2xl);
+        background: var(--background-main);
+        border-radius: var(--radius-2xl);
+        border: 2px dashed var(--border-color);
+        margin: var(--spacing-xl) 0;
+    }
+
+    .empty-illustration {
+        width: 120px;
+        height: 120px;
+        background: linear-gradient(135deg, var(--background-accent) 0%, var(--border-light) 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto var(--spacing-lg);
+        color: var(--text-muted);
+        font-size: 3rem;
+    }
+
+    .empty-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: var(--spacing-sm);
+    }
+
+    .empty-description {
+        color: var(--text-secondary);
+        font-size: 1rem;
+        max-width: 500px;
+        margin: 0 auto;
+        line-height: 1.6;
+    }
+
+    /* Animations améliorées */
+    @keyframes fadeInScale {
+        from {
+            opacity: 0;
+            transform: scale(0.9) translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+    }
+
+    .animate-in {
+        animation: fadeInScale 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+
+    /* Responsive amélioré */
+    @media (max-width: 768px) {
+        .page-title {
+            font-size: 2.5rem;
+        }
+
+        .stats-row {
+            flex-direction: column;
+            gap: var(--spacing-md);
+        }
+
+        .controls-bar {
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .search-box {
+            min-width: 280px;
+        }
+
+        .classes-grid {
+            grid-template-columns: 1fr;
+            gap: var(--spacing-lg);
+        }
+
+        .class-metrics {
+            grid-template-columns: 1fr;
+            gap: var(--spacing-md);
+        }
+
+        .card-actions {
+            flex-direction: column;
+        }
+
+        .btn-secondary {
+            width: 100%;
+            height: 48px;
+        }
+    }
+
+    /* Mode sombre (optionnel) */
+    @media (prefers-color-scheme: dark) {
+        :root {
+            --background-main: #1e293b;
+            --background-alt: #0f172a;
+            --background-accent: #334155;
+            --text-primary: #f8fafc;
+            --text-secondary: #cbd5e1;
+            --text-muted: #64748b;
+            --border-color: #334155;
+            --border-light: #475569;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="content-wrapper">
+        <!-- En-tête épuré -->
+        <div class="page-header">
+            <h1 class="page-title">Emplois du temps</h1>
+            <p class="page-subtitle">
+                Découvrez et gérez les plannings de vos classes avec une interface moderne et intuitive
+            </p>
+            
+            <div class="stats-row">
+                <div class="stat-item">
+                    <span class="stat-number">{{ classes|length }}</span>
+                    <div class="stat-label">Classes totales</div>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">{{ active_classes_count|default:0 }}</span>
+                    <div class="stat-label">Classes actives</div>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">{{ total_students|default:0 }}</span>
+                    <div class="stat-label">Élèves inscrits</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contrôles simplifiés -->
+        <div class="controls-bar">
+            <div class="search-box">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" 
+                       class="search-input" 
+                       placeholder="Rechercher une classe..." 
+                       id="searchInput"
+                       onkeyup="filterClasses()">
+            </div>
+            <button class="filter-chip" data-filter="" onclick="setFilter(this, '')">
+                Toutes les classes
+            </button>
+            <button class="filter-chip" data-filter="active" onclick="setFilter(this, 'active')">
+                Classes actives
+            </button>
+            <button class="filter-chip" data-filter="inactive" onclick="setFilter(this, 'inactive')">
+                Classes inactives
+            </button>
+        </div>
+
+        <!-- Grille des classes repensée -->
+        <div class="classes-grid" id="classesGrid">
+            {% for class in classes %}
+            <div class="class-card animate-in" 
+                 data-name="{{ class.name|lower }}" 
+                 data-level="{{ class.level.name|lower }}" 
+                 data-status="{% if class.is_active %}active{% else %}inactive{% endif %}"
+                 style="animation-delay: {{ forloop.counter0|floatformat:0 }}00ms;">
+                
+                <div class="card-header">
+                    <div class="class-badge {% if class.is_active %}active{% else %}inactive{% endif %}">
+                        {% if class.is_active %}
+                            <i class="fas fa-check-circle"></i> Actif
+                        {% else %}
+                            <i class="fas fa-pause-circle"></i> Inactif
+                        {% endif %}
+                    </div>
+                    
+                    <div class="class-identity">
+                        <div class="class-avatar">
+                            {{ class.name.0|upper }}
+                        </div>
+                        <div>
+                            <h3 class="class-name">{{ class.name }}</h3>
+                            <div class="class-level">{{ class.level.name }}</div>
+                            <div class="class-year">{{ class.year.name }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-body">
+                    <div class="class-metrics">
+                        <div class="metric-item">
+                            <span class="metric-number">{{ class.students.count }}</span>
+                            <div class="metric-label">Élèves</div>
+                        </div>
+                        <div class="metric-item">
+                            <span class="metric-number">{{ class.capacity|default:0 }}</span>
+                            <div class="metric-label">Capacité</div>
+                        </div>
+                    </div>
+
+                    <div class="class-details">
+                        {% if class.main_teacher %}
+                        <div class="detail-row">
+                            <div class="detail-icon">
+                                <i class="fas fa-user-tie"></i>
+                            </div>
+                            <div class="detail-text">
+                                Professeur principal
+                            </div>
+                            <div class="detail-value">
+                                {{ class.main_teacher.get_full_name }}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if class.classroom %}
+                        <div class="detail-row">
+                            <div class="detail-icon">
+                                <i class="fas fa-door-open"></i>
+                            </div>
+                            <div class="detail-text">
+                                Salle de classe
+                            </div>
+                            <div class="detail-value">
+                                {{ class.classroom }}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="detail-row">
+                            <div class="detail-icon">
+                                <i class="fas fa-building"></i>
+                            </div>
+                            <div class="detail-text">
+                                Établissement
+                            </div>
+                            <div class="detail-value">
+                                {{ class.school.name }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-actions">
+                        <a href="{% url 'classes:timetable_interactive' class.id %}" class="btn btn-primary">
+                            <i class="fas fa-calendar-alt"></i>
+                            Voir l'emploi du temps
+                        </a>
+                        <a href="{% url 'classes:schoolclass_detail' class.id %}" class="btn btn-secondary" title="Détails de la classe">
+                            <i class="fas fa-info-circle"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="empty-state">
+                <div class="empty-illustration">
+                    <i class="fas fa-graduation-cap"></i>
+                </div>
+                <h3 class="empty-title">Aucune classe disponible</h3>
+                <p class="empty-description">
+                    Il n'y a actuellement aucune classe dans le système. 
+                    Contactez votre administrateur pour créer de nouvelles classes.
+                </p>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Message de recherche vide -->
+        <div class="empty-state" id="noResults" style="display: none;">
+            <div class="empty-illustration">
+                <i class="fas fa-search"></i>
+            </div>
+            <h3 class="empty-title">Aucun résultat trouvé</h3>
+            <p class="empty-description">
+                Aucune classe ne correspond à vos critères de recherche. 
+                Essayez de modifier votre terme de recherche ou vos filtres.
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+// Variables globales
+let allCards = [];
+let currentFilter = '';
+
+// Initialisation
+document.addEventListener('DOMContentLoaded', function() {
+    allCards = Array.from(document.querySelectorAll('.class-card'));
+    
+    // Marquer le premier filtre comme actif
+    document.querySelector('.filter-chip').classList.add('active');
+    
+    // Animation d'entrée échelonnée
+    allCards.forEach((card, index) => {
+        card.style.animationDelay = `${index * 150}ms`;
+    });
+});
+
+// Fonction de filtrage
+function setFilter(button, filter) {
+    // Mettre à jour l'état des boutons
+    document.querySelectorAll('.filter-chip').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    button.classList.add('active');
+    
+    currentFilter = filter;
+    filterClasses();
+}
+
+// Fonction de recherche et filtrage
+function filterClasses() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const noResults = document.getElementById('noResults');
+    let visibleCount = 0;
+
+    allCards.forEach((card, index) => {
+        const name = card.dataset.name;
+        const level = card.dataset.level;
+        const status = card.dataset.status;
+        
+        const matchesSearch = name.includes(searchTerm) || level.includes(searchTerm);
+        const matchesFilter = !currentFilter || status === currentFilter;
+        
+        if (matchesSearch && matchesFilter) {
+            card.style.display = 'block';
+            card.style.animationDelay = `${visibleCount * 100}ms`;
+            card.classList.add('animate-in');
+            visibleCount++;
+        } else {
+            card.style.display = 'none';
+            card.classList.remove('animate-in');
+        }
+    });
+
+    // Afficher/masquer le message "aucun résultat"
+    if (visibleCount === 0 && allCards.length > 0) {
+        noResults.style.display = 'block';
+    } else {
+        noResults.style.display = 'none';
+    }
+}
+
+// Gestion du clic sur les cartes
+document.querySelectorAll('.class-card').forEach(card => {
+    card.addEventListener('click', function(event) {
+        // Ne pas déclencher si on clique sur un bouton
+        if (event.target.closest('.btn')) {
+            return;
+        }
+        
+        const link = card.querySelector('.btn-primary');
+        if (link) {
+            window.location.href = link.href;
+        }
+    });
+    
+    // Accessibilité
+    card.setAttribute('tabindex', '0');
+    card.setAttribute('role', 'button');
+    
+    card.addEventListener('keydown', function(event) {
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            const link = card.querySelector('.btn-primary');
+            if (link) {
+                link.click();
+            }
+        }
+    });
+});
+
+// Raccourcis clavier
+document.addEventListener('keydown', function(event) {
+    if ((event.ctrlKey || event.metaKey) && event.key === 'f') {
+        event.preventDefault();
+        document.getElementById('searchInput').focus();
+    }
+    
+    if (event.key === 'Escape') {
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput.value) {
+            searchInput.value = '';
+            filterClasses();
+        }
+    }
+});
+
+// Animation au scroll
+const observerOptions = {
+    threshold: 0.1,
+    rootMargin: '0px 0px -100px 0px'
+};
+
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            entry.target.classList.add('animate-in');
+        }
+    });
+}, observerOptions);
+
+// Observer les cartes
+allCards.forEach(card => {
+    observer.observe(card);
+});
+</script>
+{% endblock %}

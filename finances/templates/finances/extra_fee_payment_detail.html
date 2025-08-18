@@ -1,0 +1,256 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Détails du Paiement - {{ payment.receipt }}{% endblock %}
+{% block page_title %}Détails du Paiement{% endblock %}
+{% block breadcrumb_current %}Paiements Frais Annexes{% endblock %}
+
+{% block page_actions %}
+<div class="flex items-center gap-3">
+    <a href="{% url 'finances:extra_fee_payment_receipt_pdf' payment.pk %}" target="_blank" class="btn-gradient text-white font-semibold py-2 px-4 rounded-xl transition-all duration-200">
+        <i class="fas fa-file-pdf mr-2"></i>Générer PDF
+    </a>
+    <a href="{% url 'finances:extra_fee_payment_list' %}" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2 px-4 rounded-xl transition-all duration-200">
+        <i class="fas fa-arrow-left mr-2"></i>Retour
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <!-- En-tête du paiement -->
+    <div class="card-hover bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden mb-6">
+        <div class="px-6 py-4 border-b border-slate-200/60 bg-gradient-to-r from-purple-50 to-pink-50">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center text-white font-bold text-lg mr-4">
+                        <i class="fas fa-plus-circle"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900">Paiement {{ payment.receipt }}</h2>
+                        <p class="text-slate-600">
+                            {{ payment.extra_fee.name }} - {{ payment.extra_fee.fee_type.name }}
+                        </p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <div class="text-2xl font-bold text-purple-600">{{ payment.amount|floatformat:0 }} FCFA</div>
+                    <div class="text-sm text-slate-500">{{ payment.payment_date|date:"d/m/Y" }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Informations du paiement -->
+        <div class="lg:col-span-2">
+            <div class="card-hover bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-200/60">
+                    <h3 class="text-lg font-semibold text-slate-900">
+                        <i class="fas fa-info-circle mr-2 text-purple-600"></i>Informations du Paiement
+                    </h3>
+                </div>
+                <div class="p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Détails principaux -->
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
+                                <span class="text-sm font-medium text-slate-600">Numéro de reçu</span>
+                                <span class="font-mono text-sm bg-purple-100 text-purple-800 px-3 py-1 rounded-lg">{{ payment.receipt }}</span>
+                            </div>
+                            
+                            <div class="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
+                                <span class="text-sm font-medium text-slate-600">Date de paiement</span>
+                                <span class="text-sm font-medium text-slate-900">{{ payment.payment_date|date:"d/m/Y" }}</span>
+                            </div>
+                            
+                            <div class="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
+                                <span class="text-sm font-medium text-slate-600">Mode de paiement</span>
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium
+                                    {% if payment.mode == 'cash' %}bg-green-100 text-green-800
+                                    {% elif payment.mode == 'cheque' %}bg-blue-100 text-blue-800
+                                    {% elif payment.mode == 'mobile' %}bg-yellow-100 text-yellow-800
+                                    {% else %}bg-purple-100 text-purple-800{% endif %}">
+                                    <i class="fas fa-{% if payment.mode == 'cash' %}money-bill-wave{% elif payment.mode == 'cheque' %}university{% elif payment.mode == 'mobile' %}mobile-alt{% else %}credit-card{% endif %} mr-1"></i>
+                                    {{ payment.get_mode_display }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Détails administratifs -->
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
+                                <span class="text-sm font-medium text-slate-600">Enregistré par</span>
+                                <span class="text-sm font-medium text-slate-900">{{ payment.created_by.get_full_name|default:payment.created_by.username }}</span>
+                            </div>
+                            
+                            <div class="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
+                                <span class="text-sm font-medium text-slate-600">Date d'enregistrement</span>
+                                <span class="text-sm font-medium text-slate-900">{{ payment.created_at|date:"d/m/Y H:i" }}</span>
+                            </div>
+                            
+                            <div class="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
+                                <span class="text-sm font-medium text-slate-600">Document justificatif</span>
+                                <div>
+                                    {% if payment.document %}
+                                        <a href="{{ payment.document.url }}" target="_blank" class="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-800 rounded-lg text-xs font-medium hover:bg-blue-200 transition-colors">
+                                            <i class="fas fa-download mr-1"></i>Télécharger
+                                        </a>
+                                    {% else %}
+                                        <span class="text-xs text-slate-400">Aucun document</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Informations sur les frais annexes -->
+            <div class="card-hover bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden mt-6">
+                <div class="px-6 py-4 border-b border-slate-200/60">
+                    <h3 class="text-lg font-semibold text-slate-900">
+                        <i class="fas fa-plus-circle mr-2 text-purple-600"></i>Informations sur les Frais Annexes
+                    </h3>
+                </div>
+                <div class="p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="bg-gradient-to-br from-purple-50 to-pink-50 p-4 rounded-xl">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center text-white mr-3">
+                                    <i class="fas fa-plus-circle"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-slate-600">Type de frais</p>
+                                    <p class="font-semibold text-slate-900">{{ payment.extra_fee.fee_type.name }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-gradient-to-br from-green-50 to-emerald-50 p-4 rounded-xl">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center text-white mr-3">
+                                    <i class="fas fa-money-bill-wave"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-slate-600">Montant du frais</p>
+                                    <p class="font-semibold text-slate-900">{{ payment.extra_fee.get_amount_for_class|floatformat:0 }} FCFA</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-xl">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center text-white mr-3">
+                                    <i class="fas fa-calendar"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-slate-600">Année scolaire</p>
+                                    <p class="font-semibold text-slate-900">{{ payment.extra_fee.year.annee }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Détails des frais annexes -->
+                    <div class="mt-6 p-4 bg-slate-50 rounded-xl">
+                        <h4 class="text-sm font-semibold text-slate-700 mb-3">Détails du frais annexe</h4>
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between p-3 bg-white rounded-lg">
+                                <span class="text-sm text-slate-600">Nom du frais</span>
+                                <span class="font-semibold text-slate-900">{{ payment.extra_fee.name }}</span>
+                            </div>
+                            
+                            <div class="flex items-center justify-between p-3 bg-white rounded-lg">
+                                <span class="text-sm text-slate-600">Description</span>
+                                <span class="text-sm text-slate-900">{{ payment.extra_fee.description|default:"Aucune description" }}</span>
+                            </div>
+                            
+                            <div class="flex items-center justify-between p-3 bg-white rounded-lg">
+                                <span class="text-sm text-slate-600">Statut</span>
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
+                                    {% if payment.extra_fee.is_active %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                                    {% if payment.extra_fee.is_active %}Actif{% else %}Inactif{% endif %}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Informations de l'étudiant -->
+        <div class="lg:col-span-1">
+            <div class="card-hover bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-200/60">
+                    <h3 class="text-lg font-semibold text-slate-900">
+                        <i class="fas fa-user mr-2 text-purple-600"></i>Informations de l'Étudiant
+                    </h3>
+                </div>
+                <div class="p-6">
+                    <!-- Photo de l'étudiant -->
+                    <div class="text-center mb-6">
+                        {% if payment.student.photo %}
+                            <img src="{{ payment.student.photo.url }}" alt="Photo" class="w-24 h-24 rounded-full object-cover mx-auto border-4 border-slate-200">
+                        {% else %}
+                            <div class="w-24 h-24 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center text-white font-bold text-2xl mx-auto">
+                                {{ payment.student.first_name.0 }}{{ payment.student.last_name.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Informations de l'étudiant -->
+                    <div class="space-y-4">
+                        <div class="p-3 bg-slate-50 rounded-lg">
+                            <p class="text-xs text-slate-500">Nom complet</p>
+                            <p class="font-semibold text-slate-900">{{ payment.student.last_name.upper }} {{ payment.student.first_name }}</p>
+                        </div>
+                        
+                        <div class="p-3 bg-slate-50 rounded-lg">
+                            <p class="text-xs text-slate-500">Matricule</p>
+                            <p class="font-semibold text-slate-900">{{ payment.student.matricule }}</p>
+                        </div>
+                        
+                        <div class="p-3 bg-slate-50 rounded-lg">
+                            <p class="text-xs text-slate-500">Classe</p>
+                            <p class="font-semibold text-slate-900">{{ payment.student.current_class.name }}</p>
+                        </div>
+                        
+                        <div class="p-3 bg-slate-50 rounded-lg">
+                            <p class="text-xs text-slate-500">Niveau</p>
+                            <p class="font-semibold text-slate-900">{{ payment.student.current_class.level.name }}</p>
+                        </div>
+                        
+                        <div class="p-3 bg-slate-50 rounded-lg">
+                            <p class="text-xs text-slate-500">Année scolaire</p>
+                            <p class="font-semibold text-slate-900">{{ payment.student.current_class.year.annee }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions rapides -->
+            <div class="card-hover bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden mt-6">
+                <div class="px-6 py-4 border-b border-slate-200/60">
+                    <h3 class="text-lg font-semibold text-slate-900">
+                        <i class="fas fa-cogs mr-2 text-purple-600"></i>Actions
+                    </h3>
+                </div>
+                <div class="p-6 space-y-3">
+                    <a href="{% url 'finances:extra_fee_payment_receipt_pdf' payment.pk %}" target="_blank" class="w-full flex items-center justify-center px-4 py-3 bg-purple-100 text-purple-800 rounded-xl hover:bg-purple-200 transition-colors">
+                        <i class="fas fa-file-pdf mr-2"></i>Générer PDF
+                    </a>
+                    
+                    <a href="{% url 'finances:student_financial_status' payment.student.pk %}" class="w-full flex items-center justify-center px-4 py-3 bg-blue-100 text-blue-800 rounded-xl hover:bg-blue-200 transition-colors">
+                        <i class="fas fa-chart-line mr-2"></i>Statut Financier
+                    </a>
+                    
+                    <a href="{% url 'finances:extra_fee_payment_list' %}" class="w-full flex items-center justify-center px-4 py-3 bg-slate-100 text-slate-800 rounded-xl hover:bg-slate-200 transition-colors">
+                        <i class="fas fa-list mr-2"></i>Liste des Paiements
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

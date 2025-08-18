@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Initialisation des Données Système - Scolaris</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="h-full bg-gray-50">
+    <div class="min-h-screen flex items-center justify-center">
+        <div class="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
+            <!-- Header -->
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-database text-white text-2xl"></i>
+                </div>
+                <h1 class="text-2xl font-bold text-gray-900">Initialisation du Système</h1>
+                <p class="text-gray-600 mt-2">Création des données de base</p>
+            </div>
+
+            <!-- Content -->
+            <div class="space-y-6">
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h3 class="font-semibold text-blue-900 mb-2">Données à créer :</h3>
+                    <ul class="text-sm text-blue-800 space-y-1">
+                        <li>• Systèmes éducatifs (Francophone, Anglophone)</li>
+                        <li>• Types d'établissements (Public, Privé, Confessionnel)</li>
+                        <li>• Ministère de l'Éducation de Base</li>
+                        <li>• Délégation régionale</li>
+                        <li>• Niveaux scolaires (Maternelle, Primaire, Secondaire)</li>
+                    </ul>
+                </div>
+
+                <div class="text-center">
+                    <a href="{% url 'school:init_system_data' %}" 
+                       class="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-play mr-2"></i>
+                        Initialiser le système
+                    </a>
+                </div>
+
+                <div class="text-center">
+                    <a href="{% url 'school:config_school' %}" 
+                       class="text-sm text-gray-500 hover:text-gray-700">
+                        Retour à la configuration
+                    </a>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="mt-8 text-center text-xs text-gray-400">
+                <p>Cette opération ne peut être effectuée qu'une seule fois</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

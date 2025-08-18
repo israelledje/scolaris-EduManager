@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Bulletin - {{ bulletin.student }} - {{ bulletin.trimester }}</title>
+    <style>
+        @page { size: A4; margin: 1cm; }
+        body { font-family: 'Times New Roman', serif; font-size: 10px; }
+        
+        .bulletin-header {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border: 1px solid #1e40af;
+            border-radius: 4px;
+            padding: 4px;
+            margin-bottom: 6px;
+        }
+        
+        .school-logo {
+            width: 40px;
+            height: 40px;
+            border: 1px solid #1e40af;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #1e40af;
+            background: white;
+        }
+        
+        .grades-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 6px 0;
+            font-size: 8px;
+        }
+        
+        .grades-table th,
+        .grades-table td {
+            border: 0.5px solid #d1d5db;
+            padding: 2px;
+            text-align: center;
+            vertical-align: middle;
+        }
+        
+        .grades-table th {
+            background-color: #f3f4f6;
+            font-weight: bold;
+            font-size: 7px;
+        }
+        
+        .subject-name {
+            text-align: left;
+            font-weight: bold;
+            min-width: 80px;
+        }
+        
+        .group-header {
+            background-color: #e5e7eb;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .total-row {
+            background-color: #fef3c7;
+            font-weight: bold;
+        }
+        
+        .summary-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            margin: 6px 0;
+        }
+        
+        .summary-box {
+            border: 1px solid #d1d5db;
+            padding: 4px;
+            border-radius: 3px;
+        }
+        
+        .summary-box h3 {
+            margin: 0 0 3px 0;
+            font-size: 9px;
+            font-weight: bold;
+            color: #374151;
+            border-bottom: 0.5px solid #d1d5db;
+            padding-bottom: 2px;
+        }
+        
+        .signature-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 6px;
+            margin: 8px 0;
+        }
+        
+        .signature-box {
+            border: 1px solid #d1d5db;
+            padding: 4px;
+            border-radius: 3px;
+            text-align: center;
+            min-height: 50px;
+        }
+        
+        .signature-line {
+            border-top: 1px solid #000;
+            margin-top: 15px;
+            padding-top: 2px;
+            font-size: 7px;
+        }
+        
+        .flex { display: flex; }
+        .justify-between { justify-content: space-between; }
+        .items-start { align-items: flex-start; }
+        .flex-1 { flex: 1; }
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .mt-4 { margin-top: 0.25rem; }
+        .mb-6 { margin-bottom: 0.5rem; }
+        .mb-3 { margin-bottom: 0.25rem; }
+        .space-y-2 > * + * { margin-top: 0.15rem; }
+        .text-sm { font-size: 0.7rem; }
+        .text-xs { font-size: 0.6rem; }
+        .text-lg { font-size: 0.9rem; }
+        .text-2xl { font-size: 1.1rem; }
+        .font-bold { font-weight: bold; }
+        .font-medium { font-weight: 500; }
+        .text-blue-800 { color: #1e40af; }
+        .text-gray-600 { color: #4b5563; }
+        .text-gray-800 { color: #1f2937; }
+        .text-gray-500 { color: #6b7280; }
+        .bg-blue-100 { background-color: #dbeafe; }
+        .px-6 { padding-left: 0.75rem; padding-right: 0.75rem; }
+        .py-3 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+        .p-4 { padding: 0.5rem; }
+        .rounded-lg { border-radius: 0.25rem; }
+        .border { border-width: 1px; }
+        .border-gray-300 { border-color: #d1d5db; }
+        .grid { display: grid; }
+        .grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+        .md\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .gap-6 { gap: 0.5rem; }
+        .overflow-x-auto { overflow-x: auto; }
+        .min-h-\[60px\] { min-height: 25px; }
+        .inline-block { display: inline-block; }
+    </style>
+</head>
+<body>
+    <div class="bulletin-container">
+        <!-- En-tête du bulletin -->
+        <div class="bulletin-header">
+            <div class="flex justify-between items-start">
+                <!-- Gauche -->
+                <div class="flex-1">
+                    <div class="text-sm font-bold text-blue-800">MINISTÈRE DES ENSEIGNEMENTS SECONDAIRES</div>
+                    <div class="text-lg font-bold text-blue-800">{{ school_name|default:"ÉTABLISSEMENT SCOLAIRE" }}</div>
+                    <div class="text-sm text-gray-600">Discipline - Travail - Réussite</div>
+                    <div class="text-xs text-gray-600">B.P. 0000 - Tél. 000.00.00.00</div>
+                </div>
+                
+                <!-- Centre - Logo -->
+                <div class="flex flex-col items-center">
+                    {% if school_logo %}
+                    <img src="{{ school_logo }}" alt="logo" style="width:40px;height:40px;object-fit:contain;border:1px solid #1e40af;border-radius:50%;background:#fff;"/>
+                    {% else %}
+                    <div class="school-logo"><div class="text-center"><div class="text-xs font-bold">LOGO</div></div></div>
+                    {% endif %}
+                </div>
+                
+                <!-- Droite -->
+                <div class="flex-1 text-right">
+                    <div class="text-sm font-bold text-blue-800">RÉPUBLIQUE DU CAMEROUN</div>
+                    <div class="text-xs text-gray-600">Paix - Travail - Patrie</div>
+                    <div class="text-sm font-bold text-blue-800">Année scolaire: {{ bulletin.trimester.year.annee }}</div>
+                </div>
+            </div>
+            
+            <!-- Titre principal -->
+            <div class="text-center mt-4">
+                <h1 class="text-2xl font-bold text-blue-800 bg-blue-100 px-6 py-3 rounded-lg inline-block">
+                    BULLETIN SCOLAIRE DU {{ bulletin.trimester.get_trimester_display|upper }}
+                </h1>
+            </div>
+        </div>
+
+        <!-- Informations de l'élève -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div class="border border-gray-300 rounded-lg p-4">
+                <h3 class="font-bold text-gray-800 mb-3">Informations de classe</h3>
+                <div class="space-y-2 text-sm">
+                    <div><span class="font-medium">Classe:</span> {{ bulletin.student.current_class.name }}</div>
+                    <div><span class="font-medium">Effectif:</span> {{ bulletin.class_size }}</div>
+                    <div><span class="font-medium">Prof. Principal:</span> {{ bulletin.student.current_class.teacher|default:"Non assigné" }}</div>
+                </div>
+            </div>
+            
+            <div class="border border-gray-300 rounded-lg p-4">
+                <h3 class="font-bold text-gray-800 mb-3">Informations de l'élève</h3>
+                <div class="space-y-2 text-sm">
+                    <div><span class="font-medium">Matricule:</span> {{ bulletin.student.matricule }}</div>
+                    <div><span class="font-medium">Nom et prénoms:</span> {{ bulletin.student.last_name.upper }} {{ bulletin.student.first_name }}</div>
+                    <div><span class="font-medium">Date de naissance:</span> {{ bulletin.student.birth_date|date:"d/m/Y"|default:"Non renseigné" }}</div>
+                    <div><span class="font-medium">Lieu de naissance:</span> {{ bulletin.student.birth_place|default:"Non renseigné" }}</div>
+                    <div><span class="font-medium">Statut:</span> Élève non redoublant</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tableau des notes -->
+        <div class="overflow-x-auto">
+            <table class="grades-table">
+                <thead>
+                    <tr>
+                        <th class="subject-name">Matières</th>
+                        <th>EVAL1</th>
+                        <th>EVAL2</th>
+                        <th>M/20</th>
+                        <th>Coefs</th>
+                        <th>MxCoef</th>
+                        <th>Rangs</th>
+                        <th>MoyCla%</th>
+                        <th>Cote</th>
+                        <th>App. et signatures</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Groupe 1 -->
+                    <tr class="group-header">
+                        <td colspan="10">GROUPE 1</td>
+                    </tr>
+                    
+                    {% for line_data in bulletin_lines_with_grades %}
+                    {% if line_data.line.subject.group == 1 %}
+                    <tr>
+                        <td class="subject-name">
+                            {{ line_data.line.subject.name }}
+                            <div class="text-xs text-gray-600">{{ line_data.teacher_name }}</div>
+                        </td>
+                        <td>{{ line_data.eval1_score|floatformat:2|default:"--" }}</td>
+                        <td>{{ line_data.eval2_score|floatformat:2|default:"--" }}</td>
+                        <td class="font-bold">{{ line_data.line.average|floatformat:2|default:"--" }}</td>
+                        <td>{{ line_data.coefficient }}</td>
+                        <td>{{ line_data.line.total_points|floatformat:2|default:"--" }}</td>
+                        <td>{{ line_data.rank|default:"--" }}</td>
+                        <td>{{ line_data.percentage|floatformat:1|default:"--" }}%</td>
+                        <td class="font-bold">{{ line_data.cote }}</td>
+                        <td class="text-xs">{{ line_data.appreciation|default:"--" }}</td>
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                    
+                    <tr class="total-row">
+                        <td class="subject-name">Total Groupe 1</td>
+                        <td colspan="2"></td>
+                        <td class="font-bold">{{ group1_average|floatformat:2|default:"--" }}/20</td>
+                        <td>{{ group1_coefficient|default:"--" }}</td>
+                        <td>{{ group1_points|floatformat:2|default:"--" }}</td>
+                        <td colspan="4"></td>
+                    </tr>
+                    
+                    <!-- Groupe 2 -->
+                    <tr class="group-header">
+                        <td colspan="10">GROUPE 2</td>
+                    </tr>
+                    
+                    {% for line_data in bulletin_lines_with_grades %}
+                    {% if line_data.line.subject.group == 2 %}
+                    <tr>
+                        <td class="subject-name">
+                            {{ line_data.line.subject.name }}
+                            <div class="text-xs text-gray-600">{{ line_data.teacher_name }}</div>
+                        </td>
+                        <td>{{ line_data.eval1_score|floatformat:2|default:"--" }}</td>
+                        <td>{{ line_data.eval2_score|floatformat:2|default:"--" }}</td>
+                        <td class="font-bold">{{ line_data.line.average|floatformat:2|default:"--" }}</td>
+                        <td>{{ line_data.coefficient }}</td>
+                        <td>{{ line_data.line.total_points|floatformat:2|default:"--" }}</td>
+                        <td>{{ line_data.rank|default:"--" }}</td>
+                        <td>{{ line_data.percentage|floatformat:1|default:"--" }}%</td>
+                        <td class="font-bold">{{ line_data.cote }}</td>
+                        <td class="text-xs">{{ line_data.appreciation|default:"--" }}</td>
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                    
+                    <tr class="total-row">
+                        <td class="subject-name">Total Groupe 2</td>
+                        <td colspan="2"></td>
+                        <td class="font-bold">{{ group2_average|floatformat:2|default:"--" }}/20</td>
+                        <td>{{ group2_coefficient|default:"--" }}</td>
+                        <td>{{ group2_points|floatformat:2|default:"--" }}</td>
+                        <td colspan="4"></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Résumé et profil -->
+        <div class="summary-section">
+            <div class="summary-box">
+                <h3>Résultat Trim. de l'élève</h3>
+                <div class="space-y-2 text-sm">
+                    <div><span class="font-medium">Total des points:</span> {{ bulletin.total_points|floatformat:2|default:"--" }}</div>
+                    <div><span class="font-medium">Total des coefs:</span> {{ bulletin.total_coefficients|default:"--" }}</div>
+                    <div><span class="font-medium">Moyenne*:</span> {{ bulletin.student_average|floatformat:2|default:"--" }}/20</div>
+                    <div><span class="font-medium">Rang:</span> {{ bulletin.student_rank|default:"--" }}/{{ bulletin.class_size|default:"--" }}</div>
+                    <div><span class="font-medium">Progrès:</span> {{ progress_status|default:"--" }}</div>
+                </div>
+            </div>
+            
+            <div class="summary-box">
+                <h3>Profil de la classe</h3>
+                <div class="space-y-2 text-sm">
+                    <div><span class="font-medium">Moy. Premier:</span> {{ class_highest|floatformat:2|default:"--" }}</div>
+                    <div><span class="font-medium">Moy. Dernier:</span> {{ class_lowest|floatformat:2|default:"--" }}</div>
+                    <div><span class="font-medium">Nbre Moyennes:</span> {{ bulletin.class_size|default:"--" }}</div>
+                    <div><span class="font-medium">Taux Réussite:</span> {{ bulletin.success_rate|floatformat:1|default:"--" }}%</div>
+                    <div><span class="font-medium">Moy. Classe:</span> {{ bulletin.class_average|floatformat:2|default:"--" }}/20</div>
+                    <div><span class="font-medium">Écart type:</span> {{ standard_deviation|floatformat:2|default:"--" }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Conduite et moyennes précédentes -->
+        <div class="summary-section">
+            <div class="summary-box">
+                <h3>Conduite trimestrielle</h3>
+                <div class="space-y-2 text-sm">
+                    <div><span class="font-medium">Abs Non Just.:</span> {{ conduct.unjustified_absences|default:"0" }} H</div>
+                    <div><span class="font-medium">Abs Just.:</span> {{ conduct.justified_absences|default:"0" }} H</div>
+                    <div><span class="font-medium">b.vert.cond.:</span> {{ conduct.good_conduct|yesno:"Oui,Non"|default:"Non" }}</div>
+                    <div><span class="font-medium">Blame cond.:</span> {{ conduct.blame|yesno:"Oui,Non"|default:"Non" }}</div>
+                    <div><span class="font-medium">Consignes:</span> {{ conduct.instructions|default:"0" }} H</div>
+                    <div><span class="font-medium">Exclusions:</span> {{ conduct.exclusions|default:"0" }} J</div>
+                    <div><span class="font-medium">Retards:</span> {{ conduct.lateness|default:"0" }} H</div>
+                </div>
+            </div>
+            
+            <div class="summary-box">
+                <h3>Rappel des moyennes</h3>
+                <div class="space-y-2 text-sm">
+                    {% for trimester_avg in previous_averages %}
+                    <div><span class="font-medium">{{ trimester_avg.trimester }}:</span> {{ trimester_avg.average|floatformat:2 }} - Rg: {{ trimester_avg.rank }}</div>
+                    {% empty %}
+                    <div class="text-gray-500">Aucune moyenne précédente</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Appréciations et sanctions -->
+        <div class="summary-section">
+            <div class="summary-box">
+                <h3>Appréciat. et Sanction du travail</h3>
+                <div class="space-y-2 text-sm">
+                    <div><span class="font-medium">CNA:</span> {{ work_appreciation.cna|default:"--" }}</div>
+                    <div><span class="font-medium">Avertissement de travail:</span> {{ work_appreciation.warning|default:"--" }}</div>
+                </div>
+            </div>
+            
+            <div class="summary-box">
+                <h3>Observations Surveillant</h3>
+                <div class="min-h-[60px] text-sm">
+                    {{ supervisor_observations|default:"--" }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Signatures -->
+        <div class="signature-section">
+            <div class="signature-box">
+                <div class="signature-line">
+                    Signature du surveillant
+                </div>
+            </div>
+            
+            <div class="signature-box">
+                <div class="signature-line">
+                    Visa du Censeur
+                </div>
+            </div>
+            
+            <div class="signature-box">
+                <div class="signature-line">
+                    Visa du chef d'établissement
+                </div>
+            </div>
+        </div>
+
+        <!-- Observations parent et prof principal -->
+        <div class="summary-section">
+            <div class="summary-box">
+                <h3>Observation et visa du parent</h3>
+                <div class="min-h-[60px] text-sm">
+                    {{ parent_observations|default:"--" }}
+                </div>
+            </div>
+            
+            <div class="summary-box">
+                <h3>Visa du professeur principal</h3>
+                <div class="min-h-[60px] text-sm">
+                    {{ main_teacher_visa|default:"--" }}
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 

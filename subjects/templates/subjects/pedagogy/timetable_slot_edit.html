@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Modifier le Créneau - {{ school_class.name }}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-8">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="bg-white shadow rounded-lg">
+            <div class="px-4 py-5 sm:p-6">
+                <h3 class="text-lg leading-6 font-medium text-gray-900 mb-6">
+                    <i class="fas fa-edit text-blue-600 mr-2"></i>
+                    Modifier le Créneau
+                </h3>
+                
+                <form method="post" class="space-y-6">
+                    {% csrf_token %}
+                    {% for field in form %}
+                    <div>
+                        <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            {{ field.label }}
+                        </label>
+                        {{ field }}
+                        {% if field.help_text %}
+                        <p class="mt-1 text-sm text-gray-500">{{ field.help_text }}</p>
+                        {% endif %}
+                        {% if field.errors %}
+                        <div class="mt-1 text-sm text-red-600">
+                            {% for error in field.errors %}
+                            {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                    
+                    <div class="flex justify-between pt-6">
+                        <a href="{% url 'subjects:timetable_management' class_id=school_class.id %}" 
+                           class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            <i class="fas fa-arrow-left mr-2"></i>
+                            Annuler
+                        </a>
+                        <button type="submit" 
+                                class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            <i class="fas fa-save mr-2"></i>
+                            Enregistrer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Informations sur le créneau -->
+        <div class="mt-6 bg-white shadow rounded-lg">
+            <div class="px-4 py-5 sm:p-6">
+                <h4 class="text-md leading-6 font-medium text-gray-900 mb-4">
+                    <i class="fas fa-info-circle text-blue-600 mr-2"></i>
+                    Informations sur le Créneau
+                </h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-3">
+                        <div>
+                            <span class="text-sm font-medium text-gray-500">Matière :</span>
+                            <span class="ml-2 text-sm text-gray-900">{{ slot.subject.name }}</span>
+                        </div>
+                        <div>
+                            <span class="text-sm font-medium text-gray-500">Enseignant :</span>
+                            <span class="ml-2 text-sm text-gray-900">{{ slot.teacher.get_full_name }}</span>
+                        </div>
+                    </div>
+                    <div class="space-y-3">
+                        <div>
+                            <span class="text-sm font-medium text-gray-500">Jour :</span>
+                            <span class="ml-2 text-sm text-gray-900">{{ slot.get_day_display }}</span>
+                        </div>
+                        <div>
+                            <span class="text-sm font-medium text-gray-500">Période :</span>
+                            <span class="ml-2 text-sm text-gray-900">{{ slot.get_period_display }}</span>
+                        </div>
+                        <div>
+                            <span class="text-sm font-medium text-gray-500">Durée :</span>
+                            <span class="ml-2 text-sm text-gray-900">{{ slot.duration }}h</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Documents - {{ student.get_full_name }}{% endblock %}
+{% block page_title %}Documents de l'étudiant{% endblock %}
+{% block breadcrumb_current %}Documents{% endblock %}
+
+{% block page_actions %}
+<div class="flex items-center gap-3">
+    <a href="{% url 'students:student_detail' student.pk %}" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2 px-4 rounded-xl transition-all duration-200">
+        <i class="fas fa-arrow-left mr-2"></i>Retour
+    </a>
+    <a href="{% url 'documents:document_create' student.pk %}" class="btn-gradient text-white font-semibold py-2 px-4 rounded-xl transition-all duration-200">
+        <i class="fas fa-plus mr-2"></i>Nouveau document
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <!-- En-tête de l'étudiant -->
+    <div class="card-hover bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden mb-6">
+        <div class="px-6 py-4 border-b border-slate-200/60 bg-gradient-to-r from-blue-50 to-indigo-50">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-lg mr-4">
+                        <i class="fas fa-user-graduate"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900">{{ student.get_full_name }}</h2>
+                        <p class="text-slate-600">
+                            Matricule: {{ student.matricule }} | 
+                            Classe: {{ student.current_class.name|default:"Non assigné" }}
+                        </p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <div class="text-sm text-slate-500">Documents</div>
+                    <div class="text-2xl font-bold text-slate-900">{{ student_documents|length }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtres et recherche -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6 mb-6">
+        <div class="flex flex-col md:flex-row gap-4">
+            <div class="flex-1">
+                <input type="text" 
+                       placeholder="Rechercher un document..." 
+                       class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                       hx-get="{% url 'documents:document_search' student.pk %}"
+                       hx-trigger="keyup changed delay:500ms"
+                       hx-target="#documents-list"
+                       hx-include="[name='category']">
+            </div>
+            <div class="md:w-64">
+                <select name="category" 
+                        class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                        hx-get="{% url 'documents:document_search' student.pk %}"
+                        hx-trigger="change"
+                        hx-target="#documents-list"
+                        hx-include="[name='q']">
+                    <option value="">Toutes les catégories</option>
+                    {% for category in categories %}
+                        <option value="{{ category.id }}">{{ category.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des documents -->
+    <div id="documents-list">
+        {% include "documents/partials/document_list.html" %}
+    </div>
+</div>
+{% endblock %} 

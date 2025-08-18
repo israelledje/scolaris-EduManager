@@ -1,0 +1,236 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Rapports Financiers - Scolaris{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- En-tête -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">Rapports Financiers</h1>
+        <p class="text-gray-600">Gérez et analysez les données financières de votre établissement</p>
+    </div>
+
+    <!-- Statistiques rapides -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+                    <i class="fas fa-users text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Total Étudiants</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ total_students }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-green-100 text-green-600">
+                    <i class="fas fa-door-open text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Total Classes</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ total_classes }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">
+                    <i class="fas fa-exclamation-triangle text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Retards</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ overdue_count }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-purple-100 text-purple-600">
+                    <i class="fas fa-chart-line text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Année Scolaire</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ current_year.annee }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Types de rapports -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <!-- Rapport d'Inscriptions -->
+        <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+            <div class="bg-blue-600 px-6 py-4">
+                <h3 class="text-lg font-semibold text-white">Rapport d'Inscriptions</h3>
+                <p class="text-blue-100 text-sm">Suivi des inscriptions et paiements</p>
+            </div>
+            <div class="p-6">
+                <p class="text-gray-600 mb-4">Analysez les inscriptions par classe et période</p>
+                <div class="space-y-2">
+                    <a href="{% url 'finances:inscriptions_report' %}" class="block w-full bg-blue-600 text-white text-center py-2 px-4 rounded hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-chart-bar mr-2"></i>Voir le rapport
+                    </a>
+                    <a href="{% url 'finances:export_inscriptions_report' %}" class="block w-full bg-gray-100 text-gray-700 text-center py-2 px-4 rounded hover:bg-gray-200 transition-colors">
+                        <i class="fas fa-download mr-2"></i>Exporter PDF
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rapport de Scolarité -->
+        <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+            <div class="bg-green-600 px-6 py-4">
+                <h3 class="text-lg font-semibold text-white">Rapport de Scolarité</h3>
+                <p class="text-green-100 text-sm">Paiements de scolarité par classe</p>
+            </div>
+            <div class="p-6">
+                <p class="text-gray-600 mb-4">Suivez les paiements de scolarité et taux de recouvrement</p>
+                <div class="space-y-2">
+                    <a href="{% url 'finances:tuition_report' %}" class="block w-full bg-green-600 text-white text-center py-2 px-4 rounded hover:bg-green-700 transition-colors">
+                        <i class="fas fa-chart-line mr-2"></i>Voir le rapport
+                    </a>
+                    <a href="{% url 'finances:export_tuition_report' %}" class="block w-full bg-gray-100 text-gray-700 text-center py-2 px-4 rounded hover:bg-gray-200 transition-colors">
+                        <i class="fas fa-download mr-2"></i>Exporter PDF
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rapport des Retards -->
+        <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+            <div class="bg-red-600 px-6 py-4">
+                <h3 class="text-lg font-semibold text-white">Rapport des Retards</h3>
+                <p class="text-red-100 text-sm">Gestion des échéances et retardataires</p>
+            </div>
+            <div class="p-6">
+                <p class="text-gray-600 mb-4">Identifiez et gérez les retards de paiement</p>
+                <div class="space-y-2">
+                    <a href="{% url 'finances:overdue_report' %}" class="block w-full bg-red-600 text-white text-center py-2 px-4 rounded hover:bg-red-700 transition-colors">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>Voir le rapport
+                    </a>
+                    <a href="{% url 'finances:export_overdue_report' %}" class="block w-full bg-gray-100 text-gray-700 text-center py-2 px-4 rounded hover:bg-gray-200 transition-colors">
+                        <i class="fas fa-download mr-2"></i>Exporter PDF
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rapport de Performance -->
+        <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+            <div class="bg-purple-600 px-6 py-4">
+                <h3 class="text-lg font-semibold text-white">Rapport de Performance</h3>
+                <p class="text-purple-100 text-sm">Indicateurs et projections financières</p>
+            </div>
+            <div class="p-6">
+                <p class="text-gray-600 mb-4">Analysez la santé financière globale</p>
+                <div class="space-y-2">
+                    <a href="{% url 'finances:performance_report' %}" class="block w-full bg-purple-600 text-white text-center py-2 px-4 rounded hover:bg-purple-700 transition-colors">
+                        <i class="fas fa-chart-pie mr-2"></i>Voir le rapport
+                    </a>
+                    <a href="{% url 'finances:export_performance_report' %}" class="block w-full bg-gray-100 text-gray-700 text-center py-2 px-4 rounded hover:bg-gray-200 transition-colors">
+                        <i class="fas fa-download mr-2"></i>Exporter PDF
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rapport par Étudiant -->
+        <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+            <div class="bg-indigo-600 px-6 py-4">
+                <h3 class="text-lg font-semibold text-white">Rapport par Étudiant</h3>
+                <p class="text-indigo-100 text-sm">Suivi individuel détaillé</p>
+            </div>
+            <div class="p-6">
+                <p class="text-gray-600 mb-4">Consultez la situation financière par étudiant</p>
+                <div class="space-y-2">
+                    <a href="#" class="block w-full bg-indigo-600 text-white text-center py-2 px-4 rounded hover:bg-indigo-700 transition-colors">
+                        <i class="fas fa-user mr-2"></i>Sélectionner un étudiant
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rapport Général -->
+        <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+            <div class="bg-gray-600 px-6 py-4">
+                <h3 class="text-lg font-semibold text-white">Rapport Général</h3>
+                <p class="text-gray-100 text-sm">Vue d'ensemble complète</p>
+            </div>
+            <div class="p-6">
+                <p class="text-gray-600 mb-4">Rapport financier global de l'établissement</p>
+                <div class="space-y-2">
+                    <a href="{% url 'finances:financial_dashboard' %}" class="block w-full bg-gray-600 text-white text-center py-2 px-4 rounded hover:bg-gray-700 transition-colors">
+                        <i class="fas fa-tachometer-alt mr-2"></i>Voir le dashboard
+                    </a>
+                    <a href="{% url 'finances:export_financial_report' %}" class="block w-full bg-gray-100 text-gray-700 text-center py-2 px-4 rounded hover:bg-gray-200 transition-colors">
+                        <i class="fas fa-download mr-2"></i>Exporter PDF
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Paiements récents -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Paiements de scolarité récents -->
+        <div class="bg-white rounded-lg shadow">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900">Paiements de Scolarité Récents</h3>
+            </div>
+            <div class="p-6">
+                {% if recent_payments %}
+                    <div class="space-y-3">
+                        {% for payment in recent_payments %}
+                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded">
+                            <div>
+                                <p class="font-medium text-gray-900">{{ payment.student.last_name.upper }} {{ payment.student.first_name }}</p>
+                                <p class="text-sm text-gray-600">{{ payment.student.current_class.name }} - Tranche {{ payment.tranche.number }}</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-semibold text-green-600">{{ payment.amount|floatformat:0 }} FCFA</p>
+                                <p class="text-xs text-gray-500">{{ payment.payment_date|date:"d/m/Y" }}</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-gray-500 text-center py-4">Aucun paiement récent</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Inscriptions récentes -->
+        <div class="bg-white rounded-lg shadow">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900">Inscriptions Récentes</h3>
+            </div>
+            <div class="p-6">
+                {% if recent_inscriptions %}
+                    <div class="space-y-3">
+                        {% for inscription in recent_inscriptions %}
+                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded">
+                            <div>
+                                <p class="font-medium text-gray-900">{{ inscription.student.last_name.upper }} {{ inscription.student.first_name }}</p>
+                                <p class="text-sm text-gray-600">{{ inscription.student.current_class.name }} - Inscription</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-semibold text-blue-600">{{ inscription.amount|floatformat:0 }} FCFA</p>
+                                <p class="text-xs text-gray-500">{{ inscription.payment_date|date:"d/m/Y" }}</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-gray-500 text-center py-4">Aucune inscription récente</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

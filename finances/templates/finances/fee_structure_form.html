@@ -1,0 +1,690 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}{{ title }} - Finances{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block breadcrumb_current %}Structures de Frais{% endblock %}
+
+{% block page_actions %}
+<div class="flex items-center gap-3">
+    <a href="{% url 'finances:fee_structure_list' %}" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2 px-4 rounded-xl transition-all duration-200">
+        <i class="fas fa-arrow-left mr-2"></i>Retour
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <div class="card-hover bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-200/60">
+            <h3 class="text-lg font-semibold text-slate-900">
+                <i class="fas fa-edit mr-2"></i>{{ title }}
+            </h3>
+        </div>
+        
+        <form method="post" id="feeStructureForm" class="p-6 space-y-6">
+            {% csrf_token %}
+            
+            <!-- Informations de base -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="{{ form.school_class.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                        Classe <span class="text-red-500">*</span>
+                    </label>
+                    {% render_field form.school_class class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="Sélectionner une classe" %}
+                    {% if form.school_class.errors %}
+                        <div class="mt-2 text-sm text-red-600">
+                            {% for error in form.school_class.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div>
+                    <label for="{{ form.year.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                        Année scolaire <span class="text-red-500">*</span>
+                    </label>
+                    {% render_field form.year class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="Sélectionner une année" %}
+                    {% if form.year.errors %}
+                        <div class="mt-2 text-sm text-red-600">
+                            {% for error in form.year.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Montants -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                    <label for="{{ form.inscription_fee.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                        Frais d'inscription <span class="text-red-500">*</span>
+                    </label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
+                            <i class="fas fa-money-bill-wave"></i>
+                        </span>
+                        {% render_field form.inscription_fee class="w-full pl-10 pr-12 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="0.00" %}
+                        <span class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-500 text-sm">
+                            FCFA
+                        </span>
+                    </div>
+                    {% if form.inscription_fee.errors %}
+                        <div class="mt-2 text-sm text-red-600">
+                            {% for error in form.inscription_fee.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div>
+                    <label for="{{ form.tuition_total.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                        Frais de scolarité total <span class="text-red-500">*</span>
+                    </label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
+                            <i class="fas fa-graduation-cap"></i>
+                        </span>
+                        {% render_field form.tuition_total class="w-full pl-10 pr-12 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="0.00" %}
+                        <span class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-500 text-sm">
+                            FCFA
+                        </span>
+                    </div>
+                    {% if form.tuition_total.errors %}
+                        <div class="mt-2 text-sm text-red-600">
+                            {% for error in form.tuition_total.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div>
+                    <label for="{{ form.tranche_count.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                        Nombre de tranches <span class="text-red-500">*</span>
+                    </label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
+                            <i class="fas fa-layer-group"></i>
+                        </span>
+                        {% render_field form.tranche_count class="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="3" %}
+                    </div>
+                    {% if form.tranche_count.errors %}
+                        <div class="mt-2 text-sm text-red-600">
+                            {% for error in form.tranche_count.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Gestion des tranches -->
+            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200">
+                <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-layer-group text-white"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-lg font-semibold text-slate-900">Gestion des Tranches</h4>
+                            <p class="text-sm text-slate-600">Configurez les montants et dates d'échéance de chaque tranche</p>
+                            {% if existing_tranches %}
+                                <p class="text-xs text-blue-600 mt-1">
+                                    <i class="fas fa-info-circle mr-1"></i>
+                                    {{ existing_tranches|length }} tranche(s) existante(s) chargée(s)
+                                </p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <button type="button" 
+                            onclick="generateTranches()"
+                            class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-xl transition-all duration-200">
+                        <i class="fas fa-magic mr-2"></i>Générer automatiquement
+                    </button>
+                </div>
+
+                <!-- Vérification des montants -->
+                <div id="amount-verification" class="mb-6 p-4 rounded-xl border-2 transition-all duration-300 hidden">
+                    <div class="flex items-center gap-3">
+                        <div id="verification-icon" class="w-8 h-8 rounded-full flex items-center justify-center">
+                            <i id="verification-icon-symbol" class="text-white"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h5 id="verification-title" class="text-sm font-semibold"></h5>
+                            <p id="verification-message" class="text-xs"></p>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm font-mono">
+                                <span class="text-slate-600">Total frais:</span>
+                                <span id="total-tuition-display" class="ml-2 font-bold">0 FCFA</span>
+                            </div>
+                            <div class="text-sm font-mono">
+                                <span class="text-slate-600">Somme tranches:</span>
+                                <span id="total-tranches-display" class="ml-2 font-bold">0 FCFA</span>
+                            </div>
+                            <div class="text-sm font-mono">
+                                <span class="text-slate-600">Différence:</span>
+                                <span id="difference-display" class="ml-2 font-bold">0 FCFA</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Liste des tranches -->
+                <div id="tranches-container" class="space-y-4">
+                    <!-- Les tranches seront générées ici -->
+                </div>
+
+                <!-- Bouton pour ajouter une tranche manuellement -->
+                <div class="mt-4 text-center">
+                    <button type="button" 
+                            onclick="addTranche()"
+                            class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 px-6 rounded-xl transition-all duration-200">
+                        <i class="fas fa-plus mr-2"></i>Ajouter une tranche
+                    </button>
+                </div>
+            </div>
+
+            <!-- Erreurs générales du formulaire -->
+            {% if form.non_field_errors %}
+                <div class="bg-red-50 border border-red-200 rounded-xl p-4">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-exclamation-circle text-red-600"></i>
+                        </div>
+                        <div class="ml-3">
+                            <h4 class="text-sm font-medium text-red-900">Erreurs de validation</h4>
+                            <div class="mt-2 text-sm text-red-700">
+                                {% for error in form.non_field_errors %}
+                                    <p>{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Informations importantes -->
+            <div class="bg-blue-50 border border-blue-200 rounded-xl p-6">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-info-circle text-blue-600 text-xl"></i>
+                    </div>
+                    <div class="ml-3">
+                        <h4 class="text-sm font-medium text-blue-900">Informations importantes</h4>
+                        <div class="mt-2 text-sm text-blue-700 space-y-1">
+                            <p>• Les frais d'inscription sont payés une seule fois à l'inscription</p>
+                            <p>• Les frais de scolarité seront divisés selon vos configurations de tranches</p>
+                            <p>• Chaque tranche peut avoir un montant et une date d'échéance personnalisés</p>
+                            <p>• Utilisez "Générer automatiquement" pour créer des tranches équidistantes</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Boutons d'action -->
+            <div class="flex items-center justify-end gap-4 pt-6 border-t border-slate-200">
+                <a href="{% url 'finances:fee_structure_list' %}" 
+                   class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 px-6 rounded-xl transition-all duration-200">
+                    Annuler
+                </a>
+                <button type="submit" 
+                        class="btn-gradient text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg">
+                    <i class="fas fa-save mr-2"></i>
+                    {% if fee_structure %}Modifier{% else %}Créer{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal pour éditer une tranche -->
+<div id="trancheModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+            <div class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6 rounded-t-3xl">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
+                            <i class="fas fa-edit text-white text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-2xl font-bold">Modifier la tranche</h3>
+                            <p class="text-blue-100 text-sm mt-1">Ajustez le montant et la date d'échéance</p>
+                        </div>
+                    </div>
+                    <button onclick="closeTrancheModal()"
+                            class="w-10 h-10 bg-white/20 hover:bg-white/30 rounded-xl flex items-center justify-center transition-all duration-200 backdrop-blur-sm">
+                        <i class="fas fa-times text-white"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-6">
+                <div id="tranche-modal-content">
+                    <!-- Le contenu du modal sera chargé ici -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let trancheCounter = 0;
+let tranches = [];
+
+// Générer automatiquement les tranches
+function generateTranches() {
+    const tuitionTotal = parseFloat(document.getElementById('{{ form.tuition_total.id_for_label }}').value) || 0;
+    const trancheCount = parseInt(document.getElementById('{{ form.tranche_count.id_for_label }}').value) || 3;
+    
+    if (tuitionTotal <= 0) {
+        alert('Veuillez d\'abord saisir le montant total des frais de scolarité');
+        return;
+    }
+    
+    if (trancheCount <= 0) {
+        alert('Veuillez saisir un nombre de tranches valide');
+        return;
+    }
+    
+    // Vider le conteneur
+    document.getElementById('tranches-container').innerHTML = '';
+    tranches = [];
+    
+    const amountPerTranche = tuitionTotal / trancheCount;
+    const today = new Date();
+    
+    for (let i = 1; i <= trancheCount; i++) {
+        const dueDate = new Date(today);
+        dueDate.setDate(today.getDate() + (30 * i));
+        
+        const tranche = {
+            id: `tranche_${i}`,
+            number: i,
+            amount: amountPerTranche,
+            due_date: dueDate.toISOString().split('T')[0]
+        };
+        
+        tranches.push(tranche);
+        addTrancheToDOM(tranche);
+    }
+    
+    trancheCounter = trancheCount;
+    
+    // Vérifier les montants après génération
+    verifyAmounts();
+}
+
+// Ajouter une tranche manuellement
+function addTranche() {
+    trancheCounter++;
+    const today = new Date();
+    const dueDate = new Date(today);
+    dueDate.setDate(today.getDate() + (30 * trancheCounter));
+    
+    const tranche = {
+        id: `tranche_${trancheCounter}`,
+        number: trancheCounter,
+        amount: 0,
+        due_date: dueDate.toISOString().split('T')[0]
+    };
+    
+    tranches.push(tranche);
+    addTrancheToDOM(tranche);
+    
+    // Vérifier les montants après ajout
+    verifyAmounts();
+}
+
+// Ajouter une tranche au DOM
+function addTrancheToDOM(tranche) {
+    const container = document.getElementById('tranches-container');
+    
+    const trancheElement = document.createElement('div');
+    trancheElement.className = 'bg-white rounded-xl p-4 border border-slate-200 shadow-sm';
+    trancheElement.id = tranche.id;
+    
+    trancheElement.innerHTML = `
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+            <div class="flex items-center gap-3">
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                    Tranche ${tranche.number}
+                </span>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Montant (FCFA)</label>
+                <input type="number" 
+                       value="${tranche.amount}" 
+                       step="0.01" 
+                       min="0"
+                       onchange="updateTranche('${tranche.id}', 'amount', this.value)"
+                       class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Date d'échéance</label>
+                <input type="date" 
+                       value="${tranche.due_date}" 
+                       onchange="updateTranche('${tranche.id}', 'due_date', this.value)"
+                       class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <button type="button" 
+                        onclick="editTranche('${tranche.id}')"
+                        class="text-amber-600 hover:text-amber-900 transition-colors duration-200 p-2 rounded-lg hover:bg-amber-50">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button type="button" 
+                        onclick="removeTranche('${tranche.id}')"
+                        class="text-red-600 hover:text-red-900 transition-colors duration-200 p-2 rounded-lg hover:bg-red-50">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    `;
+    
+    container.appendChild(trancheElement);
+}
+
+// Mettre à jour une tranche
+function updateTranche(trancheId, field, value) {
+    const tranche = tranches.find(t => t.id === trancheId);
+    if (tranche) {
+        tranche[field] = value;
+        // Vérifier les montants après chaque modification
+        verifyAmounts();
+    }
+}
+
+// Vérifier que les montants correspondent
+function verifyAmounts() {
+    const tuitionTotal = parseFloat(document.getElementById('{{ form.tuition_total.id_for_label }}').value) || 0;
+    const tranchesTotal = tranches.reduce((sum, tranche) => sum + (parseFloat(tranche.amount) || 0), 0);
+    const difference = tuitionTotal - tranchesTotal;
+    
+    const verificationDiv = document.getElementById('amount-verification');
+    const verificationIcon = document.getElementById('verification-icon');
+    const verificationIconSymbol = document.getElementById('verification-icon-symbol');
+    const verificationTitle = document.getElementById('verification-title');
+    const verificationMessage = document.getElementById('verification-message');
+    const totalTuitionDisplay = document.getElementById('total-tuition-display');
+    const totalTranchesDisplay = document.getElementById('total-tranches-display');
+    const differenceDisplay = document.getElementById('difference-display');
+    
+    // Mettre à jour les affichages
+    totalTuitionDisplay.textContent = formatCurrency(tuitionTotal);
+    totalTranchesDisplay.textContent = formatCurrency(tranchesTotal);
+    differenceDisplay.textContent = formatCurrency(Math.abs(difference));
+    
+    // Afficher la vérification
+    verificationDiv.classList.remove('hidden');
+    
+    if (Math.abs(difference) < 0.01) { // Égalité (tolérance pour les erreurs de virgule flottante)
+        // ✅ Montants égaux
+        verificationDiv.className = 'mb-6 p-4 rounded-xl border-2 border-green-200 bg-green-50 transition-all duration-300';
+        verificationIcon.className = 'w-8 h-8 rounded-full flex items-center justify-center bg-green-500';
+        verificationIconSymbol.className = 'fas fa-check text-white text-sm';
+        verificationTitle.textContent = 'Montants équilibrés';
+        verificationTitle.className = 'text-sm font-semibold text-green-800';
+        verificationMessage.textContent = 'La somme des tranches correspond exactement au montant total des frais de scolarité.';
+        verificationMessage.className = 'text-xs text-green-700';
+        differenceDisplay.className = 'ml-2 font-bold text-green-600';
+    } else if (difference > 0) {
+        // ⚠️ Montant total supérieur à la somme des tranches
+        verificationDiv.className = 'mb-6 p-4 rounded-xl border-2 border-amber-200 bg-amber-50 transition-all duration-300';
+        verificationIcon.className = 'w-8 h-8 rounded-full flex items-center justify-center bg-amber-500';
+        verificationIconSymbol.className = 'fas fa-exclamation-triangle text-white text-sm';
+        verificationTitle.textContent = 'Montant total supérieur';
+        verificationTitle.className = 'text-sm font-semibold text-amber-800';
+        verificationMessage.textContent = `Il manque ${formatCurrency(difference)} dans les tranches. Ajoutez des tranches ou augmentez les montants.`;
+        verificationMessage.className = 'text-xs text-amber-700';
+        differenceDisplay.className = 'ml-2 font-bold text-amber-600';
+    } else {
+        // ❌ Somme des tranches supérieure au montant total
+        verificationDiv.className = 'mb-6 p-4 rounded-xl border-2 border-red-200 bg-red-50 transition-all duration-300';
+        verificationIcon.className = 'w-8 h-8 rounded-full flex items-center justify-center bg-red-500';
+        verificationIconSymbol.className = 'fas fa-times text-white text-sm';
+        verificationTitle.textContent = 'Montant total insuffisant';
+        verificationTitle.className = 'text-sm font-semibold text-red-800';
+        verificationMessage.textContent = `Les tranches dépassent de ${formatCurrency(Math.abs(difference))} le montant total. Réduisez les montants des tranches.`;
+        verificationMessage.className = 'text-xs text-red-700';
+        differenceDisplay.className = 'ml-2 font-bold text-red-600';
+    }
+}
+
+// Formater une somme en FCFA
+function formatCurrency(amount) {
+    return new Intl.NumberFormat('fr-FR', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    }).format(amount) + ' FCFA';
+}
+
+// Masquer la vérification si aucune tranche
+function hideVerification() {
+    document.getElementById('amount-verification').classList.add('hidden');
+}
+
+// Éditer une tranche
+function editTranche(trancheId) {
+    const tranche = tranches.find(t => t.id === trancheId);
+    if (!tranche) return;
+    
+    // Ouvrir le modal
+    document.getElementById('trancheModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    
+    // Charger le contenu du modal
+    document.getElementById('tranche-modal-content').innerHTML = `
+        <form id="editTrancheForm" class="space-y-6">
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">Numéro de tranche</label>
+                <input type="number" value="${tranche.number}" disabled class="w-full px-4 py-3 border border-slate-300 rounded-xl bg-slate-50">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">Montant (FCFA) <span class="text-red-500">*</span></label>
+                <input type="number" 
+                       id="editAmount" 
+                       value="${tranche.amount}" 
+                       step="0.01" 
+                       min="0"
+                       required
+                       class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">Date d'échéance <span class="text-red-500">*</span></label>
+                <input type="date" 
+                       id="editDueDate" 
+                       value="${tranche.due_date}" 
+                       required
+                       class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </div>
+            
+            <div class="flex items-center justify-end gap-3 pt-6 border-t border-slate-200">
+                <button type="button" 
+                        onclick="closeTrancheModal()"
+                        class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 px-6 rounded-xl transition-all duration-200">
+                    Annuler
+                </button>
+                <button type="button" 
+                        onclick="saveTrancheEdit('${trancheId}')"
+                        class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200">
+                    <i class="fas fa-save mr-2"></i>Enregistrer
+                </button>
+            </div>
+        </form>
+    `;
+}
+
+// Sauvegarder les modifications d'une tranche
+function saveTrancheEdit(trancheId) {
+    const amount = parseFloat(document.getElementById('editAmount').value);
+    const dueDate = document.getElementById('editDueDate').value;
+    
+    if (!amount || amount <= 0) {
+        alert('Veuillez saisir un montant valide');
+        return;
+    }
+    
+    if (!dueDate) {
+        alert('Veuillez saisir une date d\'échéance');
+        return;
+    }
+    
+    const tranche = tranches.find(t => t.id === trancheId);
+    if (tranche) {
+        tranche.amount = amount;
+        tranche.due_date = dueDate;
+        
+        // Mettre à jour l'affichage
+        const trancheElement = document.getElementById(trancheId);
+        if (trancheElement) {
+            const amountInput = trancheElement.querySelector('input[type="number"]');
+            const dateInput = trancheElement.querySelector('input[type="date"]');
+            if (amountInput) amountInput.value = amount;
+            if (dateInput) dateInput.value = dueDate;
+        }
+    }
+    
+    closeTrancheModal();
+}
+
+// Supprimer une tranche
+function removeTranche(trancheId) {
+    if (confirm('Êtes-vous sûr de vouloir supprimer cette tranche ?')) {
+        const tranche = tranches.find(t => t.id === trancheId);
+        if (tranche) {
+            tranches = tranches.filter(t => t.id !== trancheId);
+            const element = document.getElementById(trancheId);
+            if (element) {
+                element.remove();
+            }
+            
+            // Vérifier les montants après suppression
+            if (tranches.length === 0) {
+                hideVerification();
+            } else {
+                verifyAmounts();
+            }
+        }
+    }
+}
+
+// Fermer le modal
+function closeTrancheModal() {
+    document.getElementById('trancheModal').classList.add('hidden');
+    document.body.style.overflow = 'auto';
+}
+
+// Validation du formulaire avant soumission
+document.getElementById('feeStructureForm').addEventListener('submit', function(e) {
+    if (tranches.length === 0) {
+        e.preventDefault();
+        alert('Veuillez créer au moins une tranche avant de soumettre le formulaire');
+        return;
+    }
+    
+    // Ajouter les données des tranches au formulaire
+    const tranchesData = document.createElement('input');
+    tranchesData.type = 'hidden';
+    tranchesData.name = 'tranches_data';
+    tranchesData.value = JSON.stringify(tranches);
+    this.appendChild(tranchesData);
+});
+
+// Calcul automatique du montant par tranche
+document.addEventListener('DOMContentLoaded', function() {
+    const tuitionTotalField = document.getElementById('{{ form.tuition_total.id_for_label }}');
+    const trancheCountField = document.getElementById('{{ form.tranche_count.id_for_label }}');
+    
+    // Charger les tranches existantes si on est en mode modification
+    {% if existing_tranches %}
+        loadExistingTranches();
+    {% endif %}
+    
+    function calculateTrancheAmount() {
+        const tuitionTotal = parseFloat(tuitionTotalField.value) || 0;
+        const trancheCount = parseInt(trancheCountField.value) || 1;
+        
+        if (tuitionTotal > 0 && trancheCount > 0) {
+            const amountPerTranche = tuitionTotal / trancheCount;
+            // Mettre à jour les tranches existantes si elles existent
+            if (tranches.length > 0) {
+                tranches.forEach(tranche => {
+                    tranche.amount = amountPerTranche;
+                    const trancheElement = document.getElementById(tranche.id);
+                    if (trancheElement) {
+                        const amountInput = trancheElement.querySelector('input[type="number"]');
+                        if (amountInput) amountInput.value = amountPerTranche;
+                    }
+                });
+            }
+        }
+    }
+    
+    tuitionTotalField.addEventListener('input', calculateTrancheAmount);
+    trancheCountField.addEventListener('input', calculateTrancheAmount);
+    
+    // Validation des montants
+    tuitionTotalField.addEventListener('input', function() {
+        const value = parseFloat(this.value);
+        if (value < 0) {
+            this.setCustomValidity('Le montant ne peut pas être négatif');
+        } else {
+            this.setCustomValidity('');
+        }
+    });
+    
+    trancheCountField.addEventListener('input', function() {
+        const value = parseInt(this.value);
+        if (value < 1) {
+            this.setCustomValidity('Le nombre de tranches doit être au moins 1');
+        } else if (value > 12) {
+            this.setCustomValidity('Le nombre de tranches ne peut pas dépasser 12');
+        } else {
+            this.setCustomValidity('');
+        }
+    });
+});
+
+// Fonction pour charger les tranches existantes
+function loadExistingTranches() {
+    {% if existing_tranches %}
+        const existingTranches = [
+            {% for tranche in existing_tranches %}
+                {
+                    id: 'tranche_{{ tranche.number }}',
+                    number: {{ tranche.number }},
+                    amount: {{ tranche.amount }},
+                    due_date: '{{ tranche.due_date|date:"Y-m-d" }}'
+                }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ];
+        
+        // Vider le conteneur
+        document.getElementById('tranches-container').innerHTML = '';
+        tranches = [];
+        trancheCounter = 0;
+        
+        // Charger chaque tranche existante
+        existingTranches.forEach(tranche => {
+            tranches.push(tranche);
+            addTrancheToDOM(tranche);
+            trancheCounter = Math.max(trancheCounter, tranche.number);
+        });
+        
+        // Mettre à jour le compteur de tranches
+        trancheCounter = existingTranches.length;
+    {% endif %}
+}
+</script>
+{% endblock %} 

@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="fr">
+{% load static %}
+{% load widget_tweaks %}
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}EduManager - Gestion Scolaire{% endblock %}</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            200: '#bfdbfe',
+                            300: '#93c5fd',
+                            400: '#60a5fa',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                        },
+                        secondary: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        },
+                        accent: {
+                            50: '#ecfdf5',
+                            100: '#d1fae5',
+                            200: '#a7f3d0',
+                            300: '#6ee7b7',
+                            400: '#34d399',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                            800: '#065f46',
+                            900: '#064e3b',
+                        }
+                    },
+                    fontFamily: {
+                        'sans': ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-in-out',
+                        'slide-in': 'slideIn 0.3s ease-out',
+                        'bounce-subtle': 'bounceSubtle 2s infinite',
+                        'pulse-soft': 'pulseSoft 2s infinite',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- htmx.js -->
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    
+    <!-- Alpine.js -->
+    <script defer src="{% static 'js/alpine.min.js' %}"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(-100%); }
+            to { transform: translateX(0); }
+        }
+        
+        @keyframes bounceSubtle {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-2px); }
+        }
+        
+        @keyframes pulseSoft {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .sidebar-gradient {
+            background: linear-gradient(135deg, #1e40af 0%, #3730a3 50%, #581c87 100%);
+        }
+        
+        .glass-effect {
+            backdrop-filter: blur(12px);
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .sidebar-link {
+            position: relative;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 12px;
+            margin: 0 12px 4px 12px;
+            overflow: hidden;
+        }
+        
+        .sidebar-link::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.5s;
+        }
+        
+        .sidebar-link:hover::before {
+            left: 100%;
+        }
+        
+        .sidebar-link:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(4px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .sidebar-link.active {
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            border-left: 4px solid #10b981;
+        }
+        
+        .notification-dot {
+            animation: pulse 2s infinite;
+        }
+        
+        .card-hover {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        .btn-gradient {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-gradient:hover {
+            background: linear-gradient(135deg, #2563eb, #7c3aed);
+            transform: translateY(-1px);
+            box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
+        }
+        
+        .search-focus {
+            transition: all 0.3s ease;
+        }
+        
+        .search-focus:focus {
+            width: 20rem;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .dropdown-menu {
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .dropdown-menu.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        
+        .mobile-sidebar {
+            transform: translateX(-100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .mobile-sidebar.active {
+            transform: translateX(0);
+        }
+        
+        .alert {
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body class="bg-slate-50 font-sans antialiased">
+    <!-- Mobile Sidebar Overlay -->
+    <div id="sidebarOverlay" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 lg:hidden opacity-0 invisible transition-all duration-300"></div>
+    
+    <!-- Sidebar -->
+    <nav id="sidebar" class="fixed top-0 left-0 h-screen w-72 sidebar-gradient text-white z-50 overflow-y-auto mobile-sidebar lg:translate-x-0 shadow-2xl">
+        <!-- Sidebar Header -->
+        <div class="flex items-center gap-3 p-6 border-b border-white/10">
+            <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+                <i class="fas fa-graduation-cap text-xl"></i>
+            </div>
+            <div>
+                <h4 class="text-xl font-bold">EduManager</h4>
+                <p class="text-white/70 text-sm">Gestion Scolaire</p>
+            </div>
+        </div>
+        
+        <!-- Sidebar Menu -->
+        <div class="py-6">
+            <div class="px-3 mb-4">
+                <p class="text-white/60 text-xs font-semibold uppercase tracking-wider mb-3">Navigation</p>
+            </div>
+            
+            <a href="{% url 'dashboard' %}" class="sidebar-link dashboard flex items-center px-4 py-3 text-white/90 hover:text-white" data-page="dashboard">
+                <i class="fas fa-tachometer-alt w-5"></i>
+                <span class="font-medium ml-3">Tableau de bord</span>
+            </a>
+            
+            <a href="{% url 'students:student_list' %}" class="sidebar-link students flex items-center px-4 py-3 text-white/90 hover:text-white" data-page="students">
+                <i class="fas fa-user-graduate w-5"></i>
+                <span class="font-medium ml-3">Étudiants</span>
+                <span class="ml-auto bg-accent-500 text-white text-xs px-2 py-1 rounded-full font-medium">245</span>
+            </a>
+            
+            <a href="{% url 'teachers:teacher_list' %}" class="sidebar-link teachers flex items-center px-4 py-3 text-white/90 hover:text-white" data-page="teachers">
+                <i class="fas fa-chalkboard-teacher w-5"></i>
+                <span class="font-medium ml-3">Enseignants</span>
+                <span class="ml-auto bg-secondary-500 text-white text-xs px-2 py-1 rounded-full font-medium">32</span>
+            </a>
+            
+            <a href="{% url 'classes:schoolclass_list' %}" class="sidebar-link classes flex items-center px-4 py-3 text-white/90 hover:text-white" data-page="classes">
+                <i class="fas fa-door-open w-5"></i>
+                <span class="font-medium ml-3">Classes</span>
+            </a>
+            
+            <a href="{% url 'subjects:subject_list'%}" class="sidebar-link subjects flex items-center px-4 py-3 text-white/90 hover:text-white" data-page="subjects">
+                <i class="fas fa-book w-5"></i>
+                <span class="font-medium ml-3">Matières</span>
+            </a>
+            
+            <div class="px-3 mt-6 mb-4">
+                <p class="text-white/60 text-xs font-semibold uppercase tracking-wider mb-3">Académique</p>
+            </div>
+            
+            <a href="{% url 'classes:timetable_list_classes' %}" class="sidebar-link flex items-center px-4 py-3 text-white/90 hover:text-white" data-page="timetable">
+                <i class="fas fa-calendar-alt w-5"></i>
+                <span class="font-medium ml-3">Emploi du temps</span>
+            </a>
+            
+            <a href="{% url 'notes:dashboard' %}" class="sidebar-link flex items-center px-4 py-3 text-white/90 hover:text-white" data-page="notes">
+                <i class="fas fa-chart-line w-5"></i>
+                <span class="font-medium ml-3">Notes</span>
+            </a>
+            
+            <!-- Sous-menu des notes -->
+            <div class="ml-8 space-y-1">
+                <a href="{% url 'notes:evaluation_list' %}" class="sidebar-link flex items-center px-4 py-2 text-white/70 hover:text-white text-sm" data-page="evaluations">
+                    <i class="fas fa-clipboard-check w-4"></i>
+                    <span class="ml-3">Évaluations</span>
+                </a>
+                <a href="{% url 'notes:bulletin_list' %}" class="sidebar-link flex items-center px-4 py-2 text-white/70 hover:text-white text-sm" data-page="bulletins">
+                    <i class="fas fa-file-alt w-4"></i>
+                    <span class="ml-3">Bulletins</span>
+                </a>
+                <a href="{% url 'notes:trimester_list' %}" class="sidebar-link flex items-center px-4 py-2 text-white/70 hover:text-white text-sm" data-page="trimesters">
+                    <i class="fas fa-calendar w-4"></i>
+                    <span class="ml-3">Trimestres</span>
+                </a>
+                
+                <a href="{% url 'notes:reports_dashboard' %}" class="sidebar-link flex items-center px-4 py-2 text-white/70 hover:text-white text-sm" data-page="reports">
+                    <i class="fas fa-chart-bar w-4"></i>
+                    <span class="ml-3">Rapports</span>
+                </a>
+                <a href="{% url 'notes:import_export_dashboard' %}" class="sidebar-link flex items-center px-4 py-2 text-white/70 hover:text-white text-sm" data-page="import-export">
+                    <i class="fas fa-exchange-alt w-4"></i>
+                    <span class="ml-3">Import/Export</span>
+                </a>
+            </div>
+            
+            <a href="#" class="sidebar-link flex items-center px-4 py-3 text-white/90 hover:text-white" data-page="attendance">
+                <i class="fas fa-user-check w-5"></i>
+                <span class="font-medium ml-3">Présences</span>
+            </a>
+            
+            <div class="px-3 mt-6 mb-4">
+                <p class="text-white/60 text-xs font-semibold uppercase tracking-wider mb-3">Gestion</p>
+            </div>
+            
+            <a href="{% url 'finances:financial_dashboard' %}" class="sidebar-link finance flex items-center px-4 py-3 text-white/90 hover:text-white" data-page="finance">
+                <i class="fas fa-money-bill-wave w-5"></i>
+                <span class="font-medium ml-3">Frais scolaires</span>
+            </a>
+            
+            <!-- Sous-menu des finances -->
+            <div class="ml-8 space-y-1">
+                <a href="{% url 'finances:fee_structure_list' %}" class="sidebar-link flex items-center px-4 py-2 text-white/70 hover:text-white text-sm" data-page="fee-structures">
+                    <i class="fas fa-list-ul w-4"></i>
+                    <span class="ml-3">Structures de frais</span>
+                </a>
+                <a href="{% url 'finances:payment_list' %}" class="sidebar-link flex items-center px-4 py-2 text-white/70 hover:text-white text-sm" data-page="payments">
+                    <i class="fas fa-credit-card w-4"></i>
+                    <span class="ml-3">Paiements</span>
+                </a>
+                <a href="{% url 'finances:discount_list' %}" class="sidebar-link flex items-center px-4 py-2 text-white/70 hover:text-white text-sm" data-page="discounts">
+                    <i class="fas fa-percentage w-4"></i>
+                    <span class="ml-3">Remises/Bourses</span>
+                </a>
+                <a href="{% url 'finances:moratorium_list' %}" class="sidebar-link flex items-center px-4 py-2 text-white/70 hover:text-white text-sm" data-page="moratoriums">
+                    <i class="fas fa-clock w-4"></i>
+                    <span class="ml-3">Moratoires</span>
+                </a>
+                <a href="{% url 'finances:extra_fee_list' %}" class="sidebar-link flex items-center px-4 py-2 text-white/70 hover:text-white text-sm" data-page="extra-fees">
+                    <i class="fas fa-plus-circle w-4"></i>
+                    <span class="ml-3">Frais annexes</span>
+                </a>
+                <a href="{% url 'finances:reports_dashboard' %}" class="sidebar-link flex items-center px-4 py-2 text-white/70 hover:text-white text-sm" data-page="reports">
+                    <i class="fas fa-file-alt w-4"></i>
+                    <span class="ml-3">Rapports Financiers</span>
+                </a>
+            </div>
+            
+            <a href="#" class="sidebar-link flex items-center px-4 py-3 text-white/90 hover:text-white" data-page="library">
+                <i class="fas fa-book-reader w-5"></i>
+                <span class="font-medium ml-3">Bibliothèque</span>
+            </a>
+            
+            <a href="#" class="sidebar-link flex items-center px-4 py-3 text-white/90 hover:text-white" data-page="events">
+                <i class="fas fa-calendar-check w-5"></i>
+                <span class="font-medium ml-3">Événements</span>
+            </a>
+            
+            <a href="#" class="sidebar-link flex items-center px-4 py-3 text-white/90 hover:text-white" data-page="reports">
+                <i class="fas fa-chart-bar w-5"></i>
+                <span class="font-medium ml-3">Rapports</span>
+            </a>
+            
+            <div class="px-3 mt-6 mb-4">
+                <p class="text-white/60 text-xs font-semibold uppercase tracking-wider mb-3">Système</p>
+            </div>
+            
+            <a href="#" class="sidebar-link settings flex items-center px-4 py-3 text-white/90 hover:text-white" data-page="settings">
+                <i class="fas fa-cog w-5"></i>
+                <span class="font-medium ml-3">Paramètres</span>
+            </a>
+        </div>
+    </nav>
+    
+    <!-- Main Content -->
+    <div class="lg:ml-72 min-h-screen transition-all duration-300">
+        <!-- Top Navbar -->
+        <nav class="glass-effect border-b border-slate-200/60 px-4 lg:px-8 py-4 sticky top-0 z-40">
+            <div class="flex items-center justify-between">
+                <!-- Left Side -->
+                <div class="flex items-center gap-4">
+                    <!-- Mobile Menu Toggle -->
+                    <button id="mobileMenuToggle" class="lg:hidden p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-all duration-200 hover:scale-105">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    
+                    <!-- Bandeau d'informations -->
+                    <div class="hidden sm:block">
+                        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-3">
+                            <div class="flex items-center gap-3">
+                                <i class="fas fa-info-circle text-blue-600"></i>
+                                <div class="text-sm text-blue-800">
+                                    <span class="font-semibold">Année scolaire 2024-2025 :</span>
+                                    <span class="text-green-600">En cours</span>
+                                    {% if school %}
+                                        | {{ school.nom }} - {{ school.get_type_etablissement_display }}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Right Side -->
+                <div class="flex items-center gap-3">
+                    <!-- Quick Actions -->
+                    <button class="hidden md:flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-xl transition-all duration-200 hover:scale-105 btn-gradient">
+                        <i class="fas fa-plus"></i>
+                        <span class="font-medium">Nouveau</span>
+                    </button>
+                    
+                    <!-- Notifications -->
+                    <div class="relative">
+                        <button id="notificationBtn" class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-all duration-200 hover:scale-105 relative">
+                            <i class="fas fa-bell"></i>
+                            <span class="notification-dot absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">3</span>
+                        </button>
+                        <div id="notificationDropdown" class="dropdown-menu absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg py-2 z-50 border border-slate-200">
+                            <div class="px-4 py-3 border-b border-slate-100">
+                                <h3 class="font-semibold text-slate-900">Notifications</h3>
+                            </div>
+                            <div class="max-h-64 overflow-y-auto">
+                                <div class="px-4 py-3 hover:bg-slate-50 transition-colors duration-200 border-l-4 border-primary-500">
+                                    <p class="text-sm font-medium text-slate-900">Nouveau étudiant inscrit</p>
+                                    <p class="text-xs text-slate-500 mt-1">Il y a 5 minutes</p>
+                                </div>
+                                <div class="px-4 py-3 hover:bg-slate-50 transition-colors duration-200 border-l-4 border-accent-500">
+                                    <p class="text-sm font-medium text-slate-900">Rapport mensuel disponible</p>
+                                    <p class="text-xs text-slate-500 mt-1">Il y a 1 heure</p>
+                                </div>
+                                <div class="px-4 py-3 hover:bg-slate-50 transition-colors duration-200 border-l-4 border-secondary-500">
+                                    <p class="text-sm font-medium text-slate-900">Mise à jour système</p>
+                                    <p class="text-xs text-slate-500 mt-1">Il y a 2 heures</p>
+                                </div>
+                            </div>
+                            <div class="px-4 py-3 border-t border-slate-100">
+                                <a href="#" class="text-sm text-primary-600 hover:text-primary-700 font-medium">Voir toutes les notifications</a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Messages -->
+                    <div class="relative">
+                        <button id="messageBtn" class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-all duration-200 hover:scale-105 relative">
+                            <i class="fas fa-envelope"></i>
+                            <span class="notification-dot absolute -top-1 -right-1 bg-accent-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">5</span>
+                        </button>
+                    </div>
+                    
+                    <!-- User Profile -->
+                    <div class="relative">
+                        <button id="userMenuBtn" class="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-100 transition-all duration-200 hover:scale-105">
+                            <div class="w-10 h-10 bg-gradient-to-br from-primary-500 to-secondary-600 rounded-xl flex items-center justify-center text-white font-semibold text-sm">
+                                {{ user.first_name.0 }}{{ user.last_name.0 }}
+                            </div>
+                            <div class="hidden md:block text-left">
+                                <p class="text-slate-700 font-semibold text-sm">{{ user.get_full_name|default:user.username }}</p>
+                                <p class="text-slate-500 text-xs">Administrateur</p>
+                            </div>
+                            <i id="userMenuChevron" class="fas fa-chevron-down text-slate-400 text-sm transition-transform duration-200"></i>
+                        </button>
+                        
+                        <!-- User Dropdown Menu -->
+                        <div id="userDropdown" class="dropdown-menu absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg py-2 z-50 border border-slate-200">
+                            <div class="px-4 py-3 border-b border-slate-100">
+                                <p class="text-sm font-semibold text-slate-700">{{ user.get_full_name|default:user.username }}</p>
+                                <p class="text-xs text-slate-500">{{ user.email }}</p>
+                            </div>
+                            
+                            <a href="#" class="flex items-center px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 transition-colors duration-200">
+                                <i class="fas fa-user mr-3 text-slate-400 w-4"></i>Mon Profil
+                            </a>
+                            
+                            <a href="#" class="flex items-center px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 transition-colors duration-200">
+                                <i class="fas fa-cog mr-3 text-slate-400 w-4"></i>Paramètres
+                            </a>
+                            
+                            <a href="#" class="flex items-center px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 transition-colors duration-200">
+                                <i class="fas fa-question-circle mr-3 text-slate-400 w-4"></i>Aide
+                            </a>
+                            
+                            <hr class="my-2 border-slate-100" />
+                            
+                            <a href="#" class="flex items-center px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors duration-200">
+                                <i class="fas fa-sign-out-alt mr-3 w-4"></i>Déconnexion
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+        
+        <!-- Content Area -->
+        <div class="p-4 lg:p-8">
+            <!-- Messages Django -->
+            {% if messages %}
+            <div id="messagesContainer" class="mb-6 space-y-3">
+                {% for message in messages %}
+                <div class="alert {% if message.tags == 'error' %}bg-red-50 border border-red-200 text-red-800 {% elif message.tags == 'success' %}bg-emerald-50 border border-emerald-200 text-emerald-800 {% elif message.tags == 'warning' %}bg-amber-50 border border-amber-200 text-amber-800 {% else %}bg-blue-50 border border-blue-200 text-blue-800 {% endif %} px-4 py-3 rounded-xl relative">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            {% if message.tags == 'error' %}
+                                <i class="fas fa-exclamation-circle"></i>
+                            {% elif message.tags == 'success' %}
+                                <i class="fas fa-check-circle"></i>
+                            {% elif message.tags == 'warning' %}
+                                <i class="fas fa-exclamation-triangle"></i>
+                            {% else %}
+                                <i class="fas fa-info-circle"></i>
+                            {% endif %}
+                        </div>
+                        <div class="ml-3 flex-1">
+                            {{ message }}
+                        </div>
+                        <button class="alert-close ml-4 flex-shrink-0 text-current opacity-60 hover:opacity-100 transition-opacity duration-200">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <!-- Page Header -->
+            <div class="mb-8">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h1 class="text-3xl font-bold text-slate-900 mb-2">
+                            {% block page_title %}Tableau de bord{% endblock %}
+                        </h1>
+                        <nav class="flex items-center space-x-2 text-sm" aria-label="Breadcrumb">
+                            <a href="#" class="text-slate-500 hover:text-slate-700 transition-colors duration-200">
+                                <i class="fas fa-home"></i>
+                            </a>
+                            <i class="fas fa-chevron-right text-slate-300 text-xs"></i>
+                            <span class="text-slate-700 font-medium">{% block breadcrumb_current %}Accueil{% endblock %}</span>
+                            {% block breadcrumb %}{% endblock %}
+                        </nav>
+                    </div>
+                    {% block page_actions %}{% endblock %}
+                </div>
+            </div>
+            
+            <!-- Main Content -->
+            {% block content %}
+            <div class="grid grid-cols-1 gap-8">
+                <div class="card-hover bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">
+                    <div class="p-12 text-center">
+                        <div class="mx-auto w-24 h-24 bg-gradient-to-br from-primary-100 to-secondary-100 rounded-2xl flex items-center justify-center mb-6">
+                            <i class="fas fa-graduation-cap text-4xl bg-gradient-to-br from-primary-600 to-secondary-600 bg-clip-text text-transparent"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold text-slate-900 mb-3">
+                            Bienvenue dans EduManager
+                        </h3>
+                        <p class="text-slate-600 text-lg mb-8 max-w-md mx-auto">
+                            Votre système de gestion scolaire moderne et intuitif pour une administration efficace
+                        </p>
+                        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                            <button class="btn-gradient text-white font-semibold py-3 px-8 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl">
+                                <i class="fas fa-rocket mr-2"></i>
+                                Commencer
+                            </button>
+                            <button class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 px-8 rounded-xl transition-all duration-200 hover:scale-105">
+                                <i class="fas fa-book mr-2"></i>
+                                Guide d'utilisation
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endblock %}
+        </div>
+    </div>
+    
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden items-center justify-center">
+        <div class="bg-white rounded-2xl p-8 shadow-2xl">
+            <div class="flex items-center gap-4">
+                <div class="loading-spinner"></div>
+                <span class="text-slate-700 font-medium">Chargement...</span>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Modern JavaScript for enhanced functionality
+        class EduManagerApp {
+            constructor() {
+                this.init();
+            }
+            
+            init() {
+                this.setupEventListeners();
+                this.setupActiveNavigation();
+                this.setupSearch();
+                this.setupDropdowns();
+                this.setupMobileMenu();
+                this.setupAlerts();
+                this.setupKeyboardNavigation();
+                this.setupLoadingStates();
+                this.setupAnimations();
+            }
+            
+            setupEventListeners() {
+                document.addEventListener('DOMContentLoaded', () => {
+                    console.log('EduManager initialized');
+                });
+            }
+            
+            setupActiveNavigation() {
+                const currentPath = window.location.pathname;
+                const navLinks = document.querySelectorAll('.sidebar-link');
+                
+                // Remove active class from all links
+                navLinks.forEach(link => link.classList.remove('active'));
+                
+                // Add active class to current page link
+                navLinks.forEach(link => {
+                    const href = link.getAttribute('href');
+                    if (href && (currentPath === href || currentPath.startsWith(href + '/'))) {
+                        link.classList.add('active');
+                    }
+                });
+                
+                // Fallback: match by data-page attribute
+                if (!document.querySelector('.sidebar-link.active')) {
+                    const pageMap = {
+                        'dashboard': ['/', '/dashboard/', '/accueil/'],
+                        'students': ['/students/', '/eleves/', '/etudiants/'],
+                        'teachers': ['/teachers/', '/enseignants/', '/professeurs/'],
+                        'classes': ['/classes/', '/salles/'],
+                        'subjects': ['/subjects/', '/matieres/'],
+                        'timetable': ['/timetable/', '/emploi-du-temps/', '/planning/'],
+                        'notes': ['/notes/', '/grades/', '/evaluations/'],
+                        'evaluations': ['/notes/evaluations/', '/evaluations/'],
+                        'bulletins': ['/notes/bulletins/', '/bulletins/'],
+                        'trimesters': ['/notes/trimesters/', '/trimestres/'],
+                        
+                        'reports': ['/notes/reports/', '/rapports/'],
+                        'import-export': ['/notes/import-export/', '/import-export/'],
+                        'attendance': ['/attendance/', '/presences/', '/absences/'],
+                        'finance': ['/finances/', '/finance/', '/frais/', '/paiements/'],
+                        'fee-structures': ['/finances/fee-structures/', '/finances/structures/'],
+                        'payments': ['/finances/payments/', '/finances/paiements/'],
+                        'discounts': ['/finances/discounts/', '/finances/remises/'],
+                        'moratoriums': ['/finances/moratoriums/', '/finances/moratoires/'],
+                        'extra-fees': ['/finances/extra-fees/', '/finances/frais-annexes/'],
+                        'library': ['/library/', '/bibliotheque/'],
+                        'events': ['/events/', '/evenements/'],
+                        'reports': ['/reports/', '/rapports/'],
+                        'settings': ['/settings/', '/parametres/', '/admin/']
+                    };
+                    
+                    for (const [page, paths] of Object.entries(pageMap)) {
+                        if (paths.some(path => currentPath.startsWith(path))) {
+                            const link = document.querySelector(`[data-page="${page}"]`);
+                            if (link) {
+                                link.classList.add('active');
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            setupSearch() {
+                const searchInput = document.getElementById('globalSearch');
+                const searchResults = document.getElementById('searchResults');
+                let searchTimeout;
+                
+                if (searchInput) {
+                    searchInput.addEventListener('input', (e) => {
+                        clearTimeout(searchTimeout);
+                        const query = e.target.value.trim();
+                        
+                        if (query.length < 2) {
+                            searchResults.classList.add('hidden');
+                            return;
+                        }
+                        
+                        searchTimeout = setTimeout(() => {
+                            this.performSearch(query);
+                        }, 300);
+                    });
+                    
+                    // Close search results when clicking outside
+                    document.addEventListener('click', (e) => {
+                        if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+                            searchResults.classList.add('hidden');
+                        }
+                    });
+                }
+            }
+            
+            performSearch(query) {
+                const searchResults = document.getElementById('searchResults');
+                
+                // Show loading state
+                searchResults.innerHTML = `
+                    <div class="p-4 text-center">
+                        <div class="loading-spinner mx-auto mb-2"></div>
+                        <p class="text-slate-500 text-sm">Recherche en cours...</p>
+                    </div>
+                `;
+                searchResults.classList.remove('hidden');
+                
+                // Simulate search (replace with actual API call)
+                setTimeout(() => {
+                    const mockResults = [
+                        { type: 'student', name: 'Jean Dupont', class: '5ème A', icon: 'fa-user-graduate' },
+                        { type: 'teacher', name: 'Marie Martin', subject: 'Mathématiques', icon: 'fa-chalkboard-teacher' },
+                        { type: 'class', name: '6ème B', students: 28, icon: 'fa-door-open' }
+                    ].filter(item => item.name.toLowerCase().includes(query.toLowerCase()));
+                    
+                    if (mockResults.length > 0) {
+                        searchResults.innerHTML = mockResults.map(result => `
+                            <div class="p-3 hover:bg-slate-50 cursor-pointer transition-colors duration-200 border-b border-slate-100 last:border-b-0">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center">
+                                        <i class="fas ${result.icon} text-primary-600 text-sm"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-medium text-slate-900">${result.name}</p>
+                                        <p class="text-xs text-slate-500">${result.class || result.subject || `${result.students} étudiants`}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('');
+                    } else {
+                        searchResults.innerHTML = `
+                            <div class="p-4 text-center">
+                                <i class="fas fa-search text-slate-300 text-2xl mb-2"></i>
+                                <p class="text-slate-500 text-sm">Aucun résultat trouvé</p>
+                            </div>
+                        `;
+                    }
+                }, 500);
+            }
+            
+            setupDropdowns() {
+                const dropdowns = [
+                    { btn: 'userMenuBtn', menu: 'userDropdown', chevron: 'userMenuChevron' },
+                    { btn: 'notificationBtn', menu: 'notificationDropdown' }
+                ];
+                
+                dropdowns.forEach(({ btn, menu, chevron }) => {
+                    const button = document.getElementById(btn);
+                    const dropdown = document.getElementById(menu);
+                    const chevronIcon = chevron ? document.getElementById(chevron) : null;
+                    
+                    if (button && dropdown) {
+                        button.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            
+                            // Close other dropdowns
+                            dropdowns.forEach(({ menu: otherMenu, chevron: otherChevron }) => {
+                                if (otherMenu !== menu) {
+                                    const otherDropdown = document.getElementById(otherMenu);
+                                    const otherChevronIcon = otherChevron ? document.getElementById(otherChevron) : null;
+                                    if (otherDropdown) {
+                                        otherDropdown.classList.remove('active');
+                                        if (otherChevronIcon) {
+                                            otherChevronIcon.style.transform = 'rotate(0deg)';
+                                        }
+                                    }
+                                }
+                            });
+                            
+                            // Toggle current dropdown
+                            dropdown.classList.toggle('active');
+                            if (chevronIcon) {
+                                chevronIcon.style.transform = dropdown.classList.contains('active') 
+                                    ? 'rotate(180deg)' : 'rotate(0deg)';
+                            }
+                        });
+                    }
+                });
+                
+                // Close dropdowns when clicking outside
+                document.addEventListener('click', () => {
+                    dropdowns.forEach(({ menu, chevron }) => {
+                        const dropdown = document.getElementById(menu);
+                        const chevronIcon = chevron ? document.getElementById(chevron) : null;
+                        if (dropdown) {
+                            dropdown.classList.remove('active');
+                            if (chevronIcon) {
+                                chevronIcon.style.transform = 'rotate(0deg)';
+                            }
+                        }
+                    });
+                });
+            }
+            
+            setupMobileMenu() {
+                const mobileToggle = document.getElementById('mobileMenuToggle');
+                const sidebar = document.getElementById('sidebar');
+                const overlay = document.getElementById('sidebarOverlay');
+                
+                if (mobileToggle && sidebar && overlay) {
+                    const toggleMobileMenu = () => {
+                        sidebar.classList.toggle('active');
+                        overlay.classList.toggle('opacity-0');
+                        overlay.classList.toggle('invisible');
+                        document.body.classList.toggle('overflow-hidden');
+                    };
+                    
+                    mobileToggle.addEventListener('click', toggleMobileMenu);
+                    overlay.addEventListener('click', toggleMobileMenu);
+                    
+                    // Close mobile menu when clicking on a link
+                    sidebar.addEventListener('click', (e) => {
+                        if (e.target.classList.contains('sidebar-link')) {
+                            toggleMobileMenu();
+                        }
+                    });
+                    
+                    // Close mobile menu on window resize
+                    window.addEventListener('resize', () => {
+                        if (window.innerWidth >= 1024) {
+                            sidebar.classList.remove('active');
+                            overlay.classList.add('opacity-0', 'invisible');
+                            document.body.classList.remove('overflow-hidden');
+                        }
+                    });
+                }
+            }
+            
+            setupAlerts() {
+                const alertCloseButtons = document.querySelectorAll('.alert-close');
+                
+                alertCloseButtons.forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const alert = e.target.closest('.alert');
+                        if (alert) {
+                            alert.style.opacity = '0';
+                            alert.style.transform = 'translateX(100%)';
+                            setTimeout(() => {
+                                alert.remove();
+                            }, 300);
+                        }
+                    });
+                });
+                
+                // Auto-hide alerts after 5 seconds
+                document.querySelectorAll('.alert').forEach(alert => {
+                    setTimeout(() => {
+                        if (alert.parentNode) {
+                            alert.style.opacity = '0';
+                            alert.style.transform = 'translateX(100%)';
+                            setTimeout(() => {
+                                if (alert.parentNode) {
+                                    alert.remove();
+                                }
+                            }, 300);
+                        }
+                    }, 5000);
+                });
+            }
+            
+            setupKeyboardNavigation() {
+                document.addEventListener('keydown', (e) => {
+                    // Add keyboard navigation class for focus visibility
+                    if (e.key === 'Tab') {
+                        document.body.classList.add('keyboard-navigation');
+                    }
+                    
+                    // Quick search shortcut (Ctrl/Cmd + K)
+                    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                        e.preventDefault();
+                        const searchInput = document.getElementById('globalSearch');
+                        if (searchInput) {
+                            searchInput.focus();
+                        }
+                    }
+                    
+                    // Escape key to close dropdowns and modals
+                    if (e.key === 'Escape') {
+                        // Close dropdowns
+                        document.querySelectorAll('.dropdown-menu.active').forEach(dropdown => {
+                            dropdown.classList.remove('active');
+                        });
+                        
+                        // Close search results
+                        const searchResults = document.getElementById('searchResults');
+                        if (searchResults) {
+                            searchResults.classList.add('hidden');
+                        }
+                        
+                        // Close mobile menu
+                        const sidebar = document.getElementById('sidebar');
+                        const overlay = document.getElementById('sidebarOverlay');
+                        if (sidebar && overlay) {
+                            sidebar.classList.remove('active');
+                            overlay.classList.add('opacity-0', 'invisible');
+                            document.body.classList.remove('overflow-hidden');
+                        }
+                    }
+                });
+                
+                document.addEventListener('mousedown', () => {
+                    document.body.classList.remove('keyboard-navigation');
+                });
+            }
+            
+            setupLoadingStates() {
+                // Add loading states to buttons
+                document.querySelectorAll('button, .btn').forEach(button => {
+                    button.addEventListener('click', function(e) {
+                        if (!this.classList.contains('loading') && !this.hasAttribute('data-no-loading')) {
+                            this.classList.add('loading');
+                            const originalContent = this.innerHTML;
+                            
+                            this.innerHTML = `
+                                <div class="flex items-center gap-2">
+                                    <div class="loading-spinner"></div>
+                                    <span>Chargement...</span>
+                                </div>
+                            `;
+                            
+                            // Remove loading state after 2 seconds (adjust as needed)
+                            setTimeout(() => {
+                                this.classList.remove('loading');
+                                this.innerHTML = originalContent;
+                            }, 2000);
+                        }
+                    });
+                });
+            }
+            
+            setupAnimations() {
+                // Intersection Observer for fade-in animations
+                const observerOptions = {
+                    threshold: 0.1,
+                    rootMargin: '0px 0px -50px 0px'
+                };
+                
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            entry.target.style.opacity = '1';
+                            entry.target.style.transform = 'translateY(0)';
+                        }
+                    });
+                }, observerOptions);
+                
+                // Observe elements for animation
+                document.querySelectorAll('.card-hover').forEach(card => {
+                    card.style.opacity = '0';
+                    card.style.transform = 'translateY(20px)';
+                    card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+                    observer.observe(card);
+                });
+            }
+            
+            // Utility methods
+            showLoading() {
+                const overlay = document.getElementById('loadingOverlay');
+                if (overlay) {
+                    overlay.classList.remove('hidden');
+                    overlay.classList.add('flex');
+                }
+            }
+            
+            hideLoading() {
+                const overlay = document.getElementById('loadingOverlay');
+                if (overlay) {
+                    overlay.classList.add('hidden');
+                    overlay.classList.remove('flex');
+                }
+            }
+            
+            showNotification(message, type = 'info') {
+                const container = document.getElementById('messagesContainer') || document.body;
+                const notification = document.createElement('div');
+                
+                const typeClasses = {
+                    success: 'bg-emerald-50 border-emerald-200 text-emerald-800',
+                    error: 'bg-red-50 border-red-200 text-red-800',
+                    warning: 'bg-amber-50 border-amber-200 text-amber-800',
+                    info: 'bg-blue-50 border-blue-200 text-blue-800'
+                };
+                
+                const typeIcons = {
+                    success: 'fa-check-circle',
+                    error: 'fa-exclamation-circle',
+                    warning: 'fa-exclamation-triangle',
+                    info: 'fa-info-circle'
+                };
+                
+                notification.className = `alert ${typeClasses[type]} px-4 py-3 rounded-xl relative mb-3`;
+                notification.innerHTML = `
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <i class="fas ${typeIcons[type]}"></i>
+                        </div>
+                        <div class="ml-3 flex-1">${message}</div>
+                        <button class="alert-close ml-4 flex-shrink-0 text-current opacity-60 hover:opacity-100 transition-opacity duration-200">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                `;
+                
+                container.appendChild(notification);
+                
+                // Add close functionality
+                notification.querySelector('.alert-close').addEventListener('click', () => {
+                    notification.style.opacity = '0';
+                    notification.style.transform = 'translateX(100%)';
+                    setTimeout(() => notification.remove(), 300);
+                });
+                
+                // Auto-hide after 5 seconds
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.style.opacity = '0';
+                        notification.style.transform = 'translateX(100%)';
+                        setTimeout(() => {
+                            if (notification.parentNode) {
+                                notification.remove();
+                            }
+                        }, 300);
+                    }
+                }, 5000);
+            }
+        }
+        
+        // Initialize the application
+        const app = new EduManagerApp();
+        
+        // Expose app instance globally for debugging
+        window.EduManager = app;
+    </script>
+    <script>
+        document.body.addEventListener('htmx:afterSwap', function(evt) {
+            if (evt.detail.target && evt.detail.target.id === 'modal-content') {
+                document.getElementById('modal-overlay').classList.remove('hidden');
+            }
+        });
+        </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

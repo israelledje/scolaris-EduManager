@@ -1,0 +1,31 @@
+<div class="bg-white rounded-xl shadow p-4">
+  <div class="flex items-center justify-between mb-2">
+    <h3 class="font-semibold text-lg text-gray-800">Historique des classes</h3>
+    <button hx-get="{% url 'students:student_history_create' student.id %}" hx-target="#modal-content" hx-trigger="click" @click="modalOpen = true" class="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded shadow">Ajouter</button>
+  </div>
+  <table class="min-w-full divide-y divide-gray-200">
+    <thead class="bg-gray-50">
+      <tr>
+        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Classe</th>
+        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Année</th>
+        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Redoublant</th>
+        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for h in history %}
+      <tr class="hover:bg-gray-50 transition">
+        <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-800">{{ h.school_class }}</td>
+        <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{{ h.year }}</td>
+        <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{% if h.is_repeating %}Oui{% else %}Non{% endif %}</td>
+        <td class="px-4 py-2 whitespace-nowrap text-center">
+          <button hx-get="{% url 'students:student_history_update' h.id %}" hx-target="#modal-content" hx-trigger="click" @click="modalOpen = true" class="inline-flex items-center px-3 py-1.5 bg-yellow-500 hover:bg-yellow-600 text-white text-xs font-medium rounded shadow">Modifier</button>
+          <button hx-get="{% url 'students:student_history_delete' h.id %}" hx-target="#modal-content" hx-trigger="click" @click="modalOpen = true" class="inline-flex items-center px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-medium rounded shadow ml-2">Supprimer</button>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" class="px-4 py-6 text-center text-gray-400 text-sm">Aucun historique.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div> 

@@ -1,0 +1,655 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block page_title %}{{ subject.name }}{% endblock %}
+
+{% block page_actions %}
+<div class="flex items-center gap-3">
+    <button onclick="exportSubject()" class="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-all duration-200 hover:scale-105 hover:shadow-md">
+        <i class="fas fa-download text-slate-500"></i>
+        <span class="text-slate-700 font-medium">Exporter</span>
+    </button>
+    <button onclick="editSubject()" class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105">
+        <i class="fas fa-edit"></i>
+        <span class="font-medium">Modifier</span>
+    </button>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6" id="subjectDetailContainer">
+    
+    <!-- Subject Header -->
+    <div class="bg-gradient-to-br from-violet-500 via-purple-500 to-indigo-500 rounded-2xl overflow-hidden shadow-xl transform hover:scale-[1.02] transition-all duration-300">
+        <div class="relative p-8 text-white">
+            <!-- Background Pattern -->
+            <div class="absolute inset-0 bg-black/10"></div>
+            <div class="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent"></div>
+            
+            <!-- Animated background elements -->
+            <div class="absolute top-4 right-4 w-32 h-32 bg-white/5 rounded-full blur-2xl animate-pulse"></div>
+            <div class="absolute bottom-4 left-4 w-24 h-24 bg-white/5 rounded-full blur-xl animate-pulse delay-1000"></div>
+            
+            <div class="relative flex flex-col lg:flex-row items-start lg:items-center gap-6">
+                <!-- Subject Icon -->
+                <div class="w-24 h-24 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center border-4 border-white/20 shadow-2xl transform hover:rotate-6 transition-all duration-300 hover:scale-110">
+                    <i class="fas fa-book text-4xl text-white/90 transition-all duration-300"></i>
+                </div>
+                
+                <!-- Subject Info -->
+                <div class="flex-1">
+                    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                        <div>
+                            <h1 class="text-4xl font-bold mb-3 flex items-center gap-3 animate-in slide-in-from-left-4 fade-in duration-700">
+                                {{ subject.name }}
+                                {% if subject.code %}
+                                <span class="inline-block bg-indigo-100 text-indigo-700 rounded px-3 py-1 text-base align-middle font-mono tracking-wider shadow-sm border border-indigo-200 hover:scale-105 transition-transform duration-200">{{ subject.code }}</span>
+                                {% endif %}
+                            </h1>
+                            <div class="flex flex-wrap gap-4 text-white/90 animate-in slide-in-from-left-4 fade-in duration-700 delay-200">
+                                <div class="flex items-center gap-2 hover:text-white transition-colors duration-200">
+                                    <i class="fas fa-layer-group"></i>
+                                    <span>{{ subject.category|default:"Matière générale" }}</span>
+                                </div>
+                                <div class="flex items-center gap-2 hover:text-white transition-colors duration-200">
+                                    <i class="fas fa-clock"></i>
+                                    <span>{{ subject.hours_per_week|default:0 }}h/semaine</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Quick Stats -->
+                        <div class="flex gap-6 animate-in slide-in-from-right-4 fade-in duration-700 delay-300">
+                            <div class="text-center group cursor-pointer">
+                                <div class="text-3xl font-bold group-hover:scale-110 transition-transform duration-200">{{ teachers.count }}</div>
+                                <div class="text-sm text-white/80">Enseignant{{ teachers.count|pluralize }}</div>
+                            </div>
+                            <div class="text-center group cursor-pointer">
+                                <div class="text-3xl font-bold group-hover:scale-110 transition-transform duration-200">{{ classes_count }}</div>
+                                <div class="text-sm text-white/80">Classe{{ classes_count|pluralize }}</div>
+                            </div>
+                            <div class="text-center group cursor-pointer">
+                                <div class="text-3xl font-bold group-hover:scale-110 transition-transform duration-200">{{ total_students }}</div>
+                                <div class="text-sm text-white/80">Élève{{ total_students|pluralize }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Description -->
+                    {% if subject.description %}
+                    <div class="mt-4 text-white/80 animate-in slide-in-from-bottom-4 fade-in duration-700 delay-400">
+                        <p class="leading-relaxed">{{ subject.description|truncatechars:150 }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden animate-in slide-in-from-bottom-4 fade-in duration-700 delay-500">
+        <div class="border-b border-slate-200">
+            <nav class="flex overflow-x-auto" id="tabNavigation">
+                <button onclick="switchTab('overview')" data-tab="overview"
+                        class="tab-button flex items-center gap-2 px-6 py-4 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap border-violet-500 text-violet-600 bg-violet-50">
+                    <i class="fas fa-chart-pie"></i>
+                    Vue d'ensemble
+                </button>
+                <button onclick="switchTab('teachers')" data-tab="teachers"
+                        class="tab-button flex items-center gap-2 px-6 py-4 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50">
+                    <i class="fas fa-chalkboard-teacher"></i>
+                    Enseignants
+                </button>
+                <button onclick="switchTab('classes')" data-tab="classes"
+                        class="tab-button flex items-center gap-2 px-6 py-4 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50">
+                    <i class="fas fa-users"></i>
+                    Classes
+                </button>
+                <button onclick="switchTab('curriculum')" data-tab="curriculum"
+                        class="tab-button flex items-center gap-2 px-6 py-4 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50">
+                    <i class="fas fa-list-alt"></i>
+                    Programme
+                </button>
+                <button onclick="switchTab('performance')" data-tab="performance"
+                        class="tab-button flex items-center gap-2 px-6 py-4 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50">
+                    <i class="fas fa-chart-line"></i>
+                    Résultats
+                </button>
+            </nav>
+        </div>
+        
+        <!-- Tab Content -->
+        <div class="p-6">
+            <!-- Overview Tab -->
+            <div id="tab-overview" class="tab-content">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Subject Details -->
+                    <div class="lg:col-span-2 space-y-6">
+                        <!-- General Information -->
+                        <div class="bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl p-6 border border-slate-200/50 hover:shadow-md transition-all duration-300 transform hover:-translate-y-1">
+                            <h3 class="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                                <i class="fas fa-info-circle text-slate-600"></i>
+                                Informations générales
+                            </h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="group">
+                                    <label class="text-sm font-medium text-slate-600 group-hover:text-slate-800 transition-colors duration-200">Code matière</label>
+                                    <div class="text-lg font-semibold text-slate-900 group-hover:text-violet-600 transition-colors duration-200">{{ subject.code|default:"Non défini" }}</div>
+                                </div>
+                                <div class="group">
+                                    <label class="text-sm font-medium text-slate-600 group-hover:text-slate-800 transition-colors duration-200">Catégorie</label>
+                                    <div class="text-lg font-semibold text-slate-900 group-hover:text-violet-600 transition-colors duration-200">{{ subject.category|default:"Générale" }}</div>
+                                </div>
+                                <div class="group">
+                                    <label class="text-sm font-medium text-slate-600 group-hover:text-slate-800 transition-colors duration-200">Coefficient</label>
+                                    <div class="text-lg font-semibold text-slate-900 group-hover:text-violet-600 transition-colors duration-200">{{ subject.coefficient|default:1 }}</div>
+                                </div>
+                                <div class="group">
+                                    <label class="text-sm font-medium text-slate-600 group-hover:text-slate-800 transition-colors duration-200">Heures/semaine</label>
+                                    <div class="text-lg font-semibold text-slate-900 group-hover:text-violet-600 transition-colors duration-200">{{ subject.hours_per_week|default:0 }}h</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Description -->
+                        {% if subject.description %}
+                        <div class="bg-white rounded-xl p-6 border border-slate-200 hover:shadow-md transition-all duration-300 transform hover:-translate-y-1">
+                            <h3 class="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                                <i class="fas fa-align-left text-slate-600"></i>
+                                Description
+                            </h3>
+                            <p class="text-slate-700 leading-relaxed">{{ subject.description }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Statistics -->
+                    <div class="space-y-6">
+                        <!-- Teaching Stats -->
+                        <div class="bg-gradient-to-br from-violet-50 to-purple-50 rounded-xl p-6 border border-violet-200/50 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+                            <h3 class="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                                <i class="fas fa-chart-bar text-violet-600"></i>
+                                Statistiques
+                            </h3>
+                            <div class="space-y-4">
+                                <div class="flex justify-between items-center group cursor-pointer">
+                                    <span class="text-slate-600 group-hover:text-slate-800 transition-colors duration-200">Enseignants</span>
+                                    <span class="text-2xl font-bold text-slate-900 group-hover:text-violet-600 group-hover:scale-110 transition-all duration-200">{{ teachers.count }}</span>
+                                </div>
+                                <div class="flex justify-between items-center group cursor-pointer">
+                                    <span class="text-slate-600 group-hover:text-slate-800 transition-colors duration-200">Classes</span>
+                                    <span class="text-2xl font-bold text-slate-900 group-hover:text-violet-600 group-hover:scale-110 transition-all duration-200">{{ classes_count }}</span>
+                                </div>
+                                <div class="flex justify-between items-center group cursor-pointer">
+                                    <span class="text-slate-600 group-hover:text-slate-800 transition-colors duration-200">Élèves</span>
+                                    <span class="text-2xl font-bold text-slate-900 group-hover:text-violet-600 group-hover:scale-110 transition-all duration-200">{{ total_students }}</span>
+                                </div>
+                                <div class="flex justify-between items-center group cursor-pointer">
+                                    <span class="text-slate-600 group-hover:text-slate-800 transition-colors duration-200">Moyenne générale</span>
+                                    <span class="text-2xl font-bold text-slate-900 group-hover:text-violet-600 group-hover:scale-110 transition-all duration-200">{{ average_grade }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Quick Actions -->
+                        <div class="bg-white rounded-xl p-6 border border-slate-200 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+                            <h3 class="text-lg font-semibold text-slate-900 mb-4">Actions rapides</h3>
+                            <div class="space-y-3">
+                                <button onclick="addTeacher()" class="w-full flex items-center gap-3 px-4 py-3 bg-violet-100 hover:bg-violet-200 text-violet-700 rounded-lg transition-all duration-200 hover:scale-105 hover:shadow-md">
+                                    <i class="fas fa-plus"></i>
+                                    Ajouter un enseignant
+                                </button>
+                                <button onclick="scheduleClass()" class="w-full flex items-center gap-3 px-4 py-3 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg transition-all duration-200 hover:scale-105 hover:shadow-md">
+                                    <i class="fas fa-calendar-plus"></i>
+                                    Planifier un cours
+                                </button>
+                                <button onclick="viewResults()" class="w-full flex items-center gap-3 px-4 py-3 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-lg transition-all duration-200 hover:scale-105 hover:shadow-md">
+                                    <i class="fas fa-chart-line"></i>
+                                    Voir les résultats
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Teachers Tab -->
+            <div id="tab-teachers" class="tab-content hidden">
+                <div class="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-md transition-all duration-300">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                            <i class="fas fa-chalkboard-teacher text-indigo-500"></i>
+                            Enseignants de la matière
+                        </h3>
+                        <button onclick="addTeacher()" class="text-violet-600 hover:text-violet-700 text-sm font-medium hover:scale-105 transition-all duration-200">
+                            <i class="fas fa-plus mr-1"></i>
+                            Ajouter
+                        </button>
+                    </div>
+                    <div class="flex flex-wrap gap-3">
+                        {% if main_teachers %}
+                            <div class="w-full mb-2 text-emerald-700 font-semibold">Enseignant(s) principal(aux)</div>
+                            {% for teacher in main_teachers %}
+                                <span class="inline-flex items-center px-3 py-2 rounded-lg bg-emerald-100 text-emerald-800 font-bold shadow-sm border border-emerald-200 hover:bg-emerald-200 hover:scale-105 transition-all duration-200 cursor-pointer">
+                                    <i class="fas fa-user-tie mr-2"></i> {{ teacher }}
+                                </span>
+                            {% endfor %}
+                        {% endif %}
+                        {% if teachers %}
+                            <div class="w-full mt-4 mb-2 text-indigo-700 font-semibold">Autres enseignants affectés</div>
+                            {% for teacher in teachers %}
+                                {% if teacher not in main_teachers %}
+                                    <span class="inline-flex items-center px-3 py-2 rounded-lg bg-indigo-50 text-indigo-800 font-medium shadow-sm border border-indigo-100 hover:bg-indigo-100 hover:scale-105 transition-all duration-200 cursor-pointer">
+                                        <i class="fas fa-user mr-2"></i> {{ teacher }}
+                                    </span>
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                        {% if not main_teachers and not teachers %}
+                            <div class="text-center py-8 w-full">
+                                <i class="fas fa-chalkboard-teacher text-4xl text-slate-300 mb-4"></i>
+                                <p class="text-slate-400">Aucun enseignant assigné</p>
+                                <button onclick="addTeacher()" class="mt-4 px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors duration-200">
+                                    Assigner un enseignant
+                                </button>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Classes Tab -->
+            <div id="tab-classes" class="tab-content hidden">
+                <div class="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-md transition-all duration-300">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-lg font-semibold text-slate-900">Classes suivant {{ subject.name }}</h3>
+                        <button onclick="assignToClass()" class="text-violet-600 hover:text-violet-700 text-sm font-medium hover:scale-105 transition-all duration-200">
+                            <i class="fas fa-plus mr-1"></i>
+                            Assigner à une classe
+                        </button>
+                    </div>
+                    
+                    <div class="text-center py-12 text-slate-500">
+                        <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 hover:bg-slate-200 transition-colors duration-200">
+                            <i class="fas fa-users text-2xl"></i>
+                        </div>
+                        <p class="text-lg font-medium mb-2">Liste des classes à venir</p>
+                        <p class="text-sm">Les classes assignées à cette matière apparaîtront ici</p>
+                        <button onclick="assignToClass()" class="mt-4 px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-all duration-200 hover:scale-105">
+                            Commencer l'assignation
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Curriculum Tab -->
+            <div id="tab-curriculum" class="tab-content hidden">
+                <div class="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-md transition-all duration-300">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-lg font-semibold text-slate-900">Programme de {{ subject.name }}</h3>
+                        <button onclick="editCurriculum()" class="text-violet-600 hover:text-violet-700 text-sm font-medium hover:scale-105 transition-all duration-200">
+                            <i class="fas fa-edit mr-1"></i>
+                            Modifier le programme
+                        </button>
+                    </div>
+                    
+                    <div class="text-center py-12 text-slate-500">
+                        <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 hover:bg-slate-200 transition-colors duration-200">
+                            <i class="fas fa-list-alt text-2xl"></i>
+                        </div>
+                        <p class="text-lg font-medium mb-2">Programme scolaire à définir</p>
+                        <p class="text-sm">Définissez le programme et les objectifs pédagogiques</p>
+                        <button onclick="editCurriculum()" class="mt-4 px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-all duration-200 hover:scale-105">
+                            Créer le programme
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Performance Tab -->
+            <div id="tab-performance" class="tab-content hidden">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Average Grade -->
+                    <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200/50 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 cursor-pointer">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold text-slate-900">Moyenne générale</h3>
+                            <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center text-white hover:scale-110 transition-transform duration-200">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                        </div>
+                        <div class="text-3xl font-bold text-slate-900 mb-2 hover:text-blue-600 transition-colors duration-200">{{ average_grade }}</div>
+                        <div class="text-blue-700">Sur 20 points</div>
+                    </div>
+                    
+                    <!-- Success Rate -->
+                    <div class="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-6 border border-emerald-200/50 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 cursor-pointer">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold text-slate-900">Taux de réussite</h3>
+                            <div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center text-white hover:scale-110 transition-transform duration-200">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                        </div>
+                        <div class="text-3xl font-bold text-slate-900 mb-2 hover:text-emerald-600 transition-colors duration-200">{{ subject.success_rate|default:"N/A" }}%</div>
+                        <div class="text-emerald-700">Élèves en réussite</div>
+                    </div>
+                    
+                    <!-- Participation -->
+                    <div class="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-6 border border-amber-200/50 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 cursor-pointer">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold text-slate-900">Participation</h3>
+                            <div class="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center text-white hover:scale-110 transition-transform duration-200">
+                                <i class="fas fa-hand-paper"></i>
+                            </div>
+                        </div>
+                        <div class="text-3xl font-bold text-slate-900 mb-2 hover:text-amber-600 transition-colors duration-200">{{ subject.participation_rate|default:"N/A" }}%</div>
+                        <div class="text-amber-700">Taux de participation</div>
+                    </div>
+                </div>
+                
+                <!-- Performance Chart Placeholder -->
+                <div class="mt-6 bg-white rounded-xl border border-slate-200 p-6 hover:shadow-md transition-all duration-300">
+                    <h3 class="text-lg font-semibold text-slate-900 mb-4">Évolution des résultats</h3>
+                    <div class="text-center py-12 text-slate-500">
+                        <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-chart-area text-2xl"></i>
+                        </div>
+                        <p class="text-lg font-medium mb-2">Graphique des performances</p>
+                        <p class="text-sm">Les données de performance seront affichées ici</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Notifications -->
+<div id="toastContainer" class="fixed top-4 right-4 z-50 space-y-2"></div>
+
+<script>
+// Variables globales
+let activeTab = 'overview';
+
+// Fonction pour changer d'onglet
+function switchTab(tabName) {
+    // Masquer tous les contenus d'onglets
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.add('hidden');
+        content.style.opacity = '0';
+        content.style.transform = 'translateY(10px)';
+    });
+    
+    // Réinitialiser tous les boutons d'onglets
+    document.querySelectorAll('.tab-button').forEach(button => {
+        button.classList.remove('border-violet-500', 'text-violet-600', 'bg-violet-50');
+        button.classList.add('border-transparent', 'text-slate-500');
+    });
+    
+    // Activer l'onglet sélectionné
+    const activeButton = document.querySelector(`[data-tab="${tabName}"]`);
+    const activeContent = document.getElementById(`tab-${tabName}`);
+    
+    if (activeButton && activeContent) {
+        // Mettre à jour le bouton actif
+        activeButton.classList.remove('border-transparent', 'text-slate-500');
+        activeButton.classList.add('border-violet-500', 'text-violet-600', 'bg-violet-50');
+        
+        // Afficher le contenu avec animation
+        activeContent.classList.remove('hidden');
+        
+        setTimeout(() => {
+            activeContent.style.opacity = '1';
+            activeContent.style.transform = 'translateY(0)';
+            activeContent.style.transition = 'all 0.3s ease-out';
+        }, 10);
+        
+        activeTab = tabName;
+    }
+}
+
+// Fonction pour afficher les notifications
+function showNotification(message, type = 'info') {
+    const container = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    
+    const typeClasses = {
+        success: 'bg-emerald-500',
+        error: 'bg-red-500',
+        warning: 'bg-amber-500',
+        info: 'bg-blue-500'
+    };
+    
+    const typeIcons = {
+        success: 'fa-check-circle',
+        error: 'fa-exclamation-circle',
+        warning: 'fa-exclamation-triangle',
+        info: 'fa-info-circle'
+    };
+    
+    toast.className = `${typeClasses[type]} text-white px-4 py-3 rounded-xl shadow-lg transform translate-x-full transition-all duration-300 flex items-center gap-3`;
+    toast.innerHTML = `
+        <i class="fas ${typeIcons[type]}"></i>
+        <span>${message}</span>
+        <button onclick="this.parentElement.remove()" class="ml-2 hover:bg-black/10 rounded p-1 transition-colors duration-200">
+            <i class="fas fa-times text-sm"></i>
+        </button>
+    `;
+    
+    container.appendChild(toast);
+    
+    // Animation d'entrée
+    setTimeout(() => {
+        toast.classList.remove('translate-x-full');
+    }, 10);
+    
+    // Auto-suppression après 5 secondes
+    setTimeout(() => {
+        toast.classList.add('translate-x-full');
+        setTimeout(() => {
+            if (toast.parentElement) {
+                toast.remove();
+            }
+        }, 300);
+    }, 5000);
+}
+
+// Fonctions d'actions
+function exportSubject() {
+    showNotification('Export de la matière en cours...', 'info');
+    // Logique d'export ici
+    setTimeout(() => {
+        showNotification('Matière exportée avec succès !', 'success');
+    }, 2000);
+}
+
+function editSubject() {
+    showNotification('Ouverture du formulaire de modification...', 'info');
+    // Logique de modification ici
+}
+
+function addTeacher() {
+    showNotification('Ouverture du formulaire d\'ajout d\'enseignant...', 'info');
+    // Logique d'ajout d'enseignant ici
+}
+
+function scheduleClass() {
+    showNotification('Ouverture du planificateur de cours...', 'info');
+    // Logique de planification ici
+}
+
+function viewResults() {
+    switchTab('performance');
+    showNotification('Affichage des résultats', 'info');
+}
+
+function assignToClass() {
+    showNotification('Ouverture du formulaire d\'assignation...', 'info');
+    // Logique d'assignation ici
+}
+
+function editCurriculum() {
+    showNotification('Ouverture de l\'éditeur de programme...', 'info');
+    // Logique d'édition du programme ici
+}
+
+// Initialisation au chargement de la page
+document.addEventListener('DOMContentLoaded', function() {
+    // Animation d'entrée pour les éléments
+    const elements = document.querySelectorAll('#subjectDetailContainer > *');
+    elements.forEach((element, index) => {
+        element.style.opacity = '0';
+        element.style.transform = 'translateY(20px)';
+        
+        setTimeout(() => {
+            element.style.opacity = '1';
+            element.style.transform = 'translateY(0)';
+            element.style.transition = 'all 0.6s ease-out';
+        }, index * 100);
+    });
+    
+    // Initialiser l'onglet par défaut
+    switchTab('overview');
+    
+    // Gestion des raccourcis clavier
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey || e.metaKey) {
+            switch(e.key) {
+                case '1':
+                    e.preventDefault();
+                    switchTab('overview');
+                    break;
+                case '2':
+                    e.preventDefault();
+                    switchTab('teachers');
+                    break;
+                case '3':
+                    e.preventDefault();
+                    switchTab('classes');
+                    break;
+                case '4':
+                    e.preventDefault();
+                    switchTab('curriculum');
+                    break;
+                case '5':
+                    e.preventDefault();
+                    switchTab('performance');
+                    break;
+                case 'e':
+                    e.preventDefault();
+                    editSubject();
+                    break;
+            }
+        }
+    });
+    
+    // Effet de parallaxe léger sur le header
+    window.addEventListener('scroll', function() {
+        const header = document.querySelector('.bg-gradient-to-br.from-violet-500');
+        if (header) {
+            const scrolled = window.pageYOffset;
+            const rate = scrolled * -0.5;
+            header.style.transform = `translateY(${rate}px)`;
+        }
+    });
+});
+
+// Gestion du responsive pour les onglets
+window.addEventListener('resize', function() {
+    const tabNavigation = document.getElementById('tabNavigation');
+    if (window.innerWidth < 768) {
+        tabNavigation.classList.add('overflow-x-auto');
+    } else {
+        tabNavigation.classList.remove('overflow-x-auto');
+    }
+});
+</script>
+
+<style>
+/* Animations personnalisées */
+@keyframes slideInFromLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideInFromRight {
+    from {
+        opacity: 0;
+        transform: translateX(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideInFromBottom {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-in {
+    animation-fill-mode: both;
+}
+
+.slide-in-from-left-4 {
+    animation: slideInFromLeft 0.6s ease-out;
+}
+
+.slide-in-from-right-4 {
+    animation: slideInFromRight 0.6s ease-out;
+}
+
+.slide-in-from-bottom-4 {
+    animation: slideInFromBottom 0.6s ease-out;
+}
+
+.fade-in {
+    animation: fadeIn 0.6s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.delay-200 { animation-delay: 0.2s; }
+.delay-300 { animation-delay: 0.3s; }
+.delay-400 { animation-delay: 0.4s; }
+.delay-500 { animation-delay: 0.5s; }
+
+/* Smooth scrolling */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Custom scrollbar pour les onglets */
+#tabNavigation::-webkit-scrollbar {
+    height: 4px;
+}
+
+#tabNavigation::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+
+#tabNavigation::-webkit-scrollbar-thumb {
+    background: #8b5cf6;
+    border-radius: 2px;
+}
+
+#tabNavigation::-webkit-scrollbar-thumb:hover {
+    background: #7c3aed;
+}
+</style>
+
+{% endblock %}

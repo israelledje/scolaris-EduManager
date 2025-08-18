@@ -1,0 +1,711 @@
+{% extends "base.html" %} {% load static %} {% block page_title %}Classes 
+{% endblock %} {% block page_actions %}
+<div class="flex items-center gap-3">
+    <button
+        class="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors duration-200">
+        <i class="fas fa-download text-slate-500"></i>
+        <span class="text-slate-700 font-medium">Exporter</span>
+    </button>
+    <button
+        id="btn-add-level"
+        type="button"
+        class="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-all duration-200 shadow-lg hover:shadow-xl">
+        <i class="fas fa-layer-group"></i>
+        <span class="font-medium">Ajouter un niveau</span>
+    </button>
+    <button
+        id="btn-add-system"
+        type="button"
+        class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl">
+        <i class="fas fa-sitemap"></i>
+        <span class="font-medium">Ajouter un système scolaire</span>
+    </button>
+    <button
+        hx-get="{% url 'classes:schoolclass_create_htmx' %}"
+        hx-target="#modal-content"
+        hx-trigger="click"
+        hx-swap="innerHTML"
+        onclick="openClassModal()"
+        type="button"
+        class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl">
+        <i class="fas fa-plus"></i>
+        <span class="font-medium">Ajouter une classe</span>
+    </button>
+</div>
+{% endblock %} {% block content %}
+<div class="space-y-6">
+    <!-- Statistics Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200/50">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="text-2xl font-bold text-slate-900">
+                        {{ total_classes|default:0 }}
+                    </div>
+                    <div class="text-blue-700 font-medium">Classes totales</div>
+                </div>
+                <div
+                    class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center text-white">
+                    <i class="fas fa-door-open text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-6 border border-emerald-200/50">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="text-2xl font-bold text-slate-900">
+                        {{ active_classes|default:0 }}
+                    </div>
+                    <div class="text-emerald-700 font-medium">Classes actives</div>
+                </div>
+                <div
+                    class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center text-white">
+                    <i class="fas fa-check-circle text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-6 border border-amber-200/50">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="text-2xl font-bold text-slate-900">
+                        {{ total_students|default:0 }}
+                    </div>
+                    <div class="text-amber-700 font-medium">Élèves inscrits</div>
+                </div>
+                <div
+                    class="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center text-white">
+                    <i class="fas fa-user-graduate text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-6 border border-purple-200/50">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="text-2xl font-bold text-slate-900">
+                        {{ average_capacity|default:0 }}
+                    </div>
+                    <div class="text-purple-700 font-medium">Capacité moyenne</div>
+                </div>
+                <div
+                    class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center text-white">
+                    <i class="fas fa-users text-xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters and Search -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6">
+        <div class="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+            <!-- Search Bar -->
+            <div class="flex-1 max-w-md">
+                <form method="get" class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <i class="fas fa-search text-slate-400"></i>
+                    </div>
+                    <input type="text" name="search" value="{{ search|default:'' }}"
+                        class="w-full pl-11 pr-4 py-3 border border-slate-200 rounded-xl bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 placeholder-slate-400"
+                        placeholder="Rechercher une classe..." />
+                </form>
+            </div>
+
+            <!-- Filters -->
+            <div class="flex flex-wrap gap-3">
+                <!-- Level Filter -->
+                <div class="relative" x-data="{ open: false }">
+                    <button @click="open = !open"
+                        class="flex items-center gap-2 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors duration-200 min-w-32">
+                        <i class="fas fa-layer-group text-slate-500"></i>
+                        <span class="text-slate-700 font-medium">Niveau</span>
+                        <i class="fas fa-chevron-down text-slate-400 text-sm transition-transform duration-200"
+                            :class="{ 'rotate-180': open }"></i>
+                    </button>
+
+                    <div x-show="open" x-transition:enter="transition ease-out duration-200"
+                        x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
+                        x-transition:leave="transition ease-in duration-150"
+                        x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95"
+                        @click.away="open = false"
+                        class="absolute top-full left-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-slate-200 py-2 z-10">
+                        <a href="#" @click="selectedLevel = ''; filterClasses(); open = false"
+                            class="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors duration-200">
+                            <i class="fas fa-list mr-2 text-slate-400"></i>
+                            Tous les niveaux
+                        </a>
+                        {% for level in levels %}
+                        <a href="#" @click="selectedLevel = '{{ level.id }}'; filterClasses(); open = false"
+                            class="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors duration-200">
+                            <i class="fas fa-layer-group mr-2 text-slate-400"></i>
+                            {{ level.name }}
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Status Filter -->
+                <div class="relative" x-data="{ open: false }">
+                    <button @click="open = !open"
+                        class="flex items-center gap-2 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors duration-200 min-w-32">
+                        <i class="fas fa-toggle-on text-slate-500"></i>
+                        <span class="text-slate-700 font-medium">Statut</span>
+                        <i class="fas fa-chevron-down text-slate-400 text-sm transition-transform duration-200"
+                            :class="{ 'rotate-180': open }"></i>
+                    </button>
+
+                    <div x-show="open" x-transition:enter="transition ease-out duration-200"
+                        x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
+                        x-transition:leave="transition ease-in duration-150"
+                        x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95"
+                        @click.away="open = false"
+                        class="absolute top-full left-0 mt-2 w-40 bg-white rounded-xl shadow-lg border border-slate-200 py-2 z-10">
+                        <a href="#" @click="selectedStatus = ''; filterClasses(); open = false"
+                            class="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors duration-200">
+                            <i class="fas fa-list mr-2 text-slate-400"></i>
+                            Toutes
+                        </a>
+                        <a href="#" @click="selectedStatus = 'active'; filterClasses(); open = false"
+                            class="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors duration-200">
+                            <i class="fas fa-check-circle mr-2 text-emerald-500"></i>
+                            Actives
+                        </a>
+                        <a href="#" @click="selectedStatus = 'inactive'; filterClasses(); open = false"
+                            class="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors duration-200">
+                            <i class="fas fa-times-circle mr-2 text-red-500"></i>
+                            Inactives
+                        </a>
+                    </div>
+                </div>
+
+
+
+                <!-- Reset Filters -->
+                <button @click="resetFilters()"
+                    class="flex items-center gap-2 px-4 py-3 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors duration-200">
+                    <i class="fas fa-undo text-slate-500"></i>
+                    <span class="text-slate-700 font-medium">Reset</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Classes Content -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">
+        <!-- Header -->
+        <div class="px-6 py-4 border-b border-slate-200 bg-slate-50">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-lg font-semibold text-slate-900">
+                        Classes disponibles
+                    </h3>
+                    <p class="text-sm text-slate-500">
+                        {{ classes|length }} classe{{ classes|length|pluralize }} trouvée{{ classes|length|pluralize }}
+                    </p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <select
+                        class="border border-slate-200 rounded-lg px-3 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
+                        <option value="name">Trier par nom</option>
+                        <option value="level">Trier par niveau</option>
+                        <option value="capacity">Trier par capacité</option>
+                        <option value="students">Trier par effectif</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+
+
+        <!-- Classes Table -->
+        <div class="overflow-x-auto">
+            <table class="min-w-full">
+                <thead class="bg-slate-50 border-b border-slate-200">
+                    <tr>
+                        <th class="px-6 py-4 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                            <input type="checkbox" id="bulk-select-all" class="rounded border-slate-300">
+                        </th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                            Classe
+                        </th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                            Niveau
+                        </th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                            Année scolaire
+                        </th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                            Prof. titulaire
+                        </th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                            Effectif
+                        </th>
+                        <th class="px-6 py-4 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                            Statut
+                        </th>
+                        <th class="px-6 py-4 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                            Actions
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-slate-200">
+                    {% for classItem in classes %}
+                    <tr class="hover:bg-slate-50 transition-colors duration-200">
+                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                            <input type="checkbox" class="bulk-checkbox rounded border-slate-300" value="{{ classItem.id }}" data-class-id="{{ classItem.id }}">
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div
+                                    class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold text-sm mr-3">
+                                    <span>{{ classItem.name|slice:":2" }}</span>
+                                </div>
+                                <div>
+                                    <div class="text-sm font-semibold text-slate-900">{{ classItem.name }}</div>
+                                    <div class="text-xs text-slate-500">ID: #{{ classItem.id }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">{{ classItem.level }}</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-slate-900">{{ classItem.year }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-slate-900">{{ classItem.main_teacher|default:'Non assigné' }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="text-sm font-semibold text-slate-900 mr-2">
+                                    <span>{{ classItem.student_count|default:0 }}/{{ classItem.capacity }}</span>
+                                </div>
+                                <div class="w-16 bg-slate-200 rounded-full h-2">
+                                    <div class="bg-gradient-to-r from-indigo-500 to-purple-500 h-2 rounded-full"
+                                        style="width: {% if classItem.capacity %}{% widthratio classItem.student_count classItem.capacity 100 %}{% else %}0{% endif %}%">
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                            {% if classItem.is_active %}
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+                                    <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-2 inline-block"></span>
+                                    Active
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                    <span class="w-1.5 h-1.5 bg-red-500 rounded-full mr-2 inline-block"></span>
+                                    Inactive
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right">
+                            <div class="flex items-center justify-end gap-2">
+                                <a href="{% url 'classes:schoolclass_detail' classItem.id %}"
+                                    class="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all duration-200"
+                                    title="Voir les détails">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <button
+                                    hx-get="{% url 'classes:schoolclass_update_htmx' classItem.id %}"
+                                    hx-target="#modal-content"
+                                    hx-trigger="click"
+                                    hx-swap="innerHTML"
+                                    onclick="openClassModal()"
+                                    type="button"
+                                    class="p-2 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all duration-200"
+                                    title="Modifier">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button
+                                    hx-get="{% url 'classes:schoolclass_delete_htmx' classItem.id %}"
+                                    hx-target="#modal-content"
+                                    hx-trigger="click"
+                                    hx-swap="innerHTML"
+                                    onclick="openClassModal()"
+                                    type="button"
+                                    class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
+                                    title="Supprimer">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Bouton d'action groupée -->
+    <div class="flex items-center gap-3 mt-4">
+        <button id="btn-assign-bulk" type="button" class="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition disabled:opacity-50" disabled>
+            <i class="fas fa-tasks mr-2"></i>Attribuer matières/coefs/horaires
+        </button>
+    </div>
+</div>
+
+<!-- Modal pour les formulaires htmx -->
+<div id="modal" class="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+    <div id="modal-content" class="bg-white rounded-xl shadow-lg p-6 w-full max-w-lg relative">
+        <!-- Le contenu du formulaire htmx sera injecté ici -->
+    </div>
+</div>
+
+<!-- Modal pour création d'un niveau scolaire -->
+<div id="modal-level" class="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-xl shadow-lg p-6 w-full max-w-md relative">
+        <button onclick="closeLevelModal()" class="absolute top-2 right-2 p-2 text-slate-400 hover:text-red-500"><i class="fas fa-times"></i></button>
+        <h2 class="text-xl font-bold mb-4">Ajouter un niveau scolaire</h2>
+        <form id="form-add-level" method="post">
+            {% csrf_token %}
+            <div class="mb-4">
+                <label for="level_name" class="block text-slate-700 font-medium mb-1">Nom du niveau<span class="text-red-500">*</span></label>
+                <input type="text" name="name" id="level_name" required class="w-full border border-slate-300 rounded-lg px-3 py-2">
+            </div>
+            <div class="mb-4">
+                <label for="level_system" class="block text-slate-700 font-medium mb-1">Système éducatif<span class="text-red-500">*</span></label>
+                <select name="system" id="level_system" required class="w-full border border-slate-300 rounded-lg px-3 py-2">
+                    <option value="">Sélectionner...</option>
+                    {% for system in systems %}
+                        <option value="{{ system.id }}">{{ system.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="flex justify-end gap-2">
+                <button type="button" onclick="closeLevelModal()" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200">Annuler</button>
+                <button type="submit" class="px-6 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700">Enregistrer</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal pour création d'un système scolaire -->
+<div id="modal-system" class="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-xl shadow-lg p-6 w-full max-w-md relative">
+        <button onclick="closeSystemModal()" class="absolute top-2 right-2 p-2 text-slate-400 hover:text-red-500"><i class="fas fa-times"></i></button>
+        <h2 class="text-xl font-bold mb-4">Ajouter un système scolaire</h2>
+        <form id="form-add-system" method="post">
+            {% csrf_token %}
+            <div class="mb-4">
+                <label for="system_name" class="block text-slate-700 font-medium mb-1">Nom du système<span class="text-red-500">*</span></label>
+                <input type="text" name="name" id="system_name" required class="w-full border border-slate-300 rounded-lg px-3 py-2">
+            </div>
+            <div id="system-feedback" class="text-center text-sm mt-2"></div>
+            <div class="flex justify-end gap-2">
+                <button type="button" onclick="closeSystemModal()" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200">Annuler</button>
+                <button type="submit" id="btn-system-submit" class="px-6 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700">Enregistrer</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modale d'attribution groupée -->
+<div id="modal-assign-bulk" class="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-xl shadow-lg p-6 w-full max-w-2xl relative">
+        <button onclick="closeAssignBulkModal()" class="absolute top-2 right-2 p-2 text-slate-400 hover:text-red-500"><i class="fas fa-times"></i></button>
+        <h2 class="text-xl font-bold mb-4">Attribution groupée des matières</h2>
+        <form id="form-assign-bulk" method="post">
+            {% csrf_token %}
+            <div class="mb-4">
+                <label class="block text-slate-700 font-medium mb-1">Année scolaire</label>
+                <select name="year" id="assign_year" required class="w-full border border-slate-300 rounded-lg px-3 py-2 mb-2">
+                    <option value="">Sélectionner...</option>
+                    {% for year in schoolyears %}
+                        <option value="{{ year.id }}">{{ year.annee }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-4">
+                <label class="block text-slate-700 font-medium mb-1">Matières à attribuer</label>
+                <select id="assign_subjects" name="subjects" multiple required class="w-full border border-slate-300 rounded-lg px-3 py-2">
+                    {% for subject in subjects %}
+                        <option value="{{ subject.id }}">{{ subject.name }}</option>
+                    {% endfor %}
+                </select>
+                <small class="text-slate-500">Maintenez Ctrl (ou Cmd) pour sélectionner plusieurs matières.</small>
+            </div>
+            <div id="assign-table-container" class="mb-4 hidden">
+                <label class="block text-slate-700 font-medium mb-1">Coefficients et horaires</label>
+                <table class="min-w-full border text-sm">
+                    <thead>
+                        <tr class="bg-slate-100">
+                            <th class="px-3 py-2">Matière</th>
+                            <th class="px-3 py-2">Coefficient</th>
+                            <th class="px-3 py-2">Heures/semaine</th>
+                        </tr>
+                    </thead>
+                    <tbody id="assign-table-body"></tbody>
+                </table>
+            </div>
+            <div class="mb-4">
+                <label class="block text-slate-700 font-medium mb-1">Classes sélectionnées</label>
+                <ul id="assign-classes-list" class="flex flex-wrap gap-2"></ul>
+            </div>
+            <div id="assign-bulk-feedback" class="text-center text-sm mt-2"></div>
+            <div class="flex justify-end gap-2">
+                <button type="button" onclick="closeAssignBulkModal()" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200">Annuler</button>
+                <button type="submit" id="btn-assign-bulk-submit" class="px-6 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700">Valider</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if class_success %}
+<div id="toast-success" class="fixed top-6 right-6 bg-emerald-600 text-white px-6 py-3 rounded-xl shadow-lg z-50 animate-fade-in">
+    <i class="fas fa-check-circle mr-2"></i> {{ class_success }}
+</div>
+<script>
+    setTimeout(function() {
+        var toast = document.getElementById('toast-success');
+        if (toast) toast.style.display = 'none';
+    }, 2500);
+</script>
+{% endif %}
+
+{% block extra_js %}
+    <script src="{% static 'js/htmx.min.js' %}"></script>
+    <script src="{% static 'js/gestion_classes.js' %}"></script>
+    <script>
+    // Gestion ouverture/fermeture des modales
+    document.getElementById('btn-add-level').onclick = function() {
+        document.getElementById('modal-level').classList.remove('hidden');
+    };
+    document.getElementById('btn-add-system').onclick = function() {
+        document.getElementById('modal-system').classList.remove('hidden');
+    };
+    function closeLevelModal() {
+        document.getElementById('modal-level').classList.add('hidden');
+    }
+    function closeSystemModal() {
+        document.getElementById('modal-system').classList.add('hidden');
+    }
+
+    // Soumission AJAX pour création niveau
+    document.getElementById('form-add-level').onsubmit = function(e) {
+        e.preventDefault();
+        const form = e.target;
+        const data = new FormData(form);
+        fetch('/classes/levels/create/', {
+            method: 'POST',
+            body: data,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                closeLevelModal();
+                location.reload();
+            } else if (data.errors) {
+                alert('Erreur: ' + JSON.stringify(data.errors));
+            }
+        });
+    };
+    // Soumission AJAX pour création système scolaire
+    document.getElementById('form-add-system').onsubmit = function(e) {
+        e.preventDefault();
+        const form = e.target;
+        const data = new FormData(form);
+        const btn = document.getElementById('btn-system-submit');
+        const feedback = document.getElementById('system-feedback');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enregistrement...';
+        feedback.textContent = '';
+        fetch('/classes/systems/create/', {
+            method: 'POST',
+            body: data,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                feedback.textContent = 'Système créé avec succès !';
+                feedback.className = 'text-center text-green-600 mt-2';
+                setTimeout(() => { closeSystemModal(); location.reload(); }, 800);
+            } else if (data.errors) {
+                feedback.textContent = 'Erreur : ' + JSON.stringify(data.errors);
+                feedback.className = 'text-center text-red-600 mt-2';
+            }
+        })
+        .catch(() => {
+            feedback.textContent = 'Erreur réseau.';
+            feedback.className = 'text-center text-red-600 mt-2';
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = 'Enregistrer';
+        });
+    };
+
+    // Rafraîchissement de la page après création d'une classe via HTMX
+    if (window.htmx) {
+        document.body.addEventListener('htmx:afterSwap', function(evt) {
+            if (evt.detail.target && evt.detail.target.id === 'modal-content') {
+                // Si la modale a été remplacée par un succès (ligne de classe), on recharge la page
+                if (evt.detail.xhr && evt.detail.xhr.status === 200 && evt.detail.target.innerHTML.includes('schoolclass_row')) {
+                    setTimeout(() => { window.location.reload(); }, 300);
+                }
+            }
+        });
+    }
+    </script>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Gestion de la sélection multiple
+        function getSelectedClassIds() {
+            return Array.from(document.querySelectorAll('.bulk-checkbox:checked')).map(cb => cb.dataset.classId);
+        }
+        
+        function updateBulkButton() {
+            const selectedCount = getSelectedClassIds().length;
+            document.getElementById('btn-assign-bulk').disabled = selectedCount === 0;
+            if (selectedCount > 0) {
+                document.getElementById('btn-assign-bulk').innerHTML = `<i class="fas fa-tasks mr-2"></i>Attribuer matières/coefs/horaires (${selectedCount})`;
+            } else {
+                document.getElementById('btn-assign-bulk').innerHTML = `<i class="fas fa-tasks mr-2"></i>Attribuer matières/coefs/horaires`;
+            }
+        }
+        
+        // Gestion de la case à cocher "sélectionner tout"
+        document.getElementById('bulk-select-all').addEventListener('change', function(e) {
+            const isChecked = e.target.checked;
+            document.querySelectorAll('.bulk-checkbox').forEach(checkbox => {
+                checkbox.checked = isChecked;
+            });
+            updateBulkButton();
+        });
+        
+        // Gestion des cases à cocher individuelles
+        document.addEventListener('change', function(e) {
+            if (e.target.classList.contains('bulk-checkbox')) {
+                updateBulkButton();
+                
+                // Mise à jour de la case "sélectionner tout"
+                const allCheckboxes = document.querySelectorAll('.bulk-checkbox');
+                const checkedCheckboxes = document.querySelectorAll('.bulk-checkbox:checked');
+                document.getElementById('bulk-select-all').checked = allCheckboxes.length === checkedCheckboxes.length;
+                document.getElementById('bulk-select-all').indeterminate = checkedCheckboxes.length > 0 && checkedCheckboxes.length < allCheckboxes.length;
+            }
+        });
+
+        // Gestion sélection
+        function getSelectedClassIds() {
+            return Array.from(document.querySelectorAll('.bulk-checkbox:checked')).map(cb => cb.dataset.classId);
+        }
+        function updateBulkButton() {
+            document.getElementById('btn-assign-bulk').disabled = getSelectedClassIds().length === 0;
+        }
+        document.body.addEventListener('change', function(e) {
+            if (e.target.classList.contains('bulk-checkbox')) updateBulkButton();
+            if (e.target.id === 'bulk-select-all') {
+                let checked = e.target.checked;
+                document.querySelectorAll('.bulk-checkbox').forEach(cb => cb.checked = checked);
+                updateBulkButton();
+            }
+        });
+
+        // Ouvre la modale d'attribution groupée
+        document.getElementById('btn-assign-bulk').onclick = function() {
+            let selectedIds = getSelectedClassIds();
+            if (selectedIds.length === 0) return;
+            document.getElementById('modal-assign-bulk').classList.remove('hidden');
+            // Affiche la liste des classes sélectionnées
+            let ul = document.getElementById('assign-classes-list');
+            ul.innerHTML = '';
+            selectedIds.forEach(id => {
+                let li = document.createElement('li');
+                li.className = 'bg-indigo-100 text-indigo-700 rounded px-2 py-1 text-xs';
+                li.textContent = 'Classe #' + id;
+                ul.appendChild(li);
+            });
+        };
+        window.closeAssignBulkModal = function() {
+            document.getElementById('modal-assign-bulk').classList.add('hidden');
+            document.getElementById('form-assign-bulk').reset();
+            document.getElementById('assign-table-container').classList.add('hidden');
+            document.getElementById('assign-bulk-feedback').textContent = '';
+        };
+
+        // Génère le tableau dynamique matières/coefs/heures
+        document.getElementById('assign_subjects').onchange = function() {
+            let selected = Array.from(this.selectedOptions).map(opt => ({id: opt.value, name: opt.textContent}));
+            let tbody = document.getElementById('assign-table-body');
+            tbody.innerHTML = '';
+            if (selected.length) {
+                document.getElementById('assign-table-container').classList.remove('hidden');
+                selected.forEach(subj => {
+                    let tr = document.createElement('tr');
+                    tr.innerHTML = `<td class="px-3 py-2">${subj.name}</td>
+                        <td class="px-3 py-2"><input type="number" min="1" value="1" class="assign-coef w-20 border rounded px-2 py-1" data-subject="${subj.id}"></td>
+                        <td class="px-3 py-2"><input type="number" min="0" step="0.5" value="0" class="assign-hours w-24 border rounded px-2 py-1" data-subject="${subj.id}"></td>`;
+                    tbody.appendChild(tr);
+                });
+            } else {
+                document.getElementById('assign-table-container').classList.add('hidden');
+            }
+        };
+
+        // Soumission AJAX
+        document.getElementById('form-assign-bulk').onsubmit = function(e) {
+            e.preventDefault();
+            let selectedClasses = getSelectedClassIds();
+            let selectedSubjects = Array.from(document.getElementById('assign_subjects').selectedOptions).map(opt => opt.value);
+            let year = document.getElementById('assign_year').value;
+            let coefs = {};
+            let hours = {};
+            document.querySelectorAll('.assign-coef').forEach(input => { coefs[input.dataset.subject] = input.value; });
+            document.querySelectorAll('.assign-hours').forEach(input => { hours[input.dataset.subject] = input.value; });
+            let feedback = document.getElementById('assign-bulk-feedback');
+            let btn = document.getElementById('btn-assign-bulk-submit');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enregistrement...';
+            feedback.textContent = '';
+            let params = new URLSearchParams();
+            selectedClasses.forEach(id => params.append('classes[]', id));
+            selectedSubjects.forEach(id => params.append('subjects[]', id));
+            params.append('coefficients', JSON.stringify(coefs));
+            params.append('hours', JSON.stringify(hours));
+            params.append('year', year);
+            fetch('/classes/assign-subjects-bulk/', {
+                method: 'POST',
+                headers: {'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value},
+                body: params
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    feedback.textContent = 'Affectation réussie !';
+                    feedback.className = 'text-center text-green-600 mt-2';
+                    setTimeout(() => { closeAssignBulkModal(); window.location.reload(); }, 1000);
+                } else {
+                    feedback.textContent = 'Erreur : ' + (data.error || JSON.stringify(data.errors));
+                    feedback.className = 'text-center text-red-600 mt-2';
+                }
+            })
+            .catch(() => {
+                feedback.textContent = 'Erreur réseau.';
+                feedback.className = 'text-center text-red-600 mt-2';
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.innerHTML = 'Valider';
+            });
+        };
+    });
+    </script>
+{% endblock %}
+
+<style>
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(-20px);}
+  to { opacity: 1; transform: translateY(0);}
+}
+.animate-fade-in {
+  animation: fade-in 0.5s;
+}
+</style>
+
+{% endblock %}

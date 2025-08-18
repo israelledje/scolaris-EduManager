@@ -1,0 +1,405 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Tableau de Bord Financier{% endblock %}
+
+{% block page_actions %}
+<div class="flex items-center gap-3">
+    <!-- Filtres de période -->
+    <div class="flex items-center gap-2">
+        <select id="period-filter" class="px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200">
+            <option value="today">Aujourd'hui</option>
+            <option value="yesterday">Hier</option>
+            <option value="last_week">Semaine dernière</option>
+            <option value="this_week">Semaine en cours</option>
+            <option value="last_month">Mois dernier</option>
+            <option value="this_month" selected>Mois en cours</option>
+            <option value="custom">Période libre</option>
+        </select>
+        
+        <!-- Période personnalisée (cachée par défaut) -->
+        <div id="custom-period" class="hidden flex items-center gap-2">
+            <input type="date" id="start-date" class="px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200">
+            <span class="text-slate-500">à</span>
+            <input type="date" id="end-date" class="px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200">
+        </div>
+        
+        <button onclick="applyFilter()" class="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors">
+            <i class="fas fa-filter mr-2"></i>Filtrer
+        </button>
+    </div>
+    
+    <!-- Export PDF -->
+    <button onclick="exportPDF()" class="px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors">
+        <i class="fas fa-file-pdf mr-2"></i>Exporter PDF
+    </button>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-6">
+    <!-- En-tête avec titre et période -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-200/60 bg-gradient-to-r from-blue-50 to-indigo-50">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-lg mr-4">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold text-slate-900">Tableau de Bord Financier</h1>
+                        <p class="text-slate-600" id="period-display">
+                            {% if current_year %}{{ current_year.annee }} - {% endif %}Mois en cours
+                        </p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <div class="text-sm text-slate-500">Taux de recouvrement</div>
+                    <div class="text-2xl font-bold text-slate-900" id="recovery-rate">{{ recovery_rate|floatformat:1 }}%</div>
+                    <div class="text-xs text-slate-500">{{ total_students }} étudiants inscrits</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if current_year %}
+        <!-- Statistiques principales -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <!-- Total Paiements Reçus -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden hover:shadow-lg transition-all duration-300">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl flex items-center justify-center text-white">
+                            <i class="fas fa-money-bill-wave text-xl"></i>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm text-slate-500">Paiements Reçus</div>
+                            <div class="text-2xl font-bold text-slate-900" id="total-payments">{{ total_all_payments|floatformat:0 }}</div>
+                        </div>
+                    </div>
+                    <div class="text-sm text-emerald-600 font-medium">
+                        <i class="fas fa-check-circle mr-1"></i>{{ recovery_rate|floatformat:1 }}% du montant dû
+                    </div>
+                </div>
+            </div>
+
+            <!-- Total Dû -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden hover:shadow-lg transition-all duration-300">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center text-white">
+                            <i class="fas fa-calculator text-xl"></i>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm text-slate-500">Total Dû</div>
+                            <div class="text-2xl font-bold text-slate-900" id="total-due">{{ total_due|floatformat:0 }}</div>
+                        </div>
+                    </div>
+                    <div class="text-sm text-blue-600 font-medium">
+                        <i class="fas fa-users mr-1"></i>Basé sur {{ total_students }} étudiants
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reste à Payer -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden hover:shadow-lg transition-all duration-300">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 bg-gradient-to-br from-red-500 to-pink-600 rounded-xl flex items-center justify-center text-white">
+                            <i class="fas fa-clock text-xl"></i>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm text-slate-500">Reste à Payer</div>
+                            <div class="text-2xl font-bold text-slate-900" id="total-remaining">{{ total_remaining|floatformat:0 }}</div>
+                        </div>
+                    </div>
+                    <div class="text-sm text-red-600 font-medium">
+                        <i class="fas fa-exclamation-triangle mr-1"></i>{{ remaining_percentage|floatformat:1 }}% en attente
+                    </div>
+                </div>
+            </div>
+
+            <!-- Total Remises -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden hover:shadow-lg transition-all duration-300">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center text-white">
+                            <i class="fas fa-gift text-xl"></i>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm text-slate-500">Total Remises</div>
+                            <div class="text-2xl font-bold text-slate-900" id="total-discounts">{{ total_discounts|floatformat:0 }}</div>
+                        </div>
+                    </div>
+                    <div class="text-sm text-amber-600 font-medium">
+                        <i class="fas fa-percentage mr-1"></i>{{ discount_percentage|floatformat:1 }}% des paiements
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Graphiques -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Paiements par mode -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-200/60">
+                    <h3 class="text-lg font-semibold text-slate-900">Paiements par Mode</h3>
+                </div>
+                <div class="p-6">
+                    <canvas id="paymentModeChart" height="300"></canvas>
+                </div>
+            </div>
+
+            <!-- Paiements par mois -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-200/60">
+                    <h3 class="text-lg font-semibold text-slate-900">Évolution des Paiements</h3>
+                </div>
+                <div class="p-6">
+                    <canvas id="paymentMonthChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions rapides -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-200/60">
+                <h3 class="text-lg font-semibold text-slate-900">Actions Rapides</h3>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <a href="{% url 'finances:payment_list' %}" class="flex items-center justify-center gap-3 p-4 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl transition-all duration-200">
+                        <i class="fas fa-list text-xl"></i>
+                        <span class="font-semibold">Gérer les Paiements</span>
+                    </a>
+                    <a href="{% url 'finances:discount_create' %}" class="flex items-center justify-center gap-3 p-4 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-xl transition-all duration-200">
+                        <i class="fas fa-gift text-xl"></i>
+                        <span class="font-semibold">Accorder Remise</span>
+                    </a>
+                    <a href="{% url 'finances:moratorium_list' %}" class="flex items-center justify-center gap-3 p-4 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-xl transition-all duration-200">
+                        <i class="fas fa-clock text-xl"></i>
+                        <span class="font-semibold">Moratoires ({{ pending_moratoriums }})</span>
+                    </a>
+                    <a href="{% url 'finances:payment_list' %}" class="flex items-center justify-center gap-3 p-4 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-xl transition-all duration-200">
+                        <i class="fas fa-list text-xl"></i>
+                        <span class="font-semibold">Tous les Paiements</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Derniers paiements -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-200/60">
+                <h3 class="text-lg font-semibold text-slate-900">Derniers Paiements</h3>
+            </div>
+            <div class="p-6">
+                <div class="space-y-4" id="recent-payments">
+                    {% for payment_data in recent_payments %}
+                    <div class="flex items-center justify-between p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
+                                <i class="fas fa-money-bill-wave text-emerald-600"></i>
+                            </div>
+                            <div>
+                                <div class="font-semibold text-slate-900">
+                                    {{ payment_data.description }}
+                                </div>
+                                <div class="text-sm text-slate-500">
+                                    {{ payment_data.student.last_name }} {{ payment_data.student.first_name }} - {{ payment_data.payment.get_mode_display }}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="font-bold text-emerald-600">{{ payment_data.amount|floatformat:0 }} FCFA</div>
+                            <div class="text-xs text-slate-500">{{ payment_data.date|date:"d/m/Y" }}</div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-8">
+                        <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-money-bill-wave text-slate-400 text-xl"></i>
+                        </div>
+                        <h3 class="text-lg font-semibold text-slate-900 mb-2">Aucun paiement récent</h3>
+                        <p class="text-slate-600">Les paiements récents apparaîtront ici.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+    {% else %}
+        <!-- Message d'erreur -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">
+            <div class="p-8 text-center">
+                <div class="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-exclamation-triangle text-amber-600 text-xl"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-slate-900 mb-2">Aucune année scolaire active</h3>
+                <p class="text-slate-600 mb-4">Veuillez définir une année scolaire active pour voir les statistiques financières.</p>
+                <a href="{% url 'school:config_school' %}" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                    <i class="fas fa-cog mr-2"></i>Configurer l'année scolaire
+                </a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Scripts pour les graphiques et fonctionnalités -->
+{% if current_year %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Configuration des graphiques
+const chartColors = {
+    primary: '#3b82f6',
+    success: '#10b981',
+    warning: '#f59e0b',
+    danger: '#ef4444',
+    info: '#06b6d4',
+    purple: '#8b5cf6'
+};
+
+// Graphique des modes de paiement
+const paymentModeCtx = document.getElementById('paymentModeChart').getContext('2d');
+const paymentModeChart = new Chart(paymentModeCtx, {
+    type: 'doughnut',
+    data: {
+        labels: [
+            {% for payment in payments_by_mode %}
+                '{{ payment.mode|title }}',
+            {% endfor %}
+        ],
+        datasets: [{
+            data: [
+                {% for payment in payments_by_mode %}
+                    {{ payment.total }},
+                {% endfor %}
+            ],
+            backgroundColor: [
+                chartColors.primary,
+                chartColors.success,
+                chartColors.warning,
+                chartColors.danger,
+                chartColors.info
+            ],
+            borderWidth: 0
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: {
+                    padding: 20,
+                    usePointStyle: true
+                }
+            }
+        }
+    }
+});
+
+// Graphique des paiements par mois
+const paymentMonthCtx = document.getElementById('paymentMonthChart').getContext('2d');
+const paymentMonthChart = new Chart(paymentMonthCtx, {
+    type: 'line',
+    data: {
+        labels: [
+            {% for payment in payments_by_month %}
+                '{{ payment.month_name }}',
+            {% endfor %}
+        ],
+        datasets: [{
+            label: 'Montant (FCFA)',
+            data: [
+                {% for payment in payments_by_month %}
+                    {{ payment.total }},
+                {% endfor %}
+            ],
+            backgroundColor: chartColors.primary + '20',
+            borderColor: chartColors.primary,
+            borderWidth: 3,
+            fill: true,
+            tension: 0.4
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                grid: {
+                    color: '#e2e8f0'
+                }
+            },
+            x: {
+                grid: {
+                    display: false
+                }
+            }
+        }
+    }
+});
+
+// Gestion des filtres de période
+document.getElementById('period-filter').addEventListener('change', function() {
+    const customPeriod = document.getElementById('custom-period');
+    if (this.value === 'custom') {
+        customPeriod.classList.remove('hidden');
+    } else {
+        customPeriod.classList.add('hidden');
+    }
+});
+
+function applyFilter() {
+    const period = document.getElementById('period-filter').value;
+    const startDate = document.getElementById('start-date').value;
+    const endDate = document.getElementById('end-date').value;
+    
+    // Construire l'URL avec les paramètres
+    let url = '{% url "finances:financial_dashboard" %}?period=' + period;
+    if (period === 'custom' && startDate && endDate) {
+        url += '&start_date=' + startDate + '&end_date=' + endDate;
+    }
+    
+    // Recharger la page avec les filtres
+    window.location.href = url;
+}
+
+function exportPDF() {
+    const period = document.getElementById('period-filter').value;
+    const startDate = document.getElementById('start-date').value;
+    const endDate = document.getElementById('end-date').value;
+    
+    // Construire l'URL d'export
+    let url = '{% url "finances:export_financial_report" %}?period=' + period;
+    if (period === 'custom' && startDate && endDate) {
+        url += '&start_date=' + startDate + '&end_date=' + endDate;
+    }
+    
+    // Ouvrir dans un nouvel onglet
+    window.open(url, '_blank');
+}
+
+// Mise à jour de l'affichage de la période
+function updatePeriodDisplay() {
+    const period = document.getElementById('period-filter');
+    const periodDisplay = document.getElementById('period-display');
+    const periodText = period.options[period.selectedIndex].text;
+    
+    periodDisplay.textContent = '{% if current_year %}{{ current_year.annee }} - {% endif %}' + periodText;
+}
+
+// Initialiser l'affichage
+updatePeriodDisplay();
+document.getElementById('period-filter').addEventListener('change', updatePeriodDisplay);
+</script>
+{% endif %}
+{% endblock %} 

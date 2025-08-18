@@ -1,0 +1,97 @@
+{% load widget_tweaks %}
+<div>
+    <div class="mb-4">
+        <div class="text-lg font-bold text-slate-900 flex items-center gap-2">
+            <i class="fas fa-edit text-amber-600"></i>
+            Modifier l'affectation
+        </div>
+        <div class="text-slate-500 text-sm mt-1">
+            {{ assignment.subject.name }} - {{ assignment.school_class.name }} ({{ assignment.year }})
+        </div>
+    </div>
+    
+    <form method="post" class="space-y-6" id="teaching-assignment-coef-form">
+        {% csrf_token %}
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label for="id_coefficient" class="block text-slate-700 font-medium mb-1">Coefficient<span class="text-red-500">*</span></label>
+                {{ form.coefficient|add_class:'w-full border border-slate-300 rounded-lg px-3 py-2' }}
+                <div class="text-red-600 text-xs mt-1">{{ form.coefficient.errors|join:', ' }}</div>
+            </div>
+            <div>
+                <label for="id_hours_per_week" class="block text-slate-700 font-medium mb-1">Heures/semaine<span class="text-red-500">*</span></label>
+                {{ form.hours_per_week|add_class:'w-full border border-slate-300 rounded-lg px-3 py-2' }}
+                <div class="text-red-600 text-xs mt-1">{{ form.hours_per_week.errors|join:', ' }}</div>
+            </div>
+        </div>
+        
+        <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 mt-6">
+            <button type="button" onclick="closeAssignmentModal()" class="px-4 py-2 text-slate-700 hover:bg-slate-200 rounded-xl transition-colors duration-200">Annuler</button>
+            <button type="submit" class="px-6 py-2 bg-gradient-to-r from-amber-600 to-orange-600 text-white rounded-xl hover:from-amber-700 hover:to-orange-700 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center">
+                <span class="btn-text">Modifier</span>
+                <i class="fas fa-spinner fa-spin hidden loading-spinner ml-2"></i>
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+// Gestion de la soumission du formulaire
+document.getElementById('teaching-assignment-coef-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const form = this;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const btnText = submitBtn.querySelector('.btn-text');
+    const spinner = submitBtn.querySelector('.loading-spinner');
+    
+    // Afficher le spinner
+    btnText.textContent = 'Modification...';
+    spinner.classList.remove('hidden');
+    submitBtn.disabled = true;
+    
+    // Récupérer les données du formulaire
+    const formData = new FormData(form);
+    
+    // Soumettre via fetch
+    fetch(window.location.pathname, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => {
+        if (response.status === 204) {
+            // Succès - fermer la modale et recharger la page
+            closeAssignmentModal();
+            window.location.reload();
+        } else {
+            // Erreur - afficher le message
+            return response.text();
+        }
+    })
+    .then(html => {
+        if (html) {
+            // Afficher les erreurs de validation
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+            const errorDiv = tempDiv.querySelector('.text-red-600');
+            if (errorDiv) {
+                alert('Erreur de validation : ' + errorDiv.textContent);
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        alert('Erreur lors de la modification');
+    })
+    .finally(() => {
+        // Restaurer le bouton
+        btnText.textContent = 'Modifier';
+        spinner.classList.add('hidden');
+        submitBtn.disabled = false;
+    });
+});
+</script>
