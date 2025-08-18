@@ -1,0 +1,22 @@
+@import "tailwindcss";
+/* Styles personnalisés supplémentaires si nécessaire */
+@layer components {
+    .sidebar-gradient {
+      background: linear-gradient(135deg, #1e40af 0%, #3730a3 50%, #581c87 100%);
+    }
+  
+    .glass-effect {
+      backdrop-filter: blur(12px);
+      background: rgba(255, 255, 255, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+  
+    .btn-gradient {
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    }
+  
+    .btn-gradient:hover {
+      background: linear-gradient(135deg, #2563eb, #7c3aed);
+    }
+  }
+  

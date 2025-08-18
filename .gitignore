@@ -11,8 +11,7 @@ __pycache__/
 db.sqlite3
 
 # Fichiers statiques et médias générés
-/static
-/media
+
 
 # Configurations locales
 *.log

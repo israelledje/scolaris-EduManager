@@ -27,9 +27,10 @@ SECRET_KEY = 'django-insecure-fa=k7amo6+22#zltn$uvw%t@q3pe+o@qq@so@6fvnswghfs=67
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+
 ALLOWED_HOSTS = ['*']
-
-
+TAILWIND_APP_NAME = 'theme'
+NPM_BIN_PATH = "C:/Program Files/nodejs/npm.cmd"
 # Application definition
 
 INSTALLED_APPS = [
@@ -52,10 +53,15 @@ INSTALLED_APPS = [
     'notes',
     'documents',
     'notifications',
+    'tailwind',
+    'theme',
+    
+    
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
