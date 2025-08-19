@@ -102,16 +102,7 @@ WSGI_APPLICATION = 'scolaris.wsgi.application'
 DATABASES = {
     'default': dj_database_url.parse(config('DATABASE_URL'))
 }
-#DATABASES = {
-#    'default': {
-#        'ENGINE': 'django.db.backends.postgresql',
-#        'NAME': 'scolarisdb',
-#        'USER': 'admin',
-#        'PASSWORD': 'NZafwQNgvSNP7JjLbBXzuVo9GVZn9JqM',
-#        'HOST': 'oregon-postgres.render.com',
-#        'PORT': '5432',
-#    }
-#}
+
 
 
 # Password validation
@@ -136,9 +127,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'fr-fr'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Africa/Douala'
 
 USE_I18N = True
 
@@ -298,9 +289,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Configuration SMSVAS - Paramètres corrects basés sur les tests
-SMS_USER = os.getenv('SMS_USER', 'israelledje@gmail.com')
-SMS_PASSWORD = os.getenv('SMS_PASSWORD', 'Admin2024++')
-SMS_SENDER_ID = os.getenv('SMS_SENDER_ID', 'RESONANCE')
+SMS_USER = os.getenv('SMS_USER')
+SMS_PASSWORD = os.getenv('SMS_PASSWORD')
+SMS_SENDER_ID = os.getenv('SMS_SENDER_ID')
 
 # Configuration des notifications
 NOTIFICATIONS_ENABLED = True
