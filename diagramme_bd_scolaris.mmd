@@ -1,0 +1,507 @@
+erDiagram
+    %% ==================== AUTHENTIFICATION ====================
+    User {
+        int id PK
+        string username UK
+        string email
+        string password
+        string role "ADMIN, DIRECTION, SURVEILLANCE, ELEVE, PROFESSEUR, PARENT, SUPPORT_TECHNIQUE"
+        boolean is_active
+        datetime date_joined
+        datetime last_login
+    }
+
+    %% ==================== ÉTABLISSEMENT SCOLAIRE ====================
+    School {
+        int id PK
+        string nom
+        date date_creation
+        string autorisation_ouverture
+        image logo
+        image signature
+        string type_etablissement "PRIMAIRE, SECONDAIRE"
+    }
+
+    SchoolYear {
+        int id PK
+        string annee UK "Format: 2024-2025"
+        string statut "EN_COURS, CLOTUREE"
+    }
+
+    YearClosure {
+        int id PK
+        int annee_id FK
+        datetime date_cloture
+        string nouvelle_annee
+    }
+
+    CurrentSchoolYear {
+        int id PK
+        int year_id FK
+    }
+
+    %% ==================== SYSTÈME ÉDUCATIF ====================
+    EducationSystem {
+        int id PK
+        string name UK "Francophone, Anglophone"
+    }
+
+    SchoolLevel {
+        int id PK
+        string name
+        int system_id FK
+    }
+
+    %% ==================== CLASSES ====================
+    SchoolClass {
+        int id PK
+        string name
+        int level_id FK
+        int year_id FK
+        int school_id FK
+        int capacity
+        boolean is_active
+        int main_teacher_id FK
+        json subject_teached
+        int created_by_id FK
+        int updated_by_id FK
+        datetime created_at
+        datetime updated_at
+    }
+
+    Timetable {
+        int id PK
+        int school_class_id FK
+        int year_id FK
+        int school_id FK
+        json data
+        int created_by_id FK
+        int updated_by_id FK
+        datetime created_at
+        datetime updated_at
+    }
+
+    TimetableSlot {
+        int id PK
+        int class_obj_id FK
+        int year_id FK
+        int day "1-6 (Lundi-Samedi)"
+        int period
+        int subject_id FK
+        int teacher_id FK
+        int duration
+    }
+
+    %% ==================== MATIÈRES ====================
+    Subject {
+        int id PK
+        string name UK
+        string code UK
+        text description
+    }
+
+    %% ==================== ENSEIGNANTS ====================
+    Teacher {
+        int id PK
+        string matricule UK
+        string first_name
+        string last_name
+        date birth_date
+        string birth_place
+        string gender "M, F"
+        string nationality
+        string address
+        string phone
+        string email
+        image photo
+        int school_id FK
+        int year_id FK
+        int main_subject_id FK
+        boolean is_active
+        int created_by_id FK
+        int updated_by_id FK
+        datetime created_at
+        datetime updated_at
+    }
+
+    TeachingAssignment {
+        int id PK
+        int teacher_id FK
+        int subject_id FK
+        int school_class_id FK
+        int year_id FK
+        boolean is_titulaire
+        int coefficient
+        float hours_per_week
+    }
+
+    %% ==================== ÉLÈVES ====================
+    Student {
+        int id PK
+        string matricule UK
+        string first_name
+        string last_name
+        date birth_date
+        string birth_place
+        string gender "M, F"
+        string nationality
+        string address
+        string phone
+        int current_class_id FK
+        date enrollment_date
+        image photo
+        int year_id FK
+        int school_id FK
+        boolean is_active
+        boolean is_repeating
+        int created_by_id FK
+        int updated_by_id FK
+        datetime created_at
+        datetime updated_at
+    }
+
+    StudentClassHistory {
+        int id PK
+        int student_id FK
+        int school_class_id FK
+        int year_id FK
+        date date_assigned
+        boolean is_repeating
+        datetime created_at
+        datetime updated_at
+    }
+
+    Guardian {
+        int id PK
+        int student_id FK
+        string name
+        string relation
+        string phone
+        string email
+        string profession
+        boolean is_emergency_contact
+    }
+
+    StudentDocument {
+        int id PK
+        int student_id FK
+        string name
+        file file
+        datetime uploaded_at
+        text description
+    }
+
+    %% ==================== PRÉSENCES ET DISCIPLINE ====================
+    Attendance {
+        int id PK
+        int student_id FK
+        date date
+        boolean present
+        string reason
+        int year_id FK
+        int school_id FK
+        file justificatif
+        int created_by_id FK
+        int updated_by_id FK
+        datetime created_at
+        datetime updated_at
+    }
+
+    Sanction {
+        int id PK
+        int student_id FK
+        date date
+        text reason
+        string sanction_type
+        string issued_by
+        int year_id FK
+        int school_id FK
+        int created_by_id FK
+        int updated_by_id FK
+        datetime created_at
+        datetime updated_at
+    }
+
+    %% ==================== PAIEMENTS ====================
+    Payment {
+        int id PK
+        int student_id FK
+        int year_id FK
+        int school_id FK
+        decimal amount
+        string purpose
+        date payment_date
+        string receipt_number UK
+        int created_by_id FK
+        int updated_by_id FK
+        datetime created_at
+        datetime updated_at
+    }
+
+    Scholarship {
+        int id PK
+        int student_id FK
+        int year_id FK
+        int school_id FK
+        decimal amount
+        string reason
+        date granted_at
+    }
+
+    %% ==================== FINANCES ====================
+    FeeStructure {
+        int id PK
+        int school_class_id FK
+        int year_id FK
+        decimal inscription_fee
+        decimal tuition_total
+        int tranche_count
+    }
+
+    FeeTranche {
+        int id PK
+        int fee_structure_id FK
+        int number
+        decimal amount
+        date due_date
+    }
+
+    TranchePayment {
+        int id PK
+        int student_id FK
+        int tranche_id FK
+        decimal amount
+        date payment_date
+        string mode
+        string receipt
+        file document
+        int created_by_id FK
+        datetime created_at
+    }
+
+    FeeDiscount {
+        int id PK
+        int student_id FK
+        int tranche_id FK
+        decimal amount
+        string reason
+        date granted_at
+        int created_by_id FK
+    }
+
+    Moratorium {
+        int id PK
+        int student_id FK
+        int tranche_id FK
+        decimal amount
+        date new_due_date
+        text reason
+        boolean is_approved
+        datetime requested_at
+        datetime approved_at
+    }
+
+    PaymentRefund {
+        int id PK
+        int payment_id FK
+        decimal amount
+        string reason
+        date refund_date
+        int created_by_id FK
+    }
+
+    ExtraFee {
+        int id PK
+        string name
+        decimal amount
+        int year_id FK
+        int school_class_id FK
+        int student_id FK
+        date due_date
+        int created_by_id FK
+        datetime created_at
+    }
+
+    %% ==================== NOTES ET ÉVALUATIONS ====================
+    AcademicPeriod {
+        int id PK
+        string name
+        string period_type "TRIMESTER, SEMESTER"
+        int year_id FK
+        int school_id FK
+        date start_date
+        date end_date
+        boolean is_active
+        datetime created_at
+        datetime updated_at
+    }
+
+    EvaluationSequence {
+        int id PK
+        string sequence "S1, S2, S3, S4, S5, S6"
+        int period_id FK
+        boolean is_open
+        datetime opened_at
+        datetime closed_at
+        int created_by_id FK
+    }
+
+    Exam {
+        int id PK
+        string name
+        string exam_type "CONTROLE, EXAMEN, COMPOSITION, DEVOIR"
+        int subject_id FK
+        int school_class_id FK
+        int sequence_id FK
+        decimal max_score
+        decimal coefficient
+        date exam_date
+        int duration
+        text instructions
+        boolean is_active
+        int created_by_id FK
+        datetime created_at
+        datetime updated_at
+    }
+
+    Evaluation {
+        int id PK
+        int student_id FK
+        int exam_id FK
+        decimal score
+        text remarks
+        int graded_by_id FK
+        datetime graded_at
+        datetime updated_at
+    }
+
+    Bulletin {
+        int id PK
+        int student_id FK
+        int period_id FK
+        decimal moyenne_generale
+        int rang
+        decimal moyenne_classe
+        text appreciation
+        datetime generated_at
+        int generated_by_id FK
+    }
+
+    BulletinLine {
+        int id PK
+        int bulletin_id FK
+        int subject_id FK
+        decimal coefficient
+        decimal moyenne
+        string appreciation
+    }
+
+    %% ==================== RELATIONS ====================
+    
+    %% School et SchoolYear
+    School ||--o{ SchoolYear : "a des"
+    School ||--o{ SchoolClass : "contient"
+    School ||--o{ Teacher : "emploie"
+    School ||--o{ Student : "accueille"
+    School ||--o{ Timetable : "gère"
+    School ||--o{ AcademicPeriod : "organise"
+    School ||--o{ Attendance : "enregistre"
+    School ||--o{ Sanction : "applique"
+    School ||--o{ Payment : "reçoit"
+    School ||--o{ Scholarship : "accorde"
+    School ||--o{ ExtraFee : "facture"
+
+    SchoolYear ||--o{ SchoolClass : "contient"
+    SchoolYear ||--o{ Teacher : "emploie"
+    SchoolYear ||--o{ Student : "accueille"
+    SchoolYear ||--o{ Timetable : "organise"
+    SchoolYear ||--o{ AcademicPeriod : "divise"
+    SchoolYear ||--o{ Attendance : "enregistre"
+    SchoolYear ||--o{ Sanction : "applique"
+    SchoolYear ||--o{ Payment : "reçoit"
+    SchoolYear ||--o{ Scholarship : "accorde"
+    SchoolYear ||--o{ ExtraFee : "facture"
+    SchoolYear ||--o{ FeeStructure : "définit"
+    SchoolYear ||--o{ TeachingAssignment : "organise"
+    SchoolYear ||--o{ TimetableSlot : "planifie"
+    SchoolYear ||--o{ CurrentSchoolYear : "est actuelle"
+
+    YearClosure ||--|| SchoolYear : "clôture"
+    CurrentSchoolYear ||--|| SchoolYear : "désigne"
+
+    %% Système éducatif
+    EducationSystem ||--o{ SchoolLevel : "définit"
+    SchoolLevel ||--o{ SchoolClass : "contient"
+
+    %% Classes
+    SchoolClass ||--o{ Student : "accueille"
+    SchoolClass ||--o{ Timetable : "a"
+    SchoolClass ||--o{ TimetableSlot : "planifie"
+    SchoolClass ||--o{ TeachingAssignment : "assigne"
+    SchoolClass ||--o{ Exam : "organise"
+    SchoolClass ||--o{ FeeStructure : "définit"
+    SchoolClass ||--o{ ExtraFee : "facture"
+    SchoolClass ||--o{ StudentClassHistory : "historise"
+
+    SchoolClass ||--o{ Teacher : "titulaire"
+    Teacher ||--o{ SchoolClass : "dirige"
+
+    %% Matières
+    Subject ||--o{ Teacher : "enseignée par"
+    Subject ||--o{ TeachingAssignment : "assignée"
+    Subject ||--o{ Exam : "évaluée"
+    Subject ||--o{ TimetableSlot : "programmée"
+    Subject ||--o{ BulletinLine : "notée"
+    Subject ||--o{ Teacher : "principale"
+
+    %% Enseignants
+    Teacher ||--o{ TeachingAssignment : "assigne"
+    Teacher ||--o{ TimetableSlot : "occupe"
+    Teacher ||--o{ SchoolClass : "dirige"
+    Teacher ||--o{ Subject : "enseigne"
+    Teacher ||--o{ Subject : "spécialisé en"
+
+    %% Élèves
+    Student ||--o{ Guardian : "a"
+    Student ||--o{ StudentDocument : "possède"
+    Student ||--o{ StudentClassHistory : "historise"
+    Student ||--o{ Attendance : "enregistre"
+    Student ||--o{ Sanction : "reçoit"
+    Student ||--o{ Payment : "effectue"
+    Student ||--o{ Scholarship : "reçoit"
+    Student ||--o{ TranchePayment : "effectue"
+    Student ||--o{ FeeDiscount : "bénéficie"
+    Student ||--o{ Moratorium : "demande"
+    Student ||--o{ ExtraFee : "doit"
+    Student ||--o{ Evaluation : "obtient"
+    Student ||--o{ Bulletin : "reçoit"
+
+    %% Paiements et finances
+    FeeStructure ||--o{ FeeTranche : "divise"
+    FeeTranche ||--o{ TranchePayment : "reçoit"
+    FeeTranche ||--o{ FeeDiscount : "accorde"
+    FeeTranche ||--o{ Moratorium : "reporte"
+    TranchePayment ||--o{ PaymentRefund : "rembourse"
+
+    %% Évaluations et notes
+    AcademicPeriod ||--o{ EvaluationSequence : "contient"
+    EvaluationSequence ||--o{ Exam : "organise"
+    Exam ||--o{ Evaluation : "évalue"
+    AcademicPeriod ||--o{ Bulletin : "génère"
+    Bulletin ||--o{ BulletinLine : "détaille"
+
+    %% Utilisateurs
+    User ||--o{ SchoolClass : "crée"
+    User ||--o{ Teacher : "crée"
+    User ||--o{ Student : "crée"
+    User ||--o{ TranchePayment : "enregistre"
+    User ||--o{ FeeDiscount : "accorde"
+    User ||--o{ PaymentRefund : "effectue"
+    User ||--o{ ExtraFee : "crée"
+    User ||--o{ Evaluation : "note"
+    User ||--o{ Bulletin : "génère"
+    User ||--o{ EvaluationSequence : "gère"
+    User ||--o{ Exam : "crée"
+    User ||--o{ Attendance : "enregistre"
+    User ||--o{ Sanction : "applique"
+    User ||--o{ Payment : "enregistre" 
