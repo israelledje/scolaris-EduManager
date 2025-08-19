@@ -1,9 +1,11 @@
 {
   "dependencies": {
-    "@tailwindcss/cli": "^4.1.11",
-    "tailwindcss": "^4.1.11"
+    "@tailwindcss/cli": "^4.1.12",
+    "tailwindcss": "^4.1.12"
   },
   "scripts": {
-    "watch:css": "npx @tailwindcss/cli -i ./static/src/styles.css -o ./static/dist/styles.css --watch"
+    "build:css": "tailwindcss -i ./static/src/input.css -o ./static/src/dist/styles.css --minify",
+    "watch:css": "tailwindcss -i ./static/src/input.css -o ./static/src/dist/styles.css --watch",
+    "dev:css": "tailwindcss -i ./static/src/input.css -o ./static/src/dist/styles.css"
   }
 }

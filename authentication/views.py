@@ -42,7 +42,7 @@ def login_view(request):
                 # Redirection selon l'existence de l'établissement
                 if not School.objects.exists():
                     return redirect('school:config_school')
-                return redirect(reverse('dashboard'))
+                return redirect(reverse('dashboard:dashboard'))
             else:
                 messages.error(request, "Nom d'utilisateur ou mot de passe incorrect.")
     else:

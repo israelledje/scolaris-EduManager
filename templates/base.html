@@ -2,69 +2,16 @@
 <html lang="fr">
 {% load static %}
 {% load widget_tweaks %}
-{% load static tailwind_tags %}
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{% block title %}EduManager - Gestion Scolaire{% endblock %}</title>
-    {% tailwind_css %}
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
+    <link rel="shortcut icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
     <!-- Tailwind CSS -->
-    <!-- <script src="https://cdn.tailwindcss.com"></script> -->
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: {
-                            50: '#eff6ff',
-                            100: '#dbeafe',
-                            200: '#bfdbfe',
-                            300: '#93c5fd',
-                            400: '#60a5fa',
-                            500: '#3b82f6',
-                            600: '#2563eb',
-                            700: '#1d4ed8',
-                            800: '#1e40af',
-                            900: '#1e3a8a',
-                        },
-                        secondary: {
-                            50: '#f0f9ff',
-                            100: '#e0f2fe',
-                            200: '#bae6fd',
-                            300: '#7dd3fc',
-                            400: '#38bdf8',
-                            500: '#0ea5e9',
-                            600: '#0284c7',
-                            700: '#0369a1',
-                            800: '#075985',
-                            900: '#0c4a6e',
-                        },
-                        accent: {
-                            50: '#ecfdf5',
-                            100: '#d1fae5',
-                            200: '#a7f3d0',
-                            300: '#6ee7b7',
-                            400: '#34d399',
-                            500: '#10b981',
-                            600: '#059669',
-                            700: '#047857',
-                            800: '#065f46',
-                            900: '#064e3b',
-                        }
-                    },
-                    fontFamily: {
-                        'sans': ['Inter', 'system-ui', 'sans-serif'],
-                    },
-                    animation: {
-                        'fade-in': 'fadeIn 0.5s ease-in-out',
-                        'slide-in': 'slideIn 0.3s ease-out',
-                        'bounce-subtle': 'bounceSubtle 2s infinite',
-                        'pulse-soft': 'pulseSoft 2s infinite',
-                    }
-                }
-            }
-        }
-    </script>
+    <link rel="stylesheet" href="{% static 'src/dist/styles.css' %}">
+
     
     <!-- htmx.js -->
     <script src="{% static 'js/htmx.min.js' %}"></script>
@@ -204,6 +151,46 @@
             transform: translateX(0);
         }
         
+        /* Solution de secours robuste - indépendante de Tailwind */
+        
+        /* Sidebar responsive - Mobile first */
+        #sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: 18rem; /* 288px */
+            z-index: 50;
+            overflow-y: auto;
+            transform: translateX(-100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        /* Sidebar active sur mobile */
+        #sidebar.active {
+            transform: translateX(0);
+        }
+        
+        /* Sidebar toujours visible sur desktop */
+        @media (min-width: 1024px) {
+            #sidebar {
+                transform: translateX(0) !important;
+                position: fixed !important;
+            }
+            
+            /* Contenu principal avec marge sur desktop */
+            .main-content {
+                margin-left: 18rem;
+            }
+        }
+        
+        /* Mobile - pas de marge */
+        @media (max-width: 1023px) {
+            .main-content {
+                margin-left: 0;
+            }
+        }
+        
         .alert {
             animation: slideIn 0.3s ease-out;
         }
@@ -231,7 +218,7 @@
     <div id="sidebarOverlay" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 lg:hidden opacity-0 invisible transition-all duration-300"></div>
     
     <!-- Sidebar -->
-    <nav id="sidebar" class="fixed top-0 left-0 h-screen w-72 sidebar-gradient text-white z-50 overflow-y-auto mobile-sidebar lg:translate-x-0 shadow-2xl">
+    <nav id="sidebar" class="sidebar-gradient text-white shadow-2xl">
         <!-- Sidebar Header -->
         <div class="flex items-center gap-3 p-6 border-b border-white/10">
             <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
@@ -249,7 +236,7 @@
                 <p class="text-white/60 text-xs font-semibold uppercase tracking-wider mb-3">Navigation</p>
             </div>
             
-            <a href="{% url 'dashboard' %}" class="sidebar-link dashboard flex items-center px-4 py-3 text-white/90 hover:text-white" data-page="dashboard">
+            <a href="{% url 'dashboard:dashboard' %}" class="sidebar-link dashboard flex items-center px-4 py-3 text-white/90 hover:text-white" data-page="dashboard">
                 <i class="fas fa-tachometer-alt w-5"></i>
                 <span class="font-medium ml-3">Tableau de bord</span>
             </a>
@@ -384,7 +371,7 @@
     </nav>
     
     <!-- Main Content -->
-    <div class="lg:ml-72 min-h-screen transition-all duration-300">
+    <div class="main-content min-h-screen transition-all duration-300">
         <!-- Top Navbar -->
         <nav class="glass-effect border-b border-slate-200/60 px-4 lg:px-8 py-4 sticky top-0 z-40">
             <div class="flex items-center justify-between">

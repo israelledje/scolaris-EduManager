@@ -12,7 +12,13 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import os
+from dotenv import load_dotenv
+load_dotenv()
+from decouple import config
 import dj_database_url
+
+SECRET_KEY = os.getenv('SECRET_KEY')
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -22,15 +28,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-fa=k7amo6+22#zltn$uvw%t@q3pe+o@qq@so@6fvnswghfs=67'
+SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 
 ALLOWED_HOSTS = ['*']
-TAILWIND_APP_NAME = 'theme'
-NPM_BIN_PATH = "C:/Program Files/nodejs/npm.cmd"
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -53,8 +58,7 @@ INSTALLED_APPS = [
     'notes',
     'documents',
     'notifications',
-    'tailwind',
-    'theme',
+    
     
     
 ]
@@ -69,8 +73,8 @@ MIDDLEWARE = [
     "django_htmx.middleware.HtmxMiddleware",
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-     'scolaris.middleware.LastVisitedMiddleware',
-    
+    'scolaris.middleware.LastVisitedMiddleware',
+    'scolaris.middleware.AutoLogoutMiddleware',
 ]
 
 ROOT_URLCONF = 'scolaris.urls'
@@ -95,17 +99,19 @@ WSGI_APPLICATION = 'scolaris.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'scolarisdb',
-        'USER': 'admin',
-        'PASSWORD': 'NZafwQNgvSNP7JjLbBXzuVo9GVZn9JqM',
-        'HOST': 'oregon-postgres.render.com',
-        'PORT': '5432',
-    }
+    'default': dj_database_url.parse(config('DATABASE_URL'))
 }
+#DATABASES = {
+#    'default': {
+#        'ENGINE': 'django.db.backends.postgresql',
+#        'NAME': 'scolarisdb',
+#        'USER': 'admin',
+#        'PASSWORD': 'NZafwQNgvSNP7JjLbBXzuVo9GVZn9JqM',
+#        'HOST': 'oregon-postgres.render.com',
+#        'PORT': '5432',
+#    }
+#}
 
 
 # Password validation
@@ -142,6 +148,22 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 LOGIN_URL = '/login/'
+LOGIN_REDIRECT_URL = '/dashboard/'
+LOGOUT_REDIRECT_URL = '/login/'
+
+# Configuration des sessions
+SESSION_COOKIE_AGE = 300  # 5 minutes en secondes
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SESSION_SAVE_EVERY_REQUEST = True
+SESSION_COOKIE_SECURE = False  # Mettre True en production avec HTTPS
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
+
+# Configuration de l'authentification
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+]
+
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'

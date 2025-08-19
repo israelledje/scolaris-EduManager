@@ -22,6 +22,7 @@ from django.conf.urls.static import static
 from django.shortcuts import redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import views as auth_views
+from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 
 def root_redirect(request):
     if not request.user.is_authenticated:
@@ -36,7 +37,7 @@ urlpatterns = [
 
     path('login/', login_view, name='login'),
     path('school/', include('school.urls')),
-    path('dashboard/', include('dashboard.urls')),
+    path('dashboard/', include(('dashboard.urls', 'dashboard'), namespace='dashboard')),
     path('classes/', include(('classes.urls', 'classes'), namespace='classes')),
     path('students/', include(('students.urls', 'students'), namespace='students')),
     path('teachers/', include(('teachers.urls', 'teachers'), namespace='teachers')),
@@ -48,3 +49,4 @@ urlpatterns = [
 ]
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += staticfiles_urlpatterns()

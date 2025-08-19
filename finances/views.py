@@ -47,37 +47,37 @@ def financial_dashboard(request):
     
     try:
         # Récupérer l'année scolaire actuelle
-        current_year = CurrentSchoolYear.objects.first()
+        current_year = SchoolYear.get_active_year()
         if not current_year:
             messages.warning(request, "Aucune année scolaire n'est configurée comme année actuelle.")
             return redirect('school:config_school')
         
         # Statistiques générales
         total_students = Student.objects.filter(
-            current_class__year=current_year.year,
+            current_class__year=current_year,
             is_active=True
         ).count()
         
-        total_fee_structures = FeeStructure.objects.filter(year=current_year.year).count()
+        total_fee_structures = FeeStructure.objects.filter(year=current_year).count()
         
         # Paiements de l'année
         total_payments = TranchePayment.objects.filter(
-            tranche__fee_structure__year=current_year.year
+            tranche__fee_structure__year=current_year
         ).aggregate(total=Sum('amount'))['total'] or 0
         
         total_inscription_payments = InscriptionPayment.objects.filter(
-            fee_structure__year=current_year.year
+            fee_structure__year=current_year
         ).aggregate(total=Sum('amount'))['total'] or 0
         
         total_extra_fee_payments = ExtraFeePayment.objects.filter(
-            extra_fee__year=current_year.year
+            extra_fee__year=current_year
         ).aggregate(total=Sum('amount'))['total'] or 0
         
         total_revenue = total_payments + total_inscription_payments + total_extra_fee_payments
         
         # Calculer le total dû (basé sur les structures de frais)
         total_due = 0
-        fee_structures = FeeStructure.objects.filter(year=current_year.year)
+        fee_structures = FeeStructure.objects.filter(year=current_year)
         for fs in fee_structures:
             # Nombre d'étudiants dans cette classe
             class_students = Student.objects.filter(
@@ -101,7 +101,7 @@ def financial_dashboard(request):
         
         # Récupérer les remises
         total_discounts = FeeDiscount.objects.filter(
-            tranche__fee_structure__year=current_year.year
+            tranche__fee_structure__year=current_year
         ).aggregate(total=Sum('amount'))['total'] or 0
         
         discount_percentage = 0
@@ -110,14 +110,14 @@ def financial_dashboard(request):
         
         # Paiements en retard
         overdue_payments = TranchePayment.objects.filter(
-            tranche__fee_structure__year=current_year.year,
+            tranche__fee_structure__year=current_year,
             tranche__due_date__lt=timezone.now().date(),
             amount__lt=models.F('tranche__amount')
         ).count()
         
         # Moratoires en attente
         pending_moratoriums = Moratorium.objects.filter(
-            student__current_class__year=current_year.year,
+            student__current_class__year=current_year,
             is_approved=False
         ).count()
         
@@ -126,7 +126,7 @@ def financial_dashboard(request):
         
         # Derniers paiements de tranches
         recent_tranche_payments = TranchePayment.objects.filter(
-            tranche__fee_structure__year=current_year.year
+            tranche__fee_structure__year=current_year
         ).select_related('student', 'tranche').order_by('-created_at')[:5]
         
         for payment in recent_tranche_payments:
@@ -140,7 +140,7 @@ def financial_dashboard(request):
         
         # Derniers paiements d'inscription
         recent_inscription_payments = InscriptionPayment.objects.filter(
-            fee_structure__year=current_year.year
+            fee_structure__year=current_year
         ).select_related('student').order_by('-created_at')[:5]
         
         for payment in recent_inscription_payments:
@@ -159,7 +159,7 @@ def financial_dashboard(request):
         # Données pour les graphiques
         # Paiements par mode
         payments_by_mode = TranchePayment.objects.filter(
-            tranche__fee_structure__year=current_year.year
+            tranche__fee_structure__year=current_year
         ).values('mode').annotate(
             total=Sum('amount')
         ).order_by('-total')
@@ -173,7 +173,7 @@ def financial_dashboard(request):
             month_end = month_end.replace(day=1) - timedelta(days=1)
             
             month_total = TranchePayment.objects.filter(
-                tranche__fee_structure__year=current_year.year,
+                tranche__fee_structure__year=current_year,
                 payment_date__range=[month_start, month_end]
             ).aggregate(total=Sum('amount'))['total'] or 0
             
@@ -185,7 +185,7 @@ def financial_dashboard(request):
         payments_by_month.reverse()  # Plus ancien au plus récent
         
         context = {
-            'current_year': current_year.year,
+            'current_year': current_year,
             'total_students': total_students,
             'total_fee_structures': total_fee_structures,
             'total_revenue': total_revenue,
@@ -223,7 +223,7 @@ def student_financial_status(request, student_pk):
         student = get_object_or_404(Student, pk=student_pk, is_active=True)
         
         # Récupérer l'année scolaire actuelle
-        current_year = CurrentSchoolYear.objects.first()
+        current_year = SchoolYear.get_active_year()
         if not current_year:
             messages.warning(request, "Aucune année scolaire n'est configurée comme année actuelle.")
             return redirect('school:config_school')
@@ -231,11 +231,11 @@ def student_financial_status(request, student_pk):
         # Structure de frais de l'étudiant
         fee_structure = FeeStructure.objects.filter(
             school_class=student.current_class,
-            year=current_year.year
+            year=current_year
         ).first()
         
         if not fee_structure:
-            messages.warning(request, f"Aucune structure de frais trouvée pour {student.current_class} - {current_year.year.annee}")
+            messages.warning(request, f"Aucune structure de frais trouvée pour {student.current_class} - {current_year.annee}")
             return redirect('finances:financial_dashboard')
         
         # Paiements de tranches
@@ -253,7 +253,7 @@ def student_financial_status(request, student_pk):
         # Frais annexes
         extra_fee_payments = ExtraFeePayment.objects.filter(
             student=student,
-            extra_fee__year=current_year.year
+            extra_fee__year=current_year
         ).select_related('extra_fee')
         
         # Remises et bourses
@@ -270,7 +270,7 @@ def student_financial_status(request, student_pk):
         
         context = {
             'student': student,
-            'current_year': current_year.year,
+            'current_year': current_year,
             'fee_structure': fee_structure,
             'tranche_payments': tranche_payments,
             'inscription_payment': inscription_payment,
@@ -293,13 +293,13 @@ def reports_dashboard(request):
     logger.info(f"Utilisateur {request.user} accède au tableau de bord des rapports")
     
     try:
-        current_year = CurrentSchoolYear.objects.first()
+        current_year = SchoolYear.get_active_year()
         if not current_year:
             messages.warning(request, "Aucune année scolaire n'est configurée comme année actuelle.")
             return redirect('school:config_school')
         
         context = {
-            'current_year': current_year.year,
+            'current_year': current_year,
         }
         
         return render(request, 'finances/reports_dashboard.html', context)
@@ -316,14 +316,14 @@ def inscriptions_report(request):
     logger.info(f"Utilisateur {request.user} consulte le rapport des inscriptions")
     
     try:
-        current_year = CurrentSchoolYear.objects.first()
+        current_year = SchoolYear.get_active_year()
         if not current_year:
             messages.warning(request, "Aucune année scolaire n'est configurée comme année actuelle.")
             return redirect('finances:reports_dashboard')
         
         # Logique du rapport des inscriptions
         context = {
-            'current_year': current_year.year,
+            'current_year': current_year,
         }
         
         return render(request, 'finances/inscriptions_report.html', context)
@@ -341,7 +341,7 @@ def inscriptions_report_class(request, class_id):
     
     try:
         school_class = get_object_or_404(SchoolClass, pk=class_id)
-        current_year = CurrentSchoolYear.objects.first()
+        current_year = SchoolYear.get_active_year()
         
         if not current_year:
             messages.warning(request, "Aucune année scolaire n'est configurée comme année actuelle.")
@@ -349,7 +349,7 @@ def inscriptions_report_class(request, class_id):
         
         context = {
             'school_class': school_class,
-            'current_year': current_year.year,
+            'current_year': current_year,
         }
         
         return render(request, 'finances/inscriptions_report_class.html', context)
@@ -381,13 +381,13 @@ def tuition_report(request):
     logger.info(f"Utilisateur {request.user} consulte le rapport des scolarités")
     
     try:
-        current_year = CurrentSchoolYear.objects.first()
+        current_year = SchoolYear.get_active_year()
         if not current_year:
             messages.warning(request, "Aucune année scolaire n'est configurée comme année actuelle.")
             return redirect('finances:reports_dashboard')
         
         context = {
-            'current_year': current_year.year,
+            'current_year': current_year,
         }
         
         return render(request, 'finances/tuition_report.html', context)
@@ -405,7 +405,7 @@ def tuition_report_class(request, class_id):
     
     try:
         school_class = get_object_or_404(SchoolClass, pk=class_id)
-        current_year = CurrentSchoolYear.objects.first()
+        current_year = SchoolYear.get_active_year()
         
         if not current_year:
             messages.warning(request, "Aucune année scolaire n'est configurée comme année actuelle.")
@@ -413,7 +413,7 @@ def tuition_report_class(request, class_id):
         
         context = {
             'school_class': school_class,
-            'current_year': current_year.year,
+            'current_year': current_year,
         }
         
         return render(request, 'finances/tuition_report_class.html', context)
@@ -445,13 +445,13 @@ def overdue_report(request):
     logger.info(f"Utilisateur {request.user} consulte le rapport des paiements en retard")
     
     try:
-        current_year = CurrentSchoolYear.objects.first()
+        current_year = SchoolYear.get_active_year()
         if not current_year:
             messages.warning(request, "Aucune année scolaire n'est configurée comme année actuelle.")
             return redirect('finances:reports_dashboard')
         
         context = {
-            'current_year': current_year.year,
+            'current_year': current_year,
         }
         
         return render(request, 'finances/overdue_report.html', context)
@@ -469,7 +469,7 @@ def overdue_report_class(request, class_id):
     
     try:
         school_class = get_object_or_404(SchoolClass, pk=class_id)
-        current_year = CurrentSchoolYear.objects.first()
+        current_year = SchoolYear.get_active_year()
         
         if not current_year:
             messages.warning(request, "Aucune année scolaire n'est configurée comme année actuelle.")
@@ -477,7 +477,7 @@ def overdue_report_class(request, class_id):
         
         context = {
             'school_class': school_class,
-            'current_year': current_year.year,
+            'current_year': current_year,
         }
         
         return render(request, 'finances/overdue_report_class.html', context)
@@ -509,13 +509,13 @@ def performance_report(request):
     logger.info(f"Utilisateur {request.user} consulte le rapport de performance financière")
     
     try:
-        current_year = CurrentSchoolYear.objects.first()
+        current_year = SchoolYear.get_active_year()
         if not current_year:
             messages.warning(request, "Aucune année scolaire n'est configurée comme année actuelle.")
             return redirect('finances:reports_dashboard')
         
         context = {
-            'current_year': current_year.year,
+            'current_year': current_year,
         }
         
         return render(request, 'finances/performance_report.html', context)
@@ -548,7 +548,7 @@ def student_report(request, student_id):
     
     try:
         student = get_object_or_404(Student, pk=student_id, is_active=True)
-        current_year = CurrentSchoolYear.objects.first()
+        current_year = SchoolYear.get_active_year()
         
         if not current_year:
             messages.warning(request, "Aucune année scolaire n'est configurée comme année actuelle.")
@@ -557,7 +557,7 @@ def student_report(request, student_id):
         # Récupérer la structure de frais de l'étudiant
         fee_structure = FeeStructure.objects.filter(
             school_class=student.current_class,
-            year=current_year.year
+            year=current_year
         ).first()
         
         # Calculer les totaux
@@ -568,7 +568,7 @@ def student_report(request, student_id):
         # Paiements d'inscription
         inscription_payments = InscriptionPayment.objects.filter(
             student=student,
-            fee_structure__year=current_year.year
+            fee_structure__year=current_year
         ).select_related('fee_structure')
         
         total_inscription_paid = inscription_payments.aggregate(
@@ -577,7 +577,7 @@ def student_report(request, student_id):
         # Paiements de scolarité (tranches)
         tuition_payments = TranchePayment.objects.filter(
             student=student,
-            tranche__fee_structure__year=current_year.year
+            tranche__fee_structure__year=current_year
         ).select_related('tranche', 'tranche__fee_structure')
         
         total_tuition_paid = tuition_payments.aggregate(
@@ -592,7 +592,7 @@ def student_report(request, student_id):
         # Remises accordées
         discounts = FeeDiscount.objects.filter(
             student=student,
-            tranche__fee_structure__year=current_year.year
+            tranche__fee_structure__year=current_year
         ).select_related('tranche')
         
         total_discounts = discounts.aggregate(
@@ -616,7 +616,7 @@ def student_report(request, student_id):
         
         context = {
             'student': student,
-            'current_year': current_year.year,
+            'current_year': current_year,
             'fee_structure': fee_structure,
             'total_due': total_due,
             'total_paid': total_paid,
@@ -646,7 +646,7 @@ def export_student_report(request, student_id):
     
     try:
         student = get_object_or_404(Student, pk=student_id, is_active=True)
-        current_year = CurrentSchoolYear.objects.first()
+        current_year = SchoolYear.get_active_year()
         
         if not current_year:
             messages.error(request, "Aucune année scolaire n'est configurée comme année actuelle.")
@@ -655,7 +655,7 @@ def export_student_report(request, student_id):
         # Récupérer la structure de frais de l'étudiant
         fee_structure = FeeStructure.objects.filter(
             school_class=student.current_class,
-            year=current_year.year
+            year=current_year
         ).first()
         
         # Calculer les totaux
@@ -666,7 +666,7 @@ def export_student_report(request, student_id):
         # Paiements d'inscription
         inscription_payments = InscriptionPayment.objects.filter(
             student=student,
-            fee_structure__year=current_year.year
+            fee_structure__year=current_year
         ).select_related('fee_structure')
         
         total_inscription_paid = inscription_payments.aggregate(
@@ -675,7 +675,7 @@ def export_student_report(request, student_id):
         # Paiements de scolarité (tranches)
         tuition_payments = TranchePayment.objects.filter(
             student=student,
-            tranche__fee_structure__year=current_year.year
+            tranche__fee_structure__year=current_year
         ).select_related('tranche', 'tranche__fee_structure')
         
         total_tuition_paid = tuition_payments.aggregate(
@@ -690,7 +690,7 @@ def export_student_report(request, student_id):
         # Remises accordées
         discounts = FeeDiscount.objects.filter(
             student=student,
-            tranche__fee_structure__year=current_year.year
+            tranche__fee_structure__year=current_year
         ).select_related('tranche')
         
         total_discounts = discounts.aggregate(
@@ -741,7 +741,7 @@ def export_student_report(request, student_id):
         
         context = {
             'student': student,
-            'current_year': current_year.year,
+            'current_year': current_year,
             'fee_structure': fee_structure,
             'total_due': total_due,
             'total_paid': total_paid,
@@ -776,7 +776,7 @@ def export_student_report(request, student_id):
         
         # Créer la réponse HTTP
         response = HttpResponse(pdf, content_type='application/pdf')
-        response['Content-Disposition'] = f'attachment; filename="rapport_financier_{student.last_name}_{student.first_name}_{current_year.year.annee}.pdf"'
+        response['Content-Disposition'] = f'attachment; filename="rapport_financier_{student.last_name}_{student.first_name}_{current_year.annee}.pdf"'
         
         logger.info(f"PDF du rapport financier généré pour l'étudiant {student} par {request.user}")
         
@@ -2554,7 +2554,7 @@ def extra_fee_payment_receipt_pdf(request, pk):
         'document_header': document_header,
         'logo_url': logo_url,
         'signature_url': signature_url,
-        'current_year': CurrentSchoolYear.objects.first()
+        'current_year': SchoolYear.get_active_year()
     }
     
     # Générer le PDF
