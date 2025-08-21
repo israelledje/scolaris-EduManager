@@ -18,6 +18,7 @@ from subjects.models import Subject
 from school.models import SchoolYear, EducationSystem, SchoolLevel
 import json
 from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.mixins import LoginRequiredMixin
 import re
 
 # Configuration du logger

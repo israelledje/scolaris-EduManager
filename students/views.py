@@ -5,10 +5,13 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.db import models
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
 from .models import Student, StudentClassHistory, Guardian, StudentDocument, Scholarship
 from .forms import StudentForm
 from school.models import SchoolYear
 from classes.models import SchoolClass
+from teachers.models import Teacher
 from django.urls import reverse_lazy
 from finances.models import TranchePayment, FeeDiscount, PaymentRefund, ExtraFee, FeeStructure
 from students.models import Evaluation, Attendance, Sanction
@@ -16,7 +19,7 @@ from django.http import JsonResponse
 from .forms import GuardianForm
 
 # Vue pour afficher la liste des élèves
-class StudentListView(ListView):
+class StudentListView(LoginRequiredMixin, ListView):
     model = Student
     template_name = "students/students_list.html"
     context_object_name = "students"
@@ -95,11 +98,16 @@ class StudentListView(ListView):
             'inactive': inactive_students,
         }
         
+        # Variables pour le sidebar (compatibilité avec le template)
+        context['students_count'] = total_students
+        context['teachers_count'] = Teacher.objects.filter(is_active=True).count()
+        context['classes_count'] = SchoolClass.objects.filter(is_active=True).count()
+        
         return context
 
 # Vues HTMX pour créer, modifier et supprimer un élève via des modales
 
-class StudentCreateHtmxView(View):
+class StudentCreateHtmxView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         form = StudentForm()
         context = {"form": form}
@@ -119,7 +127,7 @@ class StudentCreateHtmxView(View):
             html = render_to_string("students/partials/student_form.html", {"form": form}, request=request)
             return HttpResponse(html)
 
-class StudentUpdateHtmxView(View):
+class StudentUpdateHtmxView(LoginRequiredMixin, View):
     def get(self, request, pk, *args, **kwargs):
         student = get_object_or_404(Student, pk=pk)
         form = StudentForm(instance=student)
@@ -141,7 +149,7 @@ class StudentUpdateHtmxView(View):
             html = render_to_string("students/partials/student_form.html", {"form": form, "student": student}, request=request)
             return HttpResponse(html)
 
-class StudentDeleteHtmxView(View):
+class StudentDeleteHtmxView(LoginRequiredMixin, View):
     def get(self, request, pk, *args, **kwargs):
         student = get_object_or_404(Student, pk=pk)
         html = render_to_string("students/partials/student_confirm_delete.html", {"student": student}, request=request)
@@ -179,7 +187,7 @@ def filter_students(request):
     context = {"students": students, "classes": classes, "years": years}
     return render(request, "students/students_list.html", context)
 
-class StudentDetailView(View):
+class StudentDetailView(LoginRequiredMixin, View):
     def get(self, request, pk, *args, **kwargs):
         student = get_object_or_404(Student, pk=pk)
         
@@ -331,7 +339,7 @@ class StudentDetailView(View):
             years = delta.days // 365
             return f"Il y a {years} an{'s' if years > 1 else ''}"
 
-class StudentHistoryCreateHtmxView(View):
+class StudentHistoryCreateHtmxView(LoginRequiredMixin, View):
     def get(self, request, student_id, *args, **kwargs):
         from .forms import StudentClassHistoryForm
         form = StudentClassHistoryForm(initial={'student': student_id})
@@ -352,7 +360,7 @@ class StudentHistoryCreateHtmxView(View):
             html = render_to_string('students/partials/history_form.html', context, request=request)
             return HttpResponse(html)
 
-class StudentHistoryUpdateHtmxView(View):
+class StudentHistoryUpdateHtmxView(LoginRequiredMixin, View):
     def get(self, request, pk, *args, **kwargs):
         from .forms import StudentClassHistoryForm
         history = get_object_or_404(StudentClassHistory, pk=pk)
@@ -375,7 +383,7 @@ class StudentHistoryUpdateHtmxView(View):
             html = render_to_string('students/partials/history_form.html', context, request=request)
             return HttpResponse(html)
 
-class StudentHistoryDeleteHtmxView(View):
+class StudentHistoryDeleteHtmxView(LoginRequiredMixin, View):
     def get(self, request, pk, *args, **kwargs):
         history = get_object_or_404(StudentClassHistory, pk=pk)
         context = {'history': history}
@@ -392,7 +400,7 @@ class StudentHistoryDeleteHtmxView(View):
 # --- Squelettes minimaux pour tous les modules liés à l'élève ---
 
 # Guardians
-class GuardianCreateHtmxView(View):
+class GuardianCreateHtmxView(LoginRequiredMixin, View):
     def get(self, request, student_id, *args, **kwargs):
         student = get_object_or_404(Student, pk=student_id)
         form = GuardianForm(initial={'student': student})
@@ -417,7 +425,7 @@ class GuardianCreateHtmxView(View):
             html = render_to_string("students/partials/guardian_form.html", context, request=request)
             return HttpResponse(html)
 
-class GuardianUpdateHtmxView(View):
+class GuardianUpdateHtmxView(LoginRequiredMixin, View):
     def get(self, request, pk, *args, **kwargs):
         guardian = get_object_or_404(Guardian, pk=pk)
         form = GuardianForm(instance=guardian)
@@ -440,7 +448,7 @@ class GuardianUpdateHtmxView(View):
             html = render_to_string("students/partials/guardian_form.html", context, request=request)
             return HttpResponse(html)
 
-class GuardianDeleteHtmxView(View):
+class GuardianDeleteHtmxView(LoginRequiredMixin, View):
     def get(self, request, pk, *args, **kwargs):
         guardian = get_object_or_404(Guardian, pk=pk)
         context = {"guardian": guardian, "student": guardian.student}
@@ -458,21 +466,21 @@ class GuardianDeleteHtmxView(View):
         return HttpResponse(html)
 
 # Documents
-class DocumentCreateHtmxView(View):
+class DocumentCreateHtmxView(LoginRequiredMixin, View):
     def get(self, request, student_id, *args, **kwargs):
         # TODO: Afficher le formulaire d'ajout de document
         pass
     def post(self, request, student_id, *args, **kwargs):
         # TODO: Traiter la soumission
         pass
-class DocumentUpdateHtmxView(View):
+class DocumentUpdateHtmxView(LoginRequiredMixin, View):
     def get(self, request, pk, *args, **kwargs):
         # TODO: Afficher le formulaire de modification
         pass
     def post(self, request, pk, *args, **kwargs):
         # TODO: Traiter la soumission
         pass
-class DocumentDeleteHtmxView(View):
+class DocumentDeleteHtmxView(LoginRequiredMixin, View):
     def get(self, request, pk, *args, **kwargs):
         # TODO: Afficher la confirmation de suppression
         pass
@@ -481,21 +489,21 @@ class DocumentDeleteHtmxView(View):
         pass
 
 # TranchePayment
-class TranchePaymentCreateHtmxView(View):
+class TranchePaymentCreateHtmxView(LoginRequiredMixin, View):
     def get(self, request, student_id, *args, **kwargs):
         # TODO: Afficher le formulaire d'ajout de paiement
         pass
     def post(self, request, student_id, *args, **kwargs):
         # TODO: Traiter la soumission
         pass
-class TranchePaymentUpdateHtmxView(View):
+class TranchePaymentUpdateHtmxView(LoginRequiredMixin, View):
     def get(self, request, pk, *args, **kwargs):
         # TODO: Afficher le formulaire de modification
         pass
     def post(self, request, pk, *args, **kwargs):
         # TODO: Traiter la soumission
         pass
-class TranchePaymentDeleteHtmxView(View):
+class TranchePaymentDeleteHtmxView(LoginRequiredMixin, View):
     def get(self, request, pk, *args, **kwargs):
         # TODO: Afficher la confirmation de suppression
         pass
@@ -504,21 +512,21 @@ class TranchePaymentDeleteHtmxView(View):
         pass
 
 # FeeDiscount
-class FeeDiscountCreateHtmxView(View):
+class FeeDiscountCreateHtmxView(LoginRequiredMixin, View):
     def get(self, request, student_id, *args, **kwargs):
         # TODO: Afficher le formulaire d'ajout de remise
         pass
     def post(self, request, student_id, *args, **kwargs):
         # TODO: Traiter la soumission
         pass
-class FeeDiscountUpdateHtmxView(View):
+class FeeDiscountUpdateHtmxView(LoginRequiredMixin, View):
     def get(self, request, pk, *args, **kwargs):
         # TODO: Afficher le formulaire de modification
         pass
     def post(self, request, pk, *args, **kwargs):
         # TODO: Traiter la soumission
         pass
-class FeeDiscountDeleteHtmxView(View):
+class FeeDiscountDeleteHtmxView(LoginRequiredMixin, View):
     def get(self, request, pk, *args, **kwargs):
         # TODO: Afficher la confirmation de suppression
         pass
@@ -527,21 +535,21 @@ class FeeDiscountDeleteHtmxView(View):
         pass
 
 # Scholarship
-class ScholarshipCreateHtmxView(View):
+class ScholarshipCreateHtmxView(LoginRequiredMixin, View):
     def get(self, request, student_id, *args, **kwargs):
         # TODO: Afficher le formulaire d'ajout de bourse
         pass
     def post(self, request, student_id, *args, **kwargs):
         # TODO: Traiter la soumission
         pass
-class ScholarshipUpdateHtmxView(View):
+class ScholarshipUpdateHtmxView(LoginRequiredMixin, View):
     def get(self, request, pk, *args, **kwargs):
         # TODO: Afficher le formulaire de modification
         pass
     def post(self, request, pk, *args, **kwargs):
         # TODO: Traiter la soumission
         pass
-class ScholarshipDeleteHtmxView(View):
+class ScholarshipDeleteHtmxView(LoginRequiredMixin, View):
     def get(self, request, pk, *args, **kwargs):
         # TODO: Afficher la confirmation de suppression
         pass
@@ -550,21 +558,21 @@ class ScholarshipDeleteHtmxView(View):
         pass
 
 # Evaluation
-class EvaluationCreateHtmxView(View):
+class EvaluationCreateHtmxView(LoginRequiredMixin, View):
     def get(self, request, student_id, *args, **kwargs):
         # TODO: Afficher le formulaire d'ajout d'évaluation
         pass
     def post(self, request, student_id, *args, **kwargs):
         # TODO: Traiter la soumission
         pass
-class EvaluationUpdateHtmxView(View):
+class EvaluationUpdateHtmxView(LoginRequiredMixin, View):
     def get(self, request, pk, *args, **kwargs):
         # TODO: Afficher le formulaire de modification
         pass
     def post(self, request, pk, *args, **kwargs):
         # TODO: Traiter la soumission
         pass
-class EvaluationDeleteHtmxView(View):
+class EvaluationDeleteHtmxView(LoginRequiredMixin, View):
     def get(self, request, pk, *args, **kwargs):
         # TODO: Afficher la confirmation de suppression
         pass
@@ -573,21 +581,21 @@ class EvaluationDeleteHtmxView(View):
         pass
 
 # Attendance
-class AttendanceCreateHtmxView(View):
+class AttendanceCreateHtmxView(LoginRequiredMixin, View):
     def get(self, request, student_id, *args, **kwargs):
         # TODO: Afficher le formulaire d'ajout de présence
         pass
     def post(self, request, student_id, *args, **kwargs):
         # TODO: Traiter la soumission
         pass
-class AttendanceUpdateHtmxView(View):
+class AttendanceUpdateHtmxView(LoginRequiredMixin, View):
     def get(self, request, pk, *args, **kwargs):
         # TODO: Afficher le formulaire de modification
         pass
     def post(self, request, pk, *args, **kwargs):
         # TODO: Traiter la soumission
         pass
-class AttendanceDeleteHtmxView(View):
+class AttendanceDeleteHtmxView(LoginRequiredMixin, View):
     def get(self, request, pk, *args, **kwargs):
         # TODO: Afficher la confirmation de suppression
         pass
@@ -596,21 +604,21 @@ class AttendanceDeleteHtmxView(View):
         pass
 
 # Sanction
-class SanctionCreateHtmxView(View):
+class SanctionCreateHtmxView(LoginRequiredMixin, View):
     def get(self, request, student_id, *args, **kwargs):
         # TODO: Afficher le formulaire d'ajout de sanction
         pass
     def post(self, request, student_id, *args, **kwargs):
         # TODO: Traiter la soumission
         pass
-class SanctionUpdateHtmxView(View):
+class SanctionUpdateHtmxView(LoginRequiredMixin, View):
     def get(self, request, pk, *args, **kwargs):
         # TODO: Afficher le formulaire de modification
         pass
     def post(self, request, pk, *args, **kwargs):
         # TODO: Traiter la soumission
         pass
-class SanctionDeleteHtmxView(View):
+class SanctionDeleteHtmxView(LoginRequiredMixin, View):
     def get(self, request, pk, *args, **kwargs):
         # TODO: Afficher la confirmation de suppression
         pass

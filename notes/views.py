@@ -11,6 +11,7 @@ from functools import wraps
 from django.template.loader import render_to_string
 from weasyprint import HTML
 from django.templatetags.static import static
+from django.contrib.auth.mixins import LoginRequiredMixin
 import json
 
 from .models import (

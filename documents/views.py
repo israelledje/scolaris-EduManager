@@ -4,6 +4,7 @@ from django.http import JsonResponse, HttpResponse
 from django.template.loader import render_to_string
 from django.contrib import messages
 from django.db.models import Q
+from django.contrib.auth.mixins import LoginRequiredMixin
 from .models import StudentDocument, DocumentCategory
 from .forms import StudentDocumentForm
 from students.models import Student

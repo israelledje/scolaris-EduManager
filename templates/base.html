@@ -11,7 +11,6 @@
     <link rel="shortcut icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
     <!-- Tailwind CSS -->
     <link rel="stylesheet" href="{% static 'src/dist/styles.css' %}">
-
     
     <!-- htmx.js -->
     <script src="{% static 'js/htmx.min.js' %}"></script>
@@ -208,6 +207,42 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+        
+        /* Styles pour les compteurs du sidebar */
+        .sidebar-link .ml-auto {
+            animation: fadeInScale 0.5s ease-out;
+            transform-origin: center;
+        }
+        
+        @keyframes fadeInScale {
+            0% {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        /* Hover effects pour les compteurs */
+        .sidebar-link:hover .ml-auto {
+            transform: scale(1.1);
+            transition: transform 0.2s ease;
+        }
+        
+        /* Couleurs spécifiques pour chaque type */
+        .sidebar-link.students .ml-auto {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        }
+        
+        .sidebar-link.teachers .ml-auto {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+        }
+        
+        .sidebar-link.classes .ml-auto {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
     </style>
     
     {% block extra_css %}{% endblock %}
@@ -244,18 +279,19 @@
             <a href="{% url 'students:student_list' %}" class="sidebar-link students flex items-center px-4 py-3 text-white/90 hover:text-white" data-page="students">
                 <i class="fas fa-user-graduate w-5"></i>
                 <span class="font-medium ml-3">Étudiants</span>
-                <span class="ml-auto bg-accent-500 text-white text-xs px-2 py-1 rounded-full font-medium">245</span>
+                <span class="ml-auto bg-blue-500 text-white text-xs px-2 py-1 rounded-full font-medium hover:bg-blue-400 transition-colors duration-200" title="{{ students_count }} étudiants actifs">{{ students_count }}</span>
             </a>
             
             <a href="{% url 'teachers:teacher_list' %}" class="sidebar-link teachers flex items-center px-4 py-3 text-white/90 hover:text-white" data-page="teachers">
                 <i class="fas fa-chalkboard-teacher w-5"></i>
                 <span class="font-medium ml-3">Enseignants</span>
-                <span class="ml-auto bg-secondary-500 text-white text-xs px-2 py-1 rounded-full font-medium">32</span>
+                <span class="ml-auto bg-purple-500 text-white text-xs px-2 py-1 rounded-full font-medium hover:bg-purple-400 transition-colors duration-200" title="{{ teachers_count }} enseignants actifs">{{ teachers_count }}</span>
             </a>
             
             <a href="{% url 'classes:schoolclass_list' %}" class="sidebar-link classes flex items-center px-4 py-3 text-white/90 hover:text-white" data-page="classes">
                 <i class="fas fa-door-open w-5"></i>
                 <span class="font-medium ml-3">Classes</span>
+                <span class="ml-auto bg-emerald-500 text-white text-xs px-2 py-1 rounded-full font-medium hover:bg-emerald-400 transition-colors duration-200" title="{{ classes_count }} classes actives">{{ classes_count }}</span>
             </a>
             
             <a href="{% url 'subjects:subject_list'%}" class="sidebar-link subjects flex items-center px-4 py-3 text-white/90 hover:text-white" data-page="subjects">
@@ -459,29 +495,33 @@
                         </button>
                         
                         <!-- User Dropdown Menu -->
-                        <div id="userDropdown" class="dropdown-menu absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg py-2 z-50 border border-slate-200">
-                            <div class="px-4 py-3 border-b border-slate-100">
-                                <p class="text-sm font-semibold text-slate-700">{{ user.get_full_name|default:user.username }}</p>
-                                <p class="text-xs text-slate-500">{{ user.email }}</p>
+                        <div id="userDropdown" class="dropdown-menu absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl py-2 z-50 border border-slate-200/60 backdrop-blur-sm">
+                            <div class="px-4 py-3 border-b border-slate-100 bg-gradient-to-r from-blue-50 to-indigo-50">
+                                <p class="text-sm font-semibold text-slate-800">{{ user.get_full_name|default:user.username }}</p>
+                                <p class="text-xs text-slate-600">{{ user.email }}</p>
+                                <span class="inline-block mt-1 px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded-full font-medium">Administrateur</span>
                             </div>
                             
-                            <a href="#" class="flex items-center px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 transition-colors duration-200">
-                                <i class="fas fa-user mr-3 text-slate-400 w-4"></i>Mon Profil
+                            <a href="#" class="flex items-center px-4 py-3 text-sm text-slate-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-all duration-200 group">
+                                <i class="fas fa-user mr-3 text-slate-400 w-4 group-hover:text-blue-500 transition-colors"></i>Mon Profil
                             </a>
                             
-                            <a href="#" class="flex items-center px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 transition-colors duration-200">
-                                <i class="fas fa-cog mr-3 text-slate-400 w-4"></i>Paramètres
+                            <a href="#" class="flex items-center px-4 py-3 text-sm text-slate-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 transition-all duration-200 group">
+                                <i class="fas fa-cog mr-3 text-slate-400 w-4 group-hover:text-purple-500 transition-colors"></i>Paramètres
                             </a>
                             
-                            <a href="#" class="flex items-center px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 transition-colors duration-200">
-                                <i class="fas fa-question-circle mr-3 text-slate-400 w-4"></i>Aide
+                            <a href="#" class="flex items-center px-4 py-3 text-sm text-slate-700 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 transition-all duration-200 group">
+                                <i class="fas fa-question-circle mr-3 text-slate-400 w-4 group-hover:text-green-500 transition-colors"></i>Aide
                             </a>
                             
                             <hr class="my-2 border-slate-100" />
                             
-                            <a href="#" class="flex items-center px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors duration-200">
-                                <i class="fas fa-sign-out-alt mr-3 w-4"></i>Déconnexion
-                            </a>
+                            <form method="post" action="{% url 'logout' %}" class="block">
+                                {% csrf_token %}
+                                <button type="submit" class="w-full flex items-center px-4 py-3 text-sm text-red-600 hover:bg-gradient-to-r hover:from-red-50 hover:to-pink-50 transition-all duration-200 group font-medium">
+                                    <i class="fas fa-sign-out-alt mr-3 w-4 group-hover:text-red-700 transition-colors"></i>Déconnexion
+                                </button>
+                            </form>
                         </div>
                     </div>
                 </div>
@@ -948,6 +988,59 @@
                     card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
                     observer.observe(card);
                 });
+            }
+            
+            setupRealTimeCounters() {
+                // Rafraîchir les compteurs toutes les 30 secondes
+                setInterval(() => {
+                    this.refreshCounters();
+                }, 30000);
+                
+                // Rafraîchir aussi lors du focus de la fenêtre
+                window.addEventListener('focus', () => {
+                    this.refreshCounters();
+                });
+            }
+            
+            async refreshCounters() {
+                try {
+                    // Faire une requête AJAX pour récupérer les nouveaux compteurs
+                    const response = await fetch('/api/stats/counters/', {
+                        method: 'GET',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        
+                        // Mettre à jour les compteurs avec animation
+                        this.updateCounter('students_count', data.students_count);
+                        this.updateCounter('teachers_count', data.teachers_count);
+                        this.updateCounter('classes_count', data.classes_count);
+                    }
+                } catch (error) {
+                    console.log('Erreur lors du rafraîchissement des compteurs:', error);
+                }
+            }
+            
+            updateCounter(counterName, newValue) {
+                const counterElement = document.querySelector(`[data-counter="${counterName}"]`);
+                if (counterElement) {
+                    const currentValue = parseInt(counterElement.textContent);
+                    if (currentValue !== newValue) {
+                        // Animation de mise à jour
+                        counterElement.style.transform = 'scale(1.2)';
+                        counterElement.style.backgroundColor = '#fbbf24';
+                        
+                        setTimeout(() => {
+                            counterElement.textContent = newValue;
+                            counterElement.style.transform = 'scale(1)';
+                            counterElement.style.backgroundColor = '';
+                        }, 200);
+                    }
+                }
             }
             
             // Utility methods

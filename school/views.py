@@ -3,6 +3,8 @@ from django import forms
 from .models import School, SchoolYear, SchoolType, EducationSystem, Ministry, RegionalDelegation, DocumentHeader, SchoolLevel
 from django.urls import reverse
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
 import json
 
 class SchoolConfigForm(forms.ModelForm):
@@ -26,6 +28,7 @@ class SchoolConfigForm(forms.ModelForm):
             'website': forms.URLInput(attrs={'class': 'block w-full rounded-lg border border-gray-300 py-2 px-3 mb-2 focus:ring-blue-500 focus:border-blue-500'}),
         }
 
+@login_required
 def config_school_view(request):
     # Récupérer l'étape actuelle depuis la session ou par défaut 1
     current_step = request.session.get('config_step', 1)
@@ -213,6 +216,7 @@ def config_school_view(request):
     
     return render(request, 'school/config_school.html', context)
 
+@login_required
 def init_system_view(request):
     """Vue pour afficher la page d'initialisation du système"""
     return render(request, 'school/init_system.html')

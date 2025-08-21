@@ -9,6 +9,8 @@ from django.views.decorators.http import require_POST, require_GET, require_http
 from django.contrib import messages
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.safestring import mark_safe
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
 
 # 07/07/2025 - Vue universelle pour création d'affectation, renvoie le formulaire HTML pour la modale universelle
 

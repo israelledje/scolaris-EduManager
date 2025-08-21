@@ -1,0 +1,291 @@
+# French translations for authentication package.
+# Copyright (C) 2025 THE authentication'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the authentication package.
+msgid ""
+msgstr ""
+"Project-Id-Version: authentication 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-08-20 00:30+0100\n"
+"PO-Revision-Date: 2025-08-20 00:30+0100\n"
+"Last-Translator: \n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: templates/authentication/login.html:175
+msgid "Welcome to Scolaris"
+msgstr "Bienvenue sur Scolaris"
+
+#: templates/authentication/login.html:177
+msgid "Welcome to {school_name}"
+msgstr "Bienvenue au {school_name}"
+
+#: templates/authentication/login.html:179
+msgid "Sign in to your account"
+msgstr "Connectez-vous à votre compte"
+
+#: templates/authentication/login.html:196
+msgid "Email address"
+msgstr "Adresse email"
+
+#: templates/authentication/login.html:203
+msgid "your.email@example.com"
+msgstr "votre.email@exemple.com"
+
+#: templates/authentication/login.html:210
+msgid "Password"
+msgstr "Mot de passe"
+
+#: templates/authentication/login.html:217
+msgid "Your password"
+msgstr "Votre mot de passe"
+
+#: templates/authentication/login.html:230
+msgid "Remember me"
+msgstr "Se souvenir de moi"
+
+#: templates/authentication/login.html:233
+msgid "Forgot password?"
+msgstr "Mot de passe oublié ?"
+
+#: templates/authentication/login.html:245
+msgid "Sign in"
+msgstr "Se connecter"
+
+#: templates/authentication/login.html:268
+msgid "ou continuer avec"
+msgstr "ou continuer avec"
+
+#: templates/authentication/login.html:275
+msgid "Google"
+msgstr "Google"
+
+#: templates/authentication/login.html:280
+msgid "GitHub"
+msgstr "GitHub"
+
+#: templates/authentication/login.html:275
+msgid "Don't have an account?"
+msgstr "Vous n'avez pas de compte ?"
+
+#: templates/authentication/login.html:276
+msgid "Contact administrator"
+msgstr "Contactez l'administrateur"
+
+#: templates/authentication/login.html:277
+msgid "Invalid credentials. Please try again."
+msgstr "Identifiants incorrects. Veuillez réessayer."
+
+#: templates/authentication/login.html:310
+msgid "Votre réussite commence ici"
+msgstr "Votre réussite commence ici"
+
+#: templates/authentication/login.html:312
+msgid "Rejoignez des milliers d'étudiants qui transforment leur apprentissage avec Scolaris. Une plateforme moderne pour un avenir brillant."
+msgstr "Rejoignez des milliers d'étudiants qui transforment leur apprentissage avec Scolaris. Une plateforme moderne pour un avenir brillant."
+
+#: templates/authentication/login.html:323
+msgid "étudiants actifs"
+msgstr "étudiants actifs"
+
+#: templates/authentication/login.html:336
+msgid "satisfaction"
+msgstr "satisfaction"
+
+#: authentication/views.py:32
+msgid "Votre nom D'utilisateur"
+msgstr "Votre nom D'utilisateur"
+
+#: authentication/views.py:39
+msgid "Votre mot de passe"
+msgstr "Votre mot de passe"
+
+#: authentication/views.py:65
+msgid "Nom d'utilisateur ou mot de passe incorrect."
+msgstr "Nom d'utilisateur ou mot de passe incorrect."
+
+#: templates/dashboard/dashboard.html:35
+msgid "Dashboard"
+msgstr "Tableau de bord"
+
+#: templates/dashboard/dashboard.html:36
+msgid "Overview of your school"
+msgstr "Vue d'ensemble de votre établissement scolaire"
+
+#: templates/dashboard/dashboard.html:42
+msgid "Last update:"
+msgstr "Dernière mise à jour:"
+
+#: templates/dashboard/dashboard.html:44
+msgid "Refresh"
+msgstr "Actualiser"
+
+#: templates/dashboard/dashboard.html:52
+msgid "Total Students"
+msgstr "Total Élèves"
+
+#: templates/dashboard/dashboard.html:58
+msgid "this month"
+msgstr "ce mois"
+
+#: templates/dashboard/dashboard.html:66
+msgid "Teachers"
+msgstr "Enseignants"
+
+#: templates/dashboard/dashboard.html:72
+msgid "Satisfaction rate: 94%"
+msgstr "Taux de satisfaction : 94%"
+
+#: templates/dashboard/dashboard.html:80
+msgid "Attendance Rate"
+msgstr "Taux de présence"
+
+#: templates/dashboard/dashboard.html:86
+msgid "vs last month"
+msgstr "vs mois dernier"
+
+#: templates/dashboard/dashboard.html:94
+msgid "Fees Paid"
+msgstr "Frais payés"
+
+#: templates/dashboard/dashboard.html:100
+msgid "recovery rate"
+msgstr "taux de recouvrement"
+
+#: templates/dashboard/dashboard.html:108
+msgid "Student distribution by level"
+msgstr "Répartition des élèves par niveau"
+
+#: templates/dashboard/dashboard.html:114
+msgid "All"
+msgstr "Tous"
+
+#: templates/dashboard/dashboard.html:122
+msgid "Payment evolution"
+msgstr "Évolution des paiements"
+
+#: templates/dashboard/dashboard.html:128
+msgid "Month"
+msgstr "Mois"
+
+#: templates/dashboard/dashboard.html:129
+msgid "Quarter"
+msgstr "Trimestre"
+
+#: templates/dashboard/dashboard.html:130
+msgid "Year"
+msgstr "Année"
+
+#: templates/dashboard/dashboard.html:138
+msgid "Recent activities"
+msgstr "Activités récentes"
+
+#: templates/dashboard/dashboard.html:146
+msgid "New student registered"
+msgstr "Nouvel élève inscrit"
+
+#: templates/dashboard/dashboard.html:154
+msgid "Payment received"
+msgstr "Paiement reçu"
+
+#: templates/dashboard/dashboard.html:156
+msgid "Upcoming events"
+msgstr "Prochains événements"
+
+#: templates/dashboard/dashboard.html:164
+msgid "Parent-teacher meeting"
+msgstr "Réunion parents-professeurs"
+
+#: templates/dashboard/dashboard.html:172
+msgid "End of quarter exams"
+msgstr "Examens de fin de trimestre"
+
+#: templates/dashboard/dashboard.html:180
+msgid "Open house day"
+msgstr "Journée portes ouvertes"
+
+#: templates/dashboard/dashboard.html:187
+msgid "See all events"
+msgstr "Voir tous les événements"
+
+#: templates/dashboard/dashboard.html:195
+msgid "Top 5 students"
+msgstr "Top 5 des élèves"
+
+#: templates/dashboard/dashboard.html:203
+msgid "See complete ranking"
+msgstr "Voir le classement complet"
+
+#: templates/dashboard/dashboard.html:211
+msgid "Alerts"
+msgstr "Alertes"
+
+#: templates/dashboard/dashboard.html:219
+msgid "Payment delay"
+msgstr "Retard de paiement"
+
+#: templates/dashboard/dashboard.html:227
+msgid "Repeated absences"
+msgstr "Absences répétées"
+
+#: templates/dashboard/dashboard.html:235
+msgid "Summons"
+msgstr "Convocations"
+
+#: templates/dashboard/dashboard.html:243
+msgid "See all alerts"
+msgstr "Voir toutes les alertes"
+
+#: templates/dashboard/dashboard.html:251
+msgid "Students with payment delays"
+msgstr "Élèves avec retards de paiement"
+
+#: templates/dashboard/dashboard.html:253
+msgid "Urgent actions"
+msgstr "Actions urgentes"
+
+#: templates/dashboard/dashboard.html:261
+msgid "Student"
+msgstr "Élève"
+
+#: templates/dashboard/dashboard.html:262
+msgid "Class"
+msgstr "Classe"
+
+#: templates/dashboard/dashboard.html:263
+msgid "Amount due"
+msgstr "Montant dû"
+
+#: templates/dashboard/dashboard.html:264
+msgid "Delay"
+msgstr "Retard"
+
+#: templates/dashboard/dashboard.html:265
+msgid "Actions"
+msgstr "Actions"
+
+#: templates/dashboard/dashboard.html:275
+msgid "Contact"
+msgstr "Contacter"
+
+#: templates/dashboard/dashboard.html:276
+msgid "Remind"
+msgstr "Rappeler"
+
+#: templates/dashboard/dashboard.html:284
+msgid "New student"
+msgstr "Nouvel élève"
+
+#: templates/dashboard/dashboard.html:290
+msgid "New teacher"
+msgstr "Nouvel enseignant"
+
+#: templates/dashboard/dashboard.html:296
+msgid "New payment"
+msgstr "Nouveau paiement"
+
+#: templates/dashboard/dashboard.html:302
+msgid "New event"
+msgstr "Nouvel événement"

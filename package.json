@@ -4,8 +4,6 @@
     "tailwindcss": "^4.1.12"
   },
   "scripts": {
-    "build:css": "tailwindcss -i ./static/src/input.css -o ./static/src/dist/styles.css --minify",
-    "watch:css": "tailwindcss -i ./static/src/input.css -o ./static/src/dist/styles.css --watch",
-    "dev:css": "tailwindcss -i ./static/src/input.css -o ./static/src/dist/styles.css"
+    "watch:css": "tailwindcss -i ./static/src/input.css -o ./static/src/dist/styles.css"
   }
 }

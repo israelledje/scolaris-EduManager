@@ -3,6 +3,7 @@ from django.contrib.auth import authenticate, login
 from django.contrib import messages
 from django import forms
 from django.urls import reverse, reverse_lazy
+from django.utils.translation import gettext_lazy as _
 from school.models import School
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, View
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
@@ -16,7 +17,7 @@ class LoginForm(forms.Form):
     username = forms.CharField(
         label="",
         widget=forms.TextInput(attrs={
-            'placeholder': "Votre nom D'utilisateur",
+            'placeholder': _("Nom d'utilisateur ou adresse email"),
             'class': 'mt-1 block w-full rounded-lg border border-gray-300 bg-white/80 py-2 px-3 text-gray-900 shadow-sm focus:border-purple-500 focus:ring-purple-500 sm:text-sm',
             'autocomplete': 'username',
         })
@@ -24,19 +25,53 @@ class LoginForm(forms.Form):
     password = forms.CharField(
         label="",
         widget=forms.PasswordInput(attrs={
-            'placeholder': "Votre mot de passe",
+            'placeholder': _("Votre mot de passe"),
             'class': 'mt-1 block w-full rounded-lg border border-gray-300 bg-white/80 py-2 px-3 text-gray-900 shadow-sm focus:border-purple-500 focus:ring-purple-500 sm:text-sm',
             'autocomplete': 'current-password',
         })
     )
 
 def login_view(request):
+    # Utiliser le logo statique
+    from django.conf import settings
+    from django.templatetags.static import static
+    
+    school_logo = static('images/logo.png')
+    school_name = "Scolaris"
+    
+    try:
+        # Récupérer le nom de l'école s'il existe
+        school = School.objects.first()
+        if school:
+            school_name = school.name
+    except:
+        pass
+    
+    # Détecter la langue de la session ou utiliser le français par défaut
+    language = request.session.get('django_language', 'fr')
+    
     if request.method == 'POST':
         form = LoginForm(request.POST)
         if form.is_valid():
-            username = form.cleaned_data['username']
+            username_or_email = form.cleaned_data['username']
             password = form.cleaned_data['password']
-            user = authenticate(request, username=username, password=password)
+            
+            # Essayer de s'authentifier avec le nom d'utilisateur ou l'email
+            user = None
+            
+            # D'abord, essayer avec le nom d'utilisateur
+            user = authenticate(request, username=username_or_email, password=password)
+            
+            # Si ça ne marche pas, essayer avec l'email
+            if user is None:
+                try:
+                    # Chercher l'utilisateur par email
+                    user_obj = User.objects.get(email=username_or_email)
+                    # Authentifier avec le nom d'utilisateur trouvé
+                    user = authenticate(request, username=user_obj.username, password=password)
+                except User.DoesNotExist:
+                    user = None
+            
             if user is not None:
                 login(request, user)
                 # Redirection selon l'existence de l'établissement
@@ -44,10 +79,16 @@ def login_view(request):
                     return redirect('school:config_school')
                 return redirect(reverse('dashboard:dashboard'))
             else:
-                messages.error(request, "Nom d'utilisateur ou mot de passe incorrect.")
+                messages.error(request, _("Nom d'utilisateur/email ou mot de passe incorrect."))
     else:
         form = LoginForm()
-    return render(request, 'authentication/login.html', {'form': form})
+    
+    context = {
+        'form': form,
+        'school_logo': school_logo,
+        'school_name': school_name,
+    }
+    return render(request, 'authentication/login.html', context)
 
 # Mixin pour vérifier le rôle
 class RoleRequiredMixin(UserPassesTestMixin):

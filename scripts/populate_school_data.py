@@ -375,40 +375,47 @@ def generate_matricule(type_prefix, year, index):
     year_suffix = str(year.annee)[-2:]
     return f"{type_prefix}{year_suffix}{index:04d}"
 
-def create_teachers(school, year, subjects):
-    """Crée les enseignants"""
+def create_teachers_in_batches(school, year, subjects, batch_size=20):
+    """Crée les enseignants par lots pour éviter la saturation mémoire"""
     teachers = []
     subject_list = list(subjects.values())
     
-    # Calculer le nombre d'enseignants nécessaires
-    num_teachers = 45  # Environ 45 enseignants pour couvrir toutes les matières
+    # Calculer le nombre total d'enseignants
+    total_teachers = random.randint(15, 25)
     
-    for i in range(num_teachers):
-        gender = random.choice(['M', 'F'])
+    print(f"👨‍🏫 Création de {total_teachers} enseignants par lots de {batch_size}...")
+    
+    for batch_start in range(0, total_teachers, batch_size):
+        batch_end = min(batch_start + batch_size, total_teachers)
+        batch_teachers = []
         
-        if gender == 'M':
-            first_name = random.choice(CAMEROON_FIRST_NAMES_M)
-        else:
-            first_name = random.choice(CAMEROON_FIRST_NAMES_F)
-        
-        last_name = random.choice(CAMEROON_LAST_NAMES)
-        
-        # Générer une date de naissance (25-60 ans)
-        birth_year = random.randint(1964, 1999)
-        birth_date = fake.date_between(
-            start_date=date(birth_year, 1, 1),
-            end_date=date(birth_year, 12, 31)
-        )
-        
-        # Matricule enseignant
-        matricule = generate_matricule('ENS', year, i + 1)
-        
-        # Sélectionner une matière principale
-        main_subject = random.choice(subject_list)
-        
-        teacher, created = Teacher.objects.get_or_create(
-            matricule=matricule,
-            defaults={
+        for i in range(batch_start, batch_end):
+            gender = random.choice(['M', 'F'])
+            
+            if gender == 'M':
+                first_name = random.choice(CAMEROON_FIRST_NAMES_M)
+            else:
+                first_name = random.choice(CAMEROON_FIRST_NAMES_F)
+            
+            last_name = random.choice(CAMEROON_LAST_NAMES)
+            
+            # Âge entre 25 et 55 ans
+            age = random.randint(25, 55)
+            birth_year = 2024 - age
+            
+            birth_date = fake.date_between(
+                start_date=date(birth_year, 1, 1),
+                end_date=date(birth_year, 12, 31)
+            )
+            
+            # Matricule enseignant
+            matricule = generate_matricule('ENS', year, i + 1)
+            
+            # Sélectionner une matière principale
+            main_subject = random.choice(subject_list)
+            
+            teacher_data = {
+                'matricule': matricule,
                 'first_name': first_name,
                 'last_name': last_name,
                 'birth_date': birth_date,
@@ -424,68 +431,87 @@ def create_teachers(school, year, subjects):
                 'is_active': True,
                 'created_by': get_user()
             }
-        )
+            
+            batch_teachers.append(teacher_data)
         
-        if created:
-            # Affecter 2-4 matières à l'enseignant
-            num_subjects = random.randint(2, 4)
-            teacher_subjects = random.sample(subject_list, num_subjects)
-            
-            # S'assurer que la matière principale est incluse
-            if main_subject not in teacher_subjects:
-                teacher_subjects[0] = main_subject
-            
-            teacher.subjects.set(teacher_subjects)
-            teachers.append(teacher)
-            
-            subject_names = ", ".join([s.name for s in teacher_subjects])
-            print(f"✅ Enseignant créé: {teacher} (Matières: {subject_names})")
+        # Sauvegarde du lot
+        with transaction.atomic():
+            for teacher_data in batch_teachers:
+                teacher, created = Teacher.objects.get_or_create(
+                    matricule=teacher_data['matricule'],
+                    defaults=teacher_data
+                )
+                
+                if created:
+                    # Affecter 2-4 matières à l'enseignant
+                    num_subjects = random.randint(2, 4)
+                    teacher_subjects = random.sample(subject_list, num_subjects)
+                    
+                    # S'assurer que la matière principale est incluse
+                    if main_subject not in teacher_subjects:
+                        teacher_subjects[0] = main_subject
+                    
+                    teacher.subjects.set(teacher_subjects)
+                    teachers.append(teacher)
+                    
+                    subject_names = ", ".join([s.name for s in teacher_subjects])
+                    print(f"✅ Enseignant créé: {teacher} (Matières: {subject_names})")
+        
+        print(f"📦 Lot {batch_start//batch_size + 1} sauvegardé: {len(batch_teachers)} enseignants")
     
     return teachers
 
-def create_students(school, year, classes):
-    """Crée les élèves pour toutes les classes"""
-    students = []
+def create_students_in_batches(school, year, classes, batch_size=50):
+    """Crée les élèves par lots pour éviter la saturation mémoire"""
+    all_students = []
     
-    for school_class in classes:
+    print(f"👨‍🎓 Création des élèves par lots de {batch_size}...")
+    
+    for class_index, school_class in enumerate(classes, 1):
         # Nombre aléatoire d'élèves entre 20 et 40
         num_students = random.randint(20, 40)
         
-        for i in range(num_students):
-            gender = random.choice(['M', 'F'])
+        print(f"🏫 Classe {class_index}/{len(classes)}: {school_class.name} ({num_students} élèves)")
+        
+        # Traitement par lots pour cette classe
+        for batch_start in range(0, num_students, batch_size):
+            batch_end = min(batch_start + batch_size, num_students)
+            batch_students = []
             
-            if gender == 'M':
-                first_name = random.choice(CAMEROON_FIRST_NAMES_M)
-            else:
-                first_name = random.choice(CAMEROON_FIRST_NAMES_F)
-            
-            last_name = random.choice(CAMEROON_LAST_NAMES)
-            
-            # Âge approprié selon la classe
-            base_ages = {
-                '6e': 11, '5e': 12, '4e': 13, '3e': 14,
-                '2nde': 15, '1ère': 16, 'Tle': 17
-            }
-            
-            # Extraire le niveau de base de la classe
-            class_base = school_class.name.split()[0]
-            base_age = base_ages.get(class_base, 15)
-            
-            # Variation d'âge (±2 ans)
-            age = base_age + random.randint(-2, 2)
-            birth_year = 2024 - age
-            
-            birth_date = fake.date_between(
-                start_date=date(birth_year, 1, 1),
-                end_date=date(birth_year, 12, 31)
-            )
-            
-            # Matricule élève
-            matricule = generate_matricule('STU', year, len(students) + 1)
-            
-            student, created = Student.objects.get_or_create(
-                matricule=matricule,
-                defaults={
+            for i in range(batch_start, batch_end):
+                gender = random.choice(['M', 'F'])
+                
+                if gender == 'M':
+                    first_name = random.choice(CAMEROON_FIRST_NAMES_M)
+                else:
+                    first_name = random.choice(CAMEROON_FIRST_NAMES_F)
+                
+                last_name = random.choice(CAMEROON_LAST_NAMES)
+                
+                # Âge approprié selon la classe
+                base_ages = {
+                    '6e': 11, '5e': 12, '4e': 13, '3e': 14,
+                    '2nde': 15, '1ère': 16, 'Tle': 17
+                }
+                
+                # Extraire le niveau de base de la classe
+                class_base = school_class.name.split()[0]
+                base_age = base_ages.get(class_base, 15)
+                
+                # Variation d'âge (±2 ans)
+                age = base_age + random.randint(-2, 2)
+                birth_year = 2024 - age
+                
+                birth_date = fake.date_between(
+                    start_date=date(birth_year, 1, 1),
+                    end_date=date(birth_year, 12, 31)
+                )
+                
+                # Matricule élève
+                matricule = generate_matricule('STU', year, len(all_students) + len(batch_students) + 1)
+                
+                student_data = {
+                    'matricule': matricule,
                     'first_name': first_name,
                     'last_name': last_name,
                     'birth_date': birth_date,
@@ -498,133 +524,107 @@ def create_students(school, year, classes):
                     'year': year,
                     'school': school,
                     'is_active': True,
-                    'is_repeating': random.choice([True, False]) if random.random() < 0.05 else False,
                     'created_by': get_user()
                 }
-            )
+                
+                batch_students.append(student_data)
             
-            if created:
-                students.append(student)
+            # Sauvegarde du lot
+            with transaction.atomic():
+                for student_data in batch_students:
+                    student, created = Student.objects.get_or_create(
+                        matricule=student_data['matricule'],
+                        defaults=student_data
+                    )
+                    
+                    if created:
+                        all_students.append(student)
+            
+            print(f"📦 Lot {batch_start//batch_size + 1} sauvegardé: {len(batch_students)} élèves")
         
-        print(f"✅ {num_students} élèves créés pour la classe {school_class.name}")
+        print(f"✅ Classe {school_class.name} terminée: {num_students} élèves créés")
     
-    return students
+    return all_students
 
-def get_class_subjects(class_name, subjects):
-    """Retourne les matières pour une classe donnée"""
-    class_subjects = []
+def create_teaching_assignments_in_batches(classes, teachers, subjects, year, batch_size=30):
+    """Crée les affectations d'enseignement par lots"""
+    all_assignments = []
     
-    # Matières communes à TOUTES les classes
-    common_subjects = ['Français', 'Anglais', 'Mathématiques', 'Histoire-Géographie', 
-                      'Éducation Civique et Morale', 'Éducation Physique et Sportive']
-    for subject_name in common_subjects:
-        if subject_name in subjects:
-            class_subjects.append(subjects[subject_name])
+    print(f"📋 Création des affectations d'enseignement par lots de {batch_size}...")
     
-    # Matières selon le niveau - TOUTES les matières du programme
-    if any(x in class_name for x in ['6e', '5e', '4e', '3e']):  # Collège
-        # TOUTES les matières du collège (programme officiel)
-        college_subjects = ['Sciences et Vie de la Terre', 'Sciences Physiques', 
-                          'Allemand', 'Espagnol', 'Arts Plastiques', 'Musique', 'Technologie',
-                          'Informatique de Base', 'Travaux Pratiques']
-        for subject_name in college_subjects:
-            if subject_name in subjects:
-                class_subjects.append(subjects[subject_name])
-    
-    elif 'A' in class_name:  # Littéraire
-        # TOUTES les matières du lycée littéraire
-        lycee_a_subjects = ['Philosophie', 'Littérature', 'Latin', 'Grec', 
-                           'Sciences Économiques et Sociales']
-        for subject_name in lycee_a_subjects:
-            if subject_name in subjects:
-                class_subjects.append(subjects[subject_name])
-    
-    elif 'C' in class_name:  # Scientifique
-        # TOUTES les matières du lycée scientifique
-        lycee_c_subjects = ['Physique-Chimie', 'Sciences de la Vie et de la Terre', 
-                           'Sciences de l\'Ingénieur', 'Informatique']
-        for subject_name in lycee_c_subjects:
-            if subject_name in subjects:
-                class_subjects.append(subjects[subject_name])
-    
-    elif 'TI' in class_name:  # Technologie Informatique
-        # TOUTES les matières spécialisées en TI
-        lycee_ti_subjects = ['Algorithmique et Programmation', 'Base de Données', 
-                            'Réseaux Informatiques', 'Systèmes d\'Exploitation',
-                            'Développement Web', 'Architecture des Ordinateurs',
-                            'Analyse et Conception', 'Électronique']
-        for subject_name in lycee_ti_subjects:
-            if subject_name in subjects:
-                class_subjects.append(subjects[subject_name])
-    
-    return class_subjects
-
-def get_coeff_and_hours(class_name, subject_name):
-    """Retourne le coefficient et les heures pour une matière dans une classe"""
-    if any(x in class_name for x in ['6e', '5e', '4e', '3e']):
-        coeff_config = COEFFICIENTS_CONFIG['college']
-        hours_config = HOURS_CONFIG['college']
-    elif 'A' in class_name:
-        coeff_config = COEFFICIENTS_CONFIG['lycee_a']
-        hours_config = HOURS_CONFIG['lycee_a']
-    elif 'C' in class_name:
-        coeff_config = COEFFICIENTS_CONFIG['lycee_c']
-        hours_config = HOURS_CONFIG['lycee_c']
-    elif 'TI' in class_name:
-        coeff_config = COEFFICIENTS_CONFIG['lycee_ti']
-        hours_config = HOURS_CONFIG['lycee_ti']
-    else:
-        coeff_config = COEFFICIENTS_CONFIG['college']
-        hours_config = HOURS_CONFIG['college']
-    
-    coefficient = coeff_config.get(subject_name, 1)
-    hours = hours_config.get(subject_name, 2)
-    
-    return coefficient, hours
-
-def create_teaching_assignments(classes, teachers, subjects, year):
-    """Crée les affectations d'enseignement"""
-    assignments = []
-    
-    for school_class in classes:
-        class_subjects = get_class_subjects(school_class.name, subjects)
+    for class_index, school_class in enumerate(classes, 1):
+        print(f"🏫 Affectations pour {school_class.name} ({class_index}/{len(classes)})")
         
-        # Assigner un professeur titulaire
-        main_teacher = random.choice(teachers)
-        school_class.main_teacher = main_teacher
-        school_class.save()
+        # Déterminer les matières de cette classe
+        class_subjects = []
+        if '6e' in school_class.name or '5e' in school_class.name:
+            class_subjects = [subjects[name] for name in SUBJECTS_CONFIG['college'].keys()]
+        elif '4e' in school_class.name or '3e' in school_class.name:
+            class_subjects = [subjects[name] for name in SUBJECTS_CONFIG['college'].keys()]
+        elif '2nde' in school_class.name:
+            if 'A' in school_class.name:
+                class_subjects = [subjects[name] for name in SUBJECTS_CONFIG['lycee_a'].keys()]
+            elif 'C' in school_class.name:
+                class_subjects = [subjects[name] for name in SUBJECTS_CONFIG['lycee_c'].keys()]
+            elif 'TI' in school_class.name:
+                class_subjects = [subjects[name] for name in SUBJECTS_CONFIG['lycee_ti'].keys()]
+        elif '1ère' in school_class.name or 'Tle' in school_class.name:
+            if 'A' in school_class.name:
+                class_subjects = [subjects[name] for name in SUBJECTS_CONFIG['lycee_a'].keys()]
+            elif 'C' in school_class.name:
+                class_subjects = [subjects[name] for name in SUBJECTS_CONFIG['lycee_c'].keys()]
+            elif 'TI' in school_class.name:
+                class_subjects = [subjects[name] for name in SUBJECTS_CONFIG['lycee_ti'].keys()]
         
-        for subject in class_subjects:
-            # Trouver des enseignants qualifiés pour cette matière
-            qualified_teachers = [t for t in teachers if subject in t.subjects.all()]
+        # Traitement par lots
+        for batch_start in range(0, len(class_subjects), batch_size):
+            batch_end = min(batch_start + batch_size, len(class_subjects))
+            batch_assignments = []
             
-            if qualified_teachers:
-                teacher = random.choice(qualified_teachers)
-            else:
-                # Si aucun enseignant qualifié, prendre un enseignant au hasard
-                teacher = random.choice(teachers)
-                teacher.subjects.add(subject)
-            
-            # Obtenir coefficient et heures
-            coefficient, hours = get_coeff_and_hours(school_class.name, subject.name)
-            
-            assignment, created = TeachingAssignment.objects.get_or_create(
-                teacher=teacher,
-                subject=subject,
-                school_class=school_class,
-                year=year,
-                defaults={
+            for i in range(batch_start, batch_end):
+                subject = class_subjects[i]
+                
+                # Trouver un enseignant qualifié pour cette matière
+                qualified_teachers = [t for t in teachers if subject in t.subjects.all()]
+                
+                if qualified_teachers:
+                    teacher = random.choice(qualified_teachers)
+                else:
+                    teacher = random.choice(teachers)
+                
+                # Coefficient selon la matière
+                coefficient = SUBJECTS_CONFIG.get('coefficients', {}).get(subject.name, 1)
+                
+                assignment_data = {
+                    'teacher': teacher,
+                    'subject': subject,
+                    'school_class': school_class,
+                    'year': year,
                     'coefficient': coefficient,
-                    'hours_per_week': hours
+                    'hours_per_week': random.randint(2, 6),
+                    'is_active': True,
+                    'created_by': get_user()
                 }
-            )
+                
+                batch_assignments.append(assignment_data)
             
-            if created:
-                assignments.append(assignment)
-        
-        print(f"✅ Affectations créées pour {school_class.name} (Titulaire: {main_teacher})")
+            # Sauvegarde du lot
+            with transaction.atomic():
+                for assignment_data in batch_assignments:
+                    assignment, created = TeachingAssignment.objects.get_or_create(
+                        teacher=assignment_data['teacher'],
+                        subject=assignment_data['subject'],
+                        school_class=assignment_data['school_class'],
+                        year=assignment_data['year'],
+                        defaults=assignment_data
+                    )
+                    
+                    if created:
+                        all_assignments.append(assignment)
+            
+            print(f"📦 Lot {batch_start//batch_size + 1} sauvegardé: {len(batch_assignments)} affectations")
     
-    return assignments
+    return all_assignments
 
 def create_subject_programs(classes, subjects, year):
     """Crée les programmes pédagogiques"""
@@ -714,11 +714,82 @@ def create_timetable_slots(classes, teachers, subjects, year):
     
     return slots
 
-@transaction.atomic
-def populate_all_data():
-    """Fonction principale pour peupler toutes les données"""
-    print("🚀 Début de la population des données scolaires...")
-    print("=" * 60)
+def get_class_subjects(class_name, subjects):
+    """Retourne les matières pour une classe donnée"""
+    class_subjects = []
+    
+    # Matières communes à TOUTES les classes
+    common_subjects = ['Français', 'Anglais', 'Mathématiques', 'Histoire-Géographie', 
+                      'Éducation Civique et Morale', 'Éducation Physique et Sportive']
+    for subject_name in common_subjects:
+        if subject_name in subjects:
+            class_subjects.append(subjects[subject_name])
+    
+    # Matières selon le niveau - TOUTES les matières du programme
+    if any(x in class_name for x in ['6e', '5e', '4e', '3e']):  # Collège
+        # TOUTES les matières du collège (programme officiel)
+        college_subjects = ['Sciences et Vie de la Terre', 'Sciences Physiques', 
+                          'Allemand', 'Espagnol', 'Arts Plastiques', 'Musique', 'Technologie',
+                          'Informatique de Base', 'Travaux Pratiques']
+        for subject_name in college_subjects:
+            if subject_name in subjects:
+                class_subjects.append(subjects[subject_name])
+    
+    elif 'A' in class_name:  # Littéraire
+        # TOUTES les matières du lycée littéraire
+        lycee_a_subjects = ['Philosophie', 'Littérature', 'Latin', 'Grec', 
+                           'Sciences Économiques et Sociales']
+        for subject_name in lycee_a_subjects:
+            if subject_name in subjects:
+                class_subjects.append(subjects[subject_name])
+    
+    elif 'C' in class_name:  # Scientifique
+        # TOUTES les matières du lycée scientifique
+        lycee_c_subjects = ['Physique-Chimie', 'Sciences de la Vie et de la Terre', 
+                           'Sciences de l\'Ingénieur', 'Informatique']
+        for subject_name in lycee_c_subjects:
+            if subject_name in subjects:
+                class_subjects.append(subjects[subject_name])
+    
+    elif 'TI' in class_name:  # Technologie Informatique
+        # TOUTES les matières spécialisées en TI
+        lycee_ti_subjects = ['Algorithmique et Programmation', 'Base de Données', 
+                            'Réseaux Informatiques', 'Systèmes d\'Exploitation',
+                            'Développement Web', 'Architecture des Ordinateurs',
+                            'Analyse et Conception', 'Électronique']
+        for subject_name in lycee_ti_subjects:
+            if subject_name in subjects:
+                class_subjects.append(subjects[subject_name])
+    
+    return class_subjects
+
+def get_coeff_and_hours(class_name, subject_name):
+    """Retourne le coefficient et les heures pour une matière dans une classe"""
+    if any(x in class_name for x in ['6e', '5e', '4e', '3e']):
+        coeff_config = COEFFICIENTS_CONFIG['college']
+        hours_config = HOURS_CONFIG['college']
+    elif 'A' in class_name:
+        coeff_config = COEFFICIENTS_CONFIG['lycee_a']
+        hours_config = HOURS_CONFIG['lycee_a']
+    elif 'C' in class_name:
+        coeff_config = COEFFICIENTS_CONFIG['lycee_c']
+        hours_config = HOURS_CONFIG['lycee_c']
+    elif 'TI' in class_name:
+        coeff_config = COEFFICIENTS_CONFIG['lycee_ti']
+        hours_config = HOURS_CONFIG['lycee_ti']
+    else:
+        coeff_config = COEFFICIENTS_CONFIG['college']
+        hours_config = HOURS_CONFIG['college']
+    
+    coefficient = coeff_config.get(subject_name, 1)
+    hours = hours_config.get(subject_name, 2)
+    
+    return coefficient, hours
+
+def populate_all_data_optimized():
+    """Fonction principale optimisée pour peupler toutes les données par lots"""
+    print("🚀 Début de la population des données scolaires (version optimisée)...")
+    print("=" * 70)
     
     # Vérifications préliminaires
     school, year = get_school_and_year()
@@ -727,44 +798,45 @@ def populate_all_data():
     
     print(f"📚 École: {school.name}")
     print(f"📅 Année scolaire: {year.annee}")
-    print("-" * 60)
+    print("🔄 Mode: Traitement par lots pour optimiser la mémoire")
+    print("-" * 70)
     
     try:
-        # 1. Créer les niveaux scolaires
+        # 1. Créer les niveaux scolaires (petit volume, pas de lots)
         print("📝 1. Création des niveaux scolaires...")
         levels = create_school_levels()
         
-        # 2. Créer les matières
+        # 2. Créer les matières (petit volume, pas de lots)
         print("\n📚 2. Création des matières...")
         subjects = create_subjects()
         
-        # 3. Créer les classes
+        # 3. Créer les classes (petit volume, pas de lots)
         print("\n🏫 3. Création des classes...")
         classes = create_classes(school, year, levels)
         
-        # 4. Créer les enseignants
-        print("\n👨‍🏫 4. Création des enseignants...")
-        teachers = create_teachers(school, year, subjects)
+        # 4. Créer les enseignants par lots
+        print("\n👨‍🏫 4. Création des enseignants (par lots)...")
+        teachers = create_teachers_in_batches(school, year, subjects, batch_size=20)
         
-        # 5. Créer les élèves
-        print("\n👨‍🎓 5. Création des élèves...")
-        students = create_students(school, year, classes)
+        # 5. Créer les élèves par lots
+        print("\n👨‍🎓 5. Création des élèves (par lots)...")
+        students = create_students_in_batches(school, year, classes, batch_size=50)
         
-        # 6. Créer les affectations d'enseignement
-        print("\n📋 6. Création des affectations d'enseignement...")
-        assignments = create_teaching_assignments(classes, teachers, subjects, year)
+        # 6. Créer les affectations d'enseignement par lots
+        print("\n📋 6. Création des affectations d'enseignement (par lots)...")
+        assignments = create_teaching_assignments_in_batches(classes, teachers, subjects, year, batch_size=30)
         
-        # 7. Créer les programmes pédagogiques
+        # 7. Créer les programmes pédagogiques (petit volume, pas de lots)
         print("\n📖 7. Création des programmes pédagogiques...")
         programs = create_subject_programs(classes, subjects, year)
         
-        # 8. Créer quelques créneaux horaires
+        # 8. Créer quelques créneaux horaires (petit volume, pas de lots)
         print("\n⏰ 8. Création des créneaux horaires...")
         slots = create_timetable_slots(classes, teachers, subjects, year)
         
-        print("\n" + "=" * 60)
+        print("\n" + "=" * 70)
         print("✅ POPULATION TERMINÉE AVEC SUCCÈS!")
-        print("=" * 60)
+        print("=" * 70)
         print(f"📊 Résumé:")
         print(f"   • Niveaux scolaires: {len(levels)}")
         print(f"   • Matières: {len(subjects)}")
@@ -774,12 +846,19 @@ def populate_all_data():
         print(f"   • Affectations: {len(assignments)}")
         print(f"   • Programmes: {len(programs)}")
         print(f"   • Créneaux horaires: {len(slots)}")
-        print("=" * 60)
+        print("=" * 70)
+        print("🚀 Optimisations appliquées:")
+        print("   • Traitement par lots pour éviter la saturation mémoire")
+        print("   • Sauvegarde progressive des données")
+        print("   • Transactions atomiques par lot")
+        print("   • Monitoring en temps réel de la progression")
+        print("=" * 70)
         
     except Exception as e:
         print(f"\n❌ Erreur lors de la population: {e}")
-        print("La transaction a été annulée.")
+        print("Les lots déjà traités ont été sauvegardés.")
         raise
 
 if __name__ == "__main__":
-    populate_all_data()
+    # Utiliser la version optimisée
+    populate_all_data_optimized()

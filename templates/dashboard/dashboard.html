@@ -1,409 +1,608 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load i18n %}
 
-{% block page_title %}Tableau de bord{% endblock %}
-
-{% block page_actions %}
-<div class="flex items-center gap-3">
-    <button class="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors duration-200">
-        <i class="fas fa-download text-slate-500"></i>
-        <span class="text-slate-700 font-medium">Exporter</span>
-    </button>
-    <button class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl">
-        <i class="fas fa-plus"></i>
-        <span class="font-medium">Nouveau</span>
-    </button>
-</div>
+{% block extra_css %}
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<!-- TailwindCSS local -->
+<link rel="stylesheet" href="{% static 'src/dist/styles.css' %}">
+<style>
+  /* Styles personnalisés pour les cartes de statistiques */
+  .stat-card-blue {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  }
+  .stat-card-green {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  }
+  .stat-card-purple {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  }
+  .stat-card-orange {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  }
+  .stat-card-red {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  }
+  .stat-card-teal {
+    background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+  }
+</style>
 {% endblock %}
 
 {% block content %}
-<!-- Stats Cards -->
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-    <!-- Élèves Card -->
-    <div class="group bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-        <div class="flex items-center justify-between mb-4">
-            <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg">
-                <i class="fas fa-user-graduate text-xl"></i>
-            </div>
-            <div class="text-right">
-                <div class="text-2xl font-bold text-slate-900">{{ total_students }}</div>
-                <div class="text-slate-500 text-sm font-medium">Élèves inscrits</div>
-            </div>
+<div class="min-h-screen bg-gray-50 font-sans">
+  <!-- Header du Dashboard -->
+  <div class="bg-white border-b border-gray-200 px-6 py-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-display font-semibold text-gray-900">Tableau de bord</h1>
+        <p class="text-gray-600 mt-1">Vue d'ensemble de votre établissement scolaire</p>
+      </div>
+      <div class="flex items-center space-x-3">
+        <div class="text-sm text-gray-500">
+          <span class="font-medium">{% trans "Dernière mise à jour:" %}</span>
+          <span id="lastUpdate">{{ "now"|date:"d/m/Y H:i" }}</span>
         </div>
-        
-        <div class="space-y-2">
-            <div class="flex items-center justify-between text-sm">
-                <span class="flex items-center gap-2 text-emerald-600">
-                    <div class="w-2 h-2 bg-emerald-500 rounded-full"></div>
-                    Actifs
-                </span>
-                <span class="font-semibold">{{ active_students }}</span>
-            </div>
-            <div class="flex items-center justify-between text-sm">
-                <span class="flex items-center gap-2 text-red-500">
-                    <div class="w-2 h-2 bg-red-500 rounded-full"></div>
-                    Inactifs
-                </span>
-                <span class="font-semibold">{{ inactive_students }}</span>
-            </div>
-        </div>
-        
-        <div class="mt-4 pt-4 border-t border-slate-100">
-            <div class="flex items-center justify-between text-sm">
-                <div class="flex items-center gap-3">
-                    <span class="flex items-center gap-1 text-blue-600">
-                        <i class="fas fa-mars text-xs"></i>
-                        {{ male_students }}
-                    </span>
-                    <span class="flex items-center gap-1 text-pink-500">
-                        <i class="fas fa-venus text-xs"></i>
-                        {{ female_students }}
-                    </span>
-                </div>
-                <div class="text-slate-400">
-                    <i class="fas fa-arrow-up text-xs"></i>
-                    +5.2%
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Enseignants Card -->
-    <div class="group bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-        <div class="flex items-center justify-between mb-4">
-            <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center text-white shadow-lg">
-                <i class="fas fa-chalkboard-teacher text-xl"></i>
-            </div>
-            <div class="text-right">
-                <div class="text-2xl font-bold text-slate-900">{{ total_teachers }}</div>
-                <div class="text-slate-500 text-sm font-medium">Enseignants</div>
-            </div>
-        </div>
-        
-        <div class="flex items-center justify-between text-sm">
-            <span class="flex items-center gap-2 text-emerald-600">
-                <div class="w-2 h-2 bg-emerald-500 rounded-full"></div>
-                Actifs
-            </span>
-            <span class="font-semibold">{{ active_teachers }}</span>
-        </div>
-        
-        <div class="mt-4 pt-4 border-t border-slate-100">
-            <div class="flex items-center justify-between text-sm">
-                <span class="text-slate-600">Taux d'activité</span>
-                <div class="flex items-center gap-2">
-                    <div class="w-16 h-2 bg-slate-200 rounded-full overflow-hidden">
-                        <div class="h-full bg-gradient-to-r from-purple-500 to-purple-600 rounded-full" style="width: 95%"></div>
-                    </div>
-                    <span class="text-slate-700 font-medium">95%</span>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Classes Card -->
-    <div class="group bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-        <div class="flex items-center justify-between mb-4">
-            <div class="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center text-white shadow-lg">
-                <i class="fas fa-door-open text-xl"></i>
-            </div>
-            <div class="text-right">
-                <div class="text-2xl font-bold text-slate-900">{{ total_classes }}</div>
-                <div class="text-slate-500 text-sm font-medium">Classes</div>
-            </div>
-        </div>
-        
-        <div class="flex items-center justify-between text-sm">
-            <span class="flex items-center gap-2 text-indigo-600">
-                <i class="fas fa-school text-xs"></i>
-                Salles disponibles
-            </span>
-            <span class="font-semibold">{{ total_classrooms }}</span>
-        </div>
-        
-        <div class="mt-4 pt-4 border-t border-slate-100">
-            <div class="flex items-center justify-between text-sm">
-                <span class="text-slate-600">Occupation</span>
-                <div class="flex items-center gap-2">
-                    <div class="w-16 h-2 bg-slate-200 rounded-full overflow-hidden">
-                        <div class="h-full bg-gradient-to-r from-amber-500 to-orange-500 rounded-full" style="width: 78%"></div>
-                    </div>
-                    <span class="text-slate-700 font-medium">78%</span>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Matières Card -->
-    <div class="group bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-        <div class="flex items-center justify-between mb-4">
-            <div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center text-white shadow-lg">
-                <i class="fas fa-book text-xl"></i>
-            </div>
-            <div class="text-right">
-                <div class="text-2xl font-bold text-slate-900">{{ total_subjects }}</div>
-                <div class="text-slate-500 text-sm font-medium">Matières</div>
-            </div>
-        </div>
-        
-        <div class="mt-4 pt-4 border-t border-slate-100">
-            <div class="flex items-center justify-between text-sm">
-                <span class="text-slate-600">Programmes actifs</span>
-                <span class="text-emerald-600 font-semibold">{{ total_subjects }}</span>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Financial Overview -->
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-    <div class="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-6 border border-emerald-200/50">
-        <div class="flex items-center justify-between mb-4">
-            <div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center text-white shadow-lg">
-                <i class="fas fa-coins text-xl"></i>
-            </div>
-            <div class="text-emerald-600 text-sm font-medium bg-emerald-100 px-3 py-1 rounded-full">
-                +12.5%
-            </div>
-        </div>
-        <div class="text-2xl font-bold text-slate-900 mb-1">{{ total_due|floatformat:0 }} FCFA</div>
-        <div class="text-emerald-700 font-medium">Frais attendus</div>
-        <div class="mt-4">
-            <div class="text-xs text-emerald-600 mb-1">Progression mensuelle</div>
-            <div class="w-full h-2 bg-emerald-200 rounded-full overflow-hidden">
-                <div class="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full" style="width: 85%"></div>
-            </div>
-        </div>
-    </div>
-
-    <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200/50">
-        <div class="flex items-center justify-between mb-4">
-            <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center text-white shadow-lg">
-                <i class="fas fa-hand-holding-usd text-xl"></i>
-            </div>
-            <div class="text-blue-600 text-sm font-medium bg-blue-100 px-3 py-1 rounded-full">
-                +8.3%
-            </div>
-        </div>
-        <div class="text-2xl font-bold text-slate-900 mb-1">{{ total_paid|floatformat:0 }} FCFA</div>
-        <div class="text-blue-700 font-medium">Montant payé</div>
-        <div class="mt-4">
-            <div class="text-xs text-blue-600 mb-1">Taux de recouvrement</div>
-            <div class="w-full h-2 bg-blue-200 rounded-full overflow-hidden">
-                <div class="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full" style="width: {{ recovery_rate }}%"></div>
-            </div>
-        </div>
-    </div>
-
-    <div class="bg-gradient-to-br from-red-50 to-rose-50 rounded-2xl p-6 border border-red-200/50">
-        <div class="flex items-center justify-between mb-4">
-            <div class="w-12 h-12 bg-gradient-to-br from-red-500 to-rose-500 rounded-xl flex items-center justify-center text-white shadow-lg">
-                <i class="fas fa-money-bill-wave text-xl"></i>
-            </div>
-            <div class="text-red-600 text-sm font-medium bg-red-100 px-3 py-1 rounded-full">
-                -3.2%
-            </div>
-        </div>
-        <div class="text-2xl font-bold text-slate-900 mb-1">{{ total_remaining|floatformat:0 }} FCFA</div>
-        <div class="text-red-700 font-medium">Reste à payer</div>
-        <div class="mt-4">
-            <div class="text-xs text-red-600 mb-1">Créances en cours</div>
-            <div class="w-full h-2 bg-red-200 rounded-full overflow-hidden">
-                <div class="h-full bg-gradient-to-r from-red-500 to-rose-500 rounded-full" style="width: 28%"></div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Students Distribution -->
-<div class="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6 mb-8">
-    <div class="flex items-center justify-between mb-6">
-        <div>
-            <h3 class="text-xl font-bold text-slate-900">Répartition des élèves par classe</h3>
-            <p class="text-slate-500 text-sm">Distribution actuelle des effectifs</p>
-        </div>
-        <button class="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors duration-200">
-            <i class="fas fa-chart-bar text-slate-500"></i>
-            <span class="text-slate-700 font-medium">Voir graphique</span>
+        <button class="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors">
+          <i class="fas fa-sync-alt mr-2"></i>{% trans "Actualiser" %}
         </button>
+      </div>
     </div>
-    
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {% for item in students_by_class %}
-        <div class="group bg-gradient-to-br from-slate-50 to-slate-100 hover:from-indigo-50 hover:to-purple-50 rounded-xl p-4 transition-all duration-300 hover:shadow-md border border-slate-200/50 hover:border-indigo-200">
-            <div class="flex items-center justify-between mb-3">
-                <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-lg flex items-center justify-center text-white text-sm font-bold">
-                    {{ item.current_classroom__school_class__name|default:'?'|slice:':2' }}
+  </div>
+
+  <div class="px-6 py-6">
+    <!-- Cartes KPI principales -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <!-- Carte Élèves -->
+      <div class="stat-card-blue text-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-blue-100 text-sm font-medium">{% trans "Total Élèves" %}</p>
+            <p class="text-3xl font-bold mt-2">{{ total_students|default:"0" }}</p>
+            <div class="flex items-center mt-3">
+              <span class="text-blue-100 text-sm">+5.2% ce mois</span>
+              <i class="fas fa-arrow-up text-green-300 ml-2"></i>
+            </div>
+          </div>
+          <div class="bg-white/20 p-3 rounded-full">
+            <i class="fas fa-user-graduate text-2xl"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Carte Enseignants -->
+      <div class="stat-card-green text-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-green-100 text-sm font-medium">{% trans "Enseignants" %}</p>
+            <p class="text-3xl font-bold mt-2">{{ total_teachers|default:"0" }}</p>
+            <div class="flex items-center mt-3">
+              <span class="text-green-100 text-sm">{% trans "Taux de satisfaction: 94%" %}</span>
+              <i class="fas fa-chart-line text-green-300 ml-2"></i>
+            </div>
+          </div>
+          <div class="bg-white/20 p-3 rounded-full">
+            <i class="fas fa-chalkboard-teacher text-2xl"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Carte Taux de présence -->
+      <div class="stat-card-purple text-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-purple-100 text-sm font-medium">{% trans "Taux de Présence" %}</p>
+            <p class="text-3xl font-bold mt-2">87%</p>
+            <div class="flex items-center mt-3">
+              <span class="text-purple-100 text-sm">+2.1% vs mois dernier</span>
+              <i class="fas fa-users text-purple-300 ml-2"></i>
+            </div>
+          </div>
+          <div class="bg-white/20 p-3 rounded-full">
+            <i class="fas fa-calendar-check text-2xl"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Carte Paiements -->
+      <div class="stat-card-orange text-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-orange-100 text-sm font-medium">{% trans "Frais Payés" %}</p>
+            <p class="text-3xl font-bold mt-2">{{ recovery_rate|default:"0" }}%</p>
+            <div class="flex items-center mt-3">
+              <span class="text-orange-100 text-sm">{{ total_paid|default:"0"|floatformat:0 }} FCFA reçus</span>
+              <i class="fas fa-coins text-orange-300 ml-2"></i>
+            </div>
+          </div>
+          <div class="bg-white/20 p-3 rounded-full">
+            <i class="fas fa-hand-holding-usd text-2xl"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Graphiques et analyses -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      <!-- Graphique répartition des élèves par niveau -->
+      <div class="bg-white rounded-xl p-6 shadow-lg">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-lg font-semibold text-gray-900">{% trans "Répartition des élèves par niveau" %}</h3>
+          <div class="flex space-x-2">
+            <button class="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200">6ème</button>
+            <button class="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200">5ème</button>
+            <button class="px-3 py-1 text-sm bg-primary-100 text-primary-700 rounded-md">{% trans "Tous" %}</button>
+          </div>
+        </div>
+        <div class="h-80">
+          <canvas id="studentsDistributionChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Graphique évolution des paiements -->
+      <div class="bg-white rounded-xl p-6 shadow-lg">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-lg font-semibold text-gray-900">{% trans "Évolution des paiements" %}</h3>
+          <div class="flex space-x-2">
+            <button class="px-3 py-1 text-sm bg-primary-100 text-primary-700 rounded-md">{% trans "Mois" %}</button>
+            <button class="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200">{% trans "Trimestre" %}</button>
+            <button class="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200">{% trans "Année" %}</button>
+          </div>
+        </div>
+        <div class="h-80">
+          <canvas id="paymentsEvolutionChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Graphiques supplémentaires -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      <!-- Graphique taux de réussite par classe -->
+      <div class="bg-white rounded-xl p-6 shadow-lg">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-lg font-semibold text-gray-900">{% trans "Taux de réussite par classe" %}</h3>
+          <span class="text-sm text-gray-500">{% trans "Moyenne générale" %}</span>
+        </div>
+        <div class="h-80">
+          <canvas id="successRateChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Graphique assiduité mensuelle -->
+      <div class="bg-white rounded-xl p-6 shadow-lg">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-lg font-semibold text-gray-900">{% trans "Assiduité mensuelle" %}</h3>
+          <span class="text-sm text-gray-500">{% trans "Présences/Absences" %}</span>
+        </div>
+        <div class="h-80">
+          <canvas id="attendanceChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section événements et alertes -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+      <!-- Prochains événements -->
+      <div class="bg-white rounded-xl p-6 shadow-lg">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold text-gray-900">{% trans "Prochains événements" %}</h3>
+          <i class="fas fa-calendar-alt text-primary-600"></i>
+        </div>
+        <div class="space-y-4">
+          <div class="flex items-center p-3 bg-blue-50 rounded-lg">
+            <div class="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
+            <div class="flex-1">
+              <p class="text-sm font-medium text-gray-900">{% trans "Réunion parents-professeurs" %}</p>
+              <p class="text-xs text-gray-500">15 Nov - 18h00</p>
+            </div>
+          </div>
+          <div class="flex items-center p-3 bg-green-50 rounded-lg">
+            <div class="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+            <div class="flex-1">
+              <p class="text-sm font-medium text-gray-900">{% trans "Examens de fin de trimestre" %}</p>
+              <p class="text-xs text-gray-500">20-25 Nov</p>
+            </div>
+          </div>
+          <div class="flex items-center p-3 bg-purple-50 rounded-lg">
+            <div class="w-2 h-2 bg-purple-500 rounded-full mr-3"></div>
+            <div class="flex-1">
+              <p class="text-sm font-medium text-gray-900">{% trans "Journée portes ouvertes" %}</p>
+              <p class="text-xs text-gray-500">30 Nov - 14h00</p>
+            </div>
+          </div>
+        </div>
+        <button class="w-full mt-4 text-primary-600 text-sm font-medium hover:text-primary-700">
+          {% trans "Voir tous les événements" %} →
+        </button>
+      </div>
+
+      <!-- Top 5 des élèves excellents -->
+      <div class="bg-white rounded-xl p-6 shadow-lg">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold text-gray-900">{% trans "Top 5 des élèves" %}</h3>
+          <i class="fas fa-trophy text-yellow-500"></i>
+        </div>
+        <div class="space-y-3">
+          <div class="flex items-center justify-between p-2 bg-yellow-50 rounded-lg">
+            <div class="flex items-center">
+              <span class="text-yellow-600 font-bold text-sm mr-2">1</span>
+              <div>
+                <p class="text-sm font-medium text-gray-900">Marie Dubois</p>
+                <p class="text-xs text-gray-500">6ème A</p>
+              </div>
+            </div>
+            <span class="text-lg font-bold text-yellow-600">18.5/20</span>
+          </div>
+          <div class="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+            <div class="flex items-center">
+              <span class="text-gray-600 font-bold text-sm mr-2">2</span>
+              <div>
+                <p class="text-sm font-medium text-gray-900">Thomas Martin</p>
+                <p class="text-xs text-gray-500">5ème B</p>
+              </div>
+            </div>
+            <span class="text-lg font-bold text-gray-600">18.2/20</span>
+          </div>
+          <div class="flex items-center justify-between p-2 bg-orange-50 rounded-lg">
+            <div class="flex items-center">
+              <span class="text-orange-600 font-bold text-sm mr-2">3</span>
+              <div>
+                <p class="text-sm font-medium text-gray-900">Sophie Bernard</p>
+                <p class="text-xs text-gray-500">4ème A</p>
+              </div>
+            </div>
+            <span class="text-lg font-bold text-orange-600">17.8/20</span>
+          </div>
+        </div>
+        <button class="w-full mt-4 text-primary-600 text-sm font-medium hover:text-primary-700">
+          {% trans "Voir le classement complet" %} →
+        </button>
+      </div>
+
+      <!-- Alertes et notifications -->
+      <div class="bg-white rounded-xl p-6 shadow-lg">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold text-gray-900">{% trans "Alertes" %}</h3>
+          <span class="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded-full">3</span>
+        </div>
+        <div class="space-y-3">
+          <div class="flex items-center p-3 bg-red-50 rounded-lg border-l-4 border-red-500">
+            <i class="fas fa-exclamation-triangle text-red-500 mr-3"></i>
+            <div>
+              <p class="text-sm font-medium text-gray-900">{% trans "Retard de paiement" %}</p>
+              <p class="text-xs text-gray-500">5 élèves concernés</p>
+            </div>
+          </div>
+          <div class="flex items-center p-3 bg-yellow-50 rounded-lg border-l-4 border-yellow-500">
+            <i class="fas fa-user-clock text-yellow-500 mr-3"></i>
+            <div>
+              <p class="text-sm font-medium text-gray-900">{% trans "Absences répétées" %}</p>
+              <p class="text-xs text-gray-500">3 élèves concernés</p>
+            </div>
+          </div>
+          <div class="flex items-center p-3 bg-blue-50 rounded-lg border-l-4 border-blue-500">
+            <i class="fas fa-bell text-blue-500 mr-3"></i>
+            <div>
+              <p class="text-sm font-medium text-gray-900">{% trans "Convocations" %}</p>
+              <p class="text-xs text-gray-500">2 parents à contacter</p>
+            </div>
+          </div>
+        </div>
+        <button class="w-full mt-4 text-primary-600 text-sm font-medium hover:text-primary-700">
+          {% trans "Voir toutes les alertes" %} →
+        </button>
+      </div>
+    </div>
+
+    <!-- Tableau des élèves avec retards de paiement -->
+    <div class="bg-white rounded-xl p-6 shadow-lg mb-8">
+      <div class="flex items-center justify-between mb-6">
+        <h3 class="text-lg font-semibold text-gray-900">{% trans "Élèves avec retards de paiement" %}</h3>
+        <button class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors">
+          <i class="fas fa-exclamation-triangle mr-2"></i>{% trans "Actions urgentes" %}
+        </button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{% trans "Élève" %}</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{% trans "Classe" %}</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{% trans "Montant dû" %}</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{% trans "Retard" %}</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{% trans "Actions" %}</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            <tr class="hover:bg-gray-50">
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                  <div class="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
+                    <span class="text-primary-600 font-medium">JD</span>
+                  </div>
+                  <div class="ml-4">
+                    <div class="text-sm font-medium text-gray-900">Jean Dupont</div>
+                    <div class="text-sm text-gray-500">jean.dupont@email.com</div>
+                  </div>
                 </div>
-                <div class="text-2xl font-bold text-slate-900">{{ item.count }}</div>
-            </div>
-            <div class="font-semibold text-slate-700 mb-1">
-                {{ item.current_classroom__school_class__name|default:'Non affecté' }}
-            </div>
-            <div class="text-xs text-slate-500">
-                {% widthratio item.count total_students 100 %}% du total
-            </div>
-            <div class="mt-3 w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                <div class="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-500" 
-                     style="width: {% widthratio item.count total_students 100 %}%"></div>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-</div>
-
-<!-- Recent Payments -->
-<div class="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6">
-    <div class="flex items-center justify-between mb-6">
-        <div>
-            <h3 class="text-xl font-bold text-slate-900">Derniers paiements enregistrés</h3>
-            <p class="text-slate-500 text-sm">Transactions récentes des 7 derniers jours</p>
-        </div>
-        <div class="flex items-center gap-3">
-            <div class="relative">
-                <input type="text" placeholder="Rechercher..." 
-                       class="pl-10 pr-4 py-2 border border-slate-200 rounded-xl bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm">
-                <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 text-sm"></i>
-            </div>
-            <button class="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors duration-200">
-                <i class="fas fa-filter text-slate-500"></i>
-                <span class="text-slate-700 font-medium">Filtrer</span>
-            </button>
-        </div>
-    </div>
-    
-    <div class="overflow-hidden rounded-xl border border-slate-200">
-        <table class="min-w-full">
-            <thead class="bg-slate-50">
-                <tr>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                        <div class="flex items-center gap-2">
-                            Élève
-                            <i class="fas fa-sort text-slate-400"></i>
-                        </div>
-                    </th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                        <div class="flex items-center gap-2">
-                            Tranche
-                            <i class="fas fa-sort text-slate-400"></i>
-                        </div>
-                    </th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                        <div class="flex items-center gap-2">
-                            Montant
-                            <i class="fas fa-sort text-slate-400"></i>
-                        </div>
-                    </th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                        <div class="flex items-center gap-2">
-                            Date
-                            <i class="fas fa-sort text-slate-400"></i>
-                        </div>
-                    </th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                        Statut
-                    </th>
-                </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-slate-200">
-                {% for payment in last_payments %}
-                <tr class="hover:bg-slate-50 transition-colors duration-200">
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <div class="flex items-center">
-                            <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold text-sm mr-3">
-                                {{ payment.student.first_name.0 }}{{ payment.student.last_name.0 }}
-                            </div>
-                            <div>
-                                <div class="text-sm font-semibold text-slate-900">{{ payment.student }}</div>
-                                <div class="text-xs text-slate-500">ID: #{{ payment.student.id }}</div>
-                            </div>
-                        </div>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            {% if payment.tranche %}
-                                Tranche {{ payment.tranche.number }}
-                            {% else %}
-                                Inscription
-                            {% endif %}
-                        </span>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <div class="text-sm font-bold text-slate-900">{{ payment.amount|floatformat:0 }} FCFA</div>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <div class="text-sm text-slate-900">{{ payment.payment_date|date:"d M Y" }}</div>
-                        <div class="text-xs text-slate-500">{{ payment.payment_date|time:"H:i" }}</div>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
-                            <div class="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-2"></div>
-                            Confirmé
-                        </span>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="5" class="px-6 py-12 text-center">
-                        <div class="flex flex-col items-center">
-                            <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-                                <i class="fas fa-receipt text-2xl text-slate-400"></i>
-                            </div>
-                            <h3 class="text-lg font-semibold text-slate-900 mb-2">Aucun paiement récent</h3>
-                            <p class="text-slate-500 text-sm">Les paiements apparaîtront ici une fois enregistrés</p>
-                                    <a href="{% url 'finances:payment_create' %}" class="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors duration-200">
-            Enregistrer un paiement
-        </a>
-                        </div>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">6ème A</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-red-600">75,000 FCFA</td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                  45 jours
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <button class="text-primary-600 hover:text-primary-900 mr-3">{% trans "Contacter" %}</button>
+                <button class="text-red-600 hover:text-red-900">{% trans "Rappeler" %}</button>
+              </td>
+            </tr>
+            <tr class="hover:bg-gray-50">
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                  <div class="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                    <span class="text-green-600 font-medium">ML</span>
+                  </div>
+                  <div class="ml-4">
+                    <div class="text-sm font-medium text-gray-900">Marie Laurent</div>
+                    <div class="text-sm text-gray-500">marie.laurent@email.com</div>
+                  </div>
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">5ème B</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-red-600">60,000 FCFA</td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                  30 jours
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <button class="text-primary-600 hover:text-primary-900 mr-3">{% trans "Contacter" %}</button>
+                <button class="text-red-600 hover:text-red-900">{% trans "Rappeler" %}</button>
+              </td>
+            </tr>
+          </tbody>
         </table>
+      </div>
     </div>
-    
-    {% if last_payments %}
-    <div class="flex items-center justify-between mt-6 pt-6 border-t border-slate-200">
-        <div class="text-sm text-slate-600">
-            Affichage de {{ last_payments|length }} paiement{{ last_payments|length|pluralize }}
+
+    <!-- Bouton d'action flottant -->
+    <div class="fixed bottom-8 right-8 z-50">
+      <div class="relative group">
+        <button class="bg-primary-600 text-white p-4 rounded-full shadow-lg hover:bg-primary-700 transition-all duration-300 group-hover:scale-110">
+          <i class="fas fa-plus text-xl"></i>
+        </button>
+        
+        <!-- Menu d'actions -->
+        <div class="absolute bottom-full right-0 mb-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300">
+          <div class="bg-white rounded-lg shadow-xl p-2 space-y-2 min-w-[200px]">
+            <a href="#" class="flex items-center p-3 text-gray-700 hover:bg-gray-50 rounded-md transition-colors">
+              <i class="fas fa-user-plus text-primary-600 mr-3"></i>
+              <span>{% trans "Nouvel élève" %}</span>
+            </a>
+            <a href="#" class="flex items-center p-3 text-gray-700 hover:bg-gray-50 rounded-md transition-colors">
+              <i class="fas fa-chalkboard-teacher text-green-600 mr-3"></i>
+              <span>{% trans "Nouvel enseignant" %}</span>
+            </a>
+            <a href="#" class="flex items-center p-3 text-gray-700 hover:bg-gray-50 rounded-md transition-colors">
+              <i class="fas fa-money-bill text-yellow-600 mr-3"></i>
+              <span>{% trans "Nouveau paiement" %}</span>
+            </a>
+            <a href="#" class="flex items-center p-3 text-gray-700 hover:bg-gray-50 rounded-md transition-colors">
+              <i class="fas fa-calendar-plus text-purple-600 mr-3"></i>
+              <span>{% trans "Nouvel événement" %}</span>
+            </a>
+          </div>
         </div>
-        <a href="{% url 'finances:payment_list' %}" class="flex items-center gap-2 px-4 py-2 text-indigo-600 hover:text-indigo-700 font-medium transition-colors duration-200">
-            Voir tous les paiements
-            <i class="fas fa-arrow-right"></i>
-        </a>
+      </div>
     </div>
-    {% endif %}
+  </div>
 </div>
 
-<!-- Quick Actions -->
-<div class="fixed bottom-6 right-6 z-30" x-data="{ open: false }">
-    <button @click="open = !open" 
-            class="w-14 h-14 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center">
-        <i class="fas fa-plus text-xl" :class="{ 'rotate-45': open }"></i>
-    </button>
+<!-- Scripts pour les graphiques -->
+<script src="{% static 'js/chart.min.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Configuration commune
+    Chart.defaults.font.family = 'Inter, system-ui, sans-serif';
+    Chart.defaults.color = '#6B7280';
     
-    <div x-show="open" 
-         x-transition:enter="transition ease-out duration-200"
-         x-transition:enter-start="opacity-0 scale-95"
-         x-transition:enter-end="opacity-100 scale-100"
-         x-transition:leave="transition ease-in duration-150"
-         x-transition:leave-start="opacity-100 scale-100"
-         x-transition:leave-end="opacity-0 scale-95"
-         @click.away="open = false"
-         class="absolute bottom-16 right-0 bg-white rounded-xl shadow-lg border border-slate-200 p-2 min-w-48">
-        <a href="{% url 'students:student_create_htmx' %}" class="flex items-center gap-3 px-4 py-3 text-slate-700 hover:bg-slate-50 rounded-lg transition-colors duration-200">
-            <i class="fas fa-user-plus text-indigo-500"></i>
-            Nouvel élève
-        </a>
-        <a href="{% url 'finances:payment_create' %}" class="flex items-center gap-3 px-4 py-3 text-slate-700 hover:bg-slate-50 rounded-lg transition-colors duration-200">
-            <i class="fas fa-money-bill text-emerald-500"></i>
-            Nouveau paiement
-        </a>
-        <a href="{% url 'classes:schoolclass_create_htmx' %}" class="flex items-center gap-3 px-4 py-3 text-slate-700 hover:bg-slate-50 rounded-lg transition-colors duration-200">
-            <i class="fas fa-door-open text-amber-500"></i>
-            Nouvelle classe
-        </a>
-    </div>
-</div>
+    // Graphique répartition des élèves par niveau
+    const studentsCtx = document.getElementById('studentsDistributionChart').getContext('2d');
+    new Chart(studentsCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['6ème', '5ème', '4ème', '3ème', '2nde', '1ère', 'Tle'],
+            datasets: [{
+                data: [45, 52, 48, 43, 38, 35, 32],
+                backgroundColor: [
+                    '#3B82F6', '#10B981', '#8B5CF6', '#F59E0B',
+                    '#EF4444', '#06B6D4', '#EC4899'
+                ],
+                borderWidth: 0,
+                hoverOffset: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 20,
+                        usePointStyle: true,
+                        font: {
+                            size: 12
+                        }
+                    }
+                }
+            }
+        }
+    });
+    
+    // Graphique évolution des paiements
+    const paymentsCtx = document.getElementById('paymentsEvolutionChart').getContext('2d');
+    new Chart(paymentsCtx, {
+        type: 'line',
+        data: {
+            labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'],
+            datasets: [{
+                label: 'Paiements reçus',
+                data: [120000, 190000, 300000, 250000, 200000, 300000, 280000, 320000, 350000, 380000, 400000, 420000],
+                borderColor: '#3B82F6',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4
+            }, {
+                label: 'Objectif mensuel',
+                data: [150000, 200000, 280000, 280000, 280000, 320000, 320000, 350000, 350000, 380000, 400000, 450000],
+                borderColor: '#10B981',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                borderWidth: 3,
+                borderDash: [5, 5],
+                fill: false,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return (value / 1000) + 'k FCFA';
+                        }
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 20,
+                        usePointStyle: true
+                    }
+                }
+            }
+        }
+    });
+    
+    // Graphique taux de réussite par classe
+    const successCtx = document.getElementById('successRateChart').getContext('2d');
+    new Chart(successCtx, {
+        type: 'bar',
+        data: {
+            labels: ['6ème A', '6ème B', '5ème A', '5ème B', '4ème A', '4ème B'],
+            datasets: [{
+                label: 'Moyenne générale',
+                data: [14.2, 13.8, 15.1, 14.5, 13.9, 14.8],
+                backgroundColor: [
+                    'rgba(59, 130, 246, 0.8)',
+                    'rgba(16, 185, 129, 0.8)',
+                    'rgba(139, 92, 246, 0.8)',
+                    'rgba(245, 158, 11, 0.8)',
+                    'rgba(239, 68, 68, 0.8)',
+                    'rgba(6, 182, 212, 0.8)'
+                ],
+                borderColor: [
+                    '#3B82F6', '#10B981', '#8B5CF6', '#F59E0B', '#EF4444', '#06B6D4'
+                ],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 20,
+                    ticks: {
+                        callback: function(value) {
+                            return value + '/20';
+                        }
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+    
+    // Graphique assiduité mensuelle
+    const attendanceCtx = document.getElementById('attendanceChart').getContext('2d');
+    new Chart(attendanceCtx, {
+        type: 'bar',
+        data: {
+            labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun'],
+            datasets: [{
+                label: 'Présences',
+                data: [95, 92, 88, 94, 91, 89],
+                backgroundColor: 'rgba(16, 185, 129, 0.8)',
+                borderColor: '#10B981',
+                borderWidth: 2
+            }, {
+                label: 'Absences',
+                data: [5, 8, 12, 6, 9, 11],
+                backgroundColor: 'rgba(239, 68, 68, 0.8)',
+                borderColor: '#EF4444',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: {
+                        callback: function(value) {
+                            return value + '%';
+                        }
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 20,
+                        usePointStyle: true
+                    }
+                }
+            }
+        }
+    });
+    
+    // Mise à jour de l'heure
+    function updateTime() {
+        const now = new Date();
+        const timeString = now.toLocaleString('fr-FR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        document.getElementById('lastUpdate').textContent = timeString;
+    }
+    
+    updateTime();
+    setInterval(updateTime, 60000); // Mise à jour toutes les minutes
+});
+</script>
 
 {% endblock %}
+{% load static %}

@@ -1,111 +1,430 @@
 {% load static %}
+{% load i18n %}
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="{{ LANGUAGE_CODE|default:'fr' }}">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <!-- Tailwind CSS local -->
-  <link rel="stylesheet" href="{% static 'dist/styles.css' %}" />
+  <meta name="description" content="{% trans 'Plateforme de gestion scolaire moderne et intuitive' %}" />
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS -->
+  <link rel="stylesheet" href="{% static 'src/dist/styles.css' %}" />
+  
   <!-- Font Awesome -->
   <link rel="stylesheet" href="{% static 'fontawesome-free-7.0.0-web/css/all.min.css' %}" />
-  <!-- Alpine.js local -->
-  <script defer src="{% static 'js/alpine.min.js' %}"></script>
-  <title>Connexion | Gestion Scolaire</title>
+  
+  <title>{% trans "Connexion" %} | {{ school_name|default:"Scolaris" }}</title>
+  
+  <style>
+    :root {
+      --royal-blue: #2563eb;
+      --emerald-orange: #f97316;
+      --forest-green: #059669;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    @keyframes fadeIn {
+      from { 
+        opacity: 0; 
+        transform: translateY(20px); 
+      }
+      to { 
+        opacity: 1; 
+        transform: translateY(0); 
+      }
+    }
+    
+    .animate-fadeIn {
+      animation: fadeIn 0.6s ease-out forwards;
+    }
+    
+    @keyframes pulse {
+      0% { opacity: 0.6; }
+      50% { opacity: 0.8; }
+      100% { opacity: 0.6; }
+    }
+    
+    .animate-pulse {
+      animation: pulse 6s infinite;
+    }
+
+    .bg-gradient-to-br {
+      background: linear-gradient(to bottom right, #dbeafe, #e0e7ff);
+    }
+
+    .from-blue-100 {
+      --tw-gradient-from: #dbeafe;
+    }
+
+    .to-indigo-100 {
+      --tw-gradient-to: #e0e7ff;
+    }
+
+    .bg-blue-400 {
+      background-color: #60a5fa;
+    }
+
+    .bg-emerald-orange {
+      background-color: var(--emerald-orange);
+    }
+
+    .bg-forest-green {
+      background-color: var(--forest-green);
+    }
+
+    .text-royal-blue {
+      color: var(--royal-blue);
+    }
+
+    .bg-royal-blue {
+      background-color: var(--royal-blue);
+    }
+
+    .border-royal-blue {
+      border-color: var(--royal-blue);
+    }
+
+    .focus\:ring-royal-blue:focus {
+      --tw-ring-color: var(--royal-blue);
+    }
+
+    .focus\:border-royal-blue:focus {
+      border-color: var(--royal-blue);
+    }
+
+    .hover\:bg-blue-700:hover {
+      background-color: #1d4ed8;
+    }
+
+    .hover\:text-royal-blue:hover {
+      color: var(--royal-blue);
+    }
+
+    .hover\:text-blue-700:hover {
+      color: #1d4ed8;
+    }
+
+    .hover\:bg-gray-50:hover {
+      background-color: #f9fafb;
+    }
+
+    .hover\:scale-105:hover {
+      transform: scale(1.05);
+    }
+
+    .hover\:scale-\[1\.02\]:hover {
+      transform: scale(1.02);
+    }
+
+    .transition-all {
+      transition-property: all;
+      transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+      transition-duration: 150ms;
+    }
+
+    .transition-transform {
+      transition-property: transform;
+      transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+      transition-duration: 150ms;
+    }
+
+    .transition-colors {
+      transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+      transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+      transition-duration: 150ms;
+    }
+
+    .duration-200 {
+      transition-duration: 200ms;
+    }
+
+    .duration-300 {
+      transition-duration: 300ms;
+    }
+
+    .ease-in-out {
+      transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .transform {
+      transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
+    }
+
+    .backdrop-blur-sm {
+      backdrop-filter: blur(4px);
+    }
+
+    .bg-white\/90 {
+      background-color: rgba(255, 255, 255, 0.9);
+    }
+
+    .mix-blend-multiply {
+      mix-blend-mode: multiply;
+    }
+
+    .filter {
+      filter: var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow);
+    }
+
+    .blur-3xl {
+      --tw-blur: blur(64px);
+      filter: var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow);
+    }
+
+    .drop-shadow-lg {
+      --tw-drop-shadow: drop-shadow(0 10px 8px rgb(0 0 0 / 0.04)) drop-shadow(0 4px 3px rgb(0 0 0 / 0.1));
+      filter: var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow);
+    }
+
+    .shadow-2xl {
+      --tw-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+      box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
+    }
+
+    .shadow-lg {
+      --tw-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+      box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
+    }
+
+    .hover\:shadow-xl:hover {
+      --tw-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+      box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .peer:checked ~ .dot {
+      transform: translateX(1.25rem);
+    }
+
+    .peer:checked ~ .block {
+      background-color: var(--royal-blue);
+    }
+
+    .dot {
+      transition: transform 0.3s ease;
+    }
+
+    .block {
+      transition: background-color 0.3s ease;
+    }
+  </style>
 </head>
 <body>
-<!-- Toasts -->
-<div id="toast-container" class="fixed top-4 right-4 z-50">
-    {% if messages %}
-      {% for message in messages %}
-        <div class="toast-message mb-2 px-4 py-3 rounded shadow-lg text-white transition-opacity duration-500
-          {% if message.tags == 'error' %}bg-red-600{% elif message.tags == 'success' %}bg-green-600{% else %}bg-indigo-600{% endif %}"
-          style="opacity: 1;">
-          {{ message }}
+  <div class="fixed inset-0 bg-gradient-to-br from-blue-100 to-indigo-100 overflow-y-auto">
+    <!-- Éléments décoratifs -->
+    <div class="absolute inset-0 overflow-hidden z-0 opacity-20 pointer-events-none">
+      <div class="absolute -top-24 -left-24 w-96 h-96 bg-blue-400 rounded-full mix-blend-multiply filter blur-3xl animate-pulse"></div>
+      <div class="absolute top-1/2 -right-24 w-80 h-80 bg-emerald-orange rounded-full mix-blend-multiply filter blur-3xl animate-pulse" style="animation-delay: 1s;"></div>
+      <div class="absolute -bottom-24 left-1/3 w-72 h-72 bg-forest-green rounded-full mix-blend-multiply filter blur-3xl animate-pulse" style="animation-delay: 2s;"></div>
+    </div>
+
+    <div class="min-h-screen w-full flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative">
+      <div class="max-w-md w-full z-10">
+        <!-- Logo avec animation -->
+        <div class="flex justify-center mb-8 transform hover:scale-105 transition-transform duration-300">
+          {% if school_logo %}
+            <img src="{{ school_logo }}" alt="Logo {{ school_name }}" class="h-16 drop-shadow-lg">
+          {% else %}
+            <div class="h-16 w-16 bg-gradient-to-br from-royal-blue to-blue-600 rounded-2xl flex items-center justify-center drop-shadow-lg">
+              <i class="fas fa-graduation-cap text-2xl text-white"></i>
+            </div>
+          {% endif %}
         </div>
-      {% endfor %}
-    {% endif %}
+
+        <!-- Titre avec animation -->
+        <div class="text-center mb-8">
+          <h2 class="text-3xl font-bold text-gray-900 mb-2">
+            Bienvenue sur <span class="text-royal-blue">{{ school_name|default:"Scolaris" }}</span>
+          </h2>
+          <p class="mt-2 text-sm text-gray-600">
+            Connectez-vous pour accéder à votre compte
+          </p>
+        </div>
+
+        <!-- Formulaire de connexion -->
+        <div class="bg-white py-8 px-8 shadow-2xl rounded-2xl space-y-6 border border-gray-100 backdrop-blur-sm bg-white/90">
+          <!-- Messages d'erreur -->
+          {% if messages %}
+            {% for message in messages %}
+              <div class="rounded-lg bg-red-50 p-4 border-l-4 border-red-400 mb-6">
+                <div class="flex">
+                  <div class="flex-shrink-0">
+                    <i class="fas fa-exclamation-triangle text-red-500 text-lg"></i>
+                  </div>
+                  <div class="ml-3">
+                    <h3 class="text-sm font-medium text-red-800">
+                      Erreur de connexion
+                    </h3>
+                    <div class="mt-2 text-sm text-red-700">
+                      <p>{{ message }}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          {% endif %}
+
+          <form method="post" class="space-y-6">
+            {% csrf_token %}
+            
+            <!-- Champ Email -->
+            <div class="space-y-2">
+              <label for="username" class="block text-sm font-medium text-gray-700">
+                Nom d'utilisateur ou adresse e-mail
+              </label>
+              <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <i class="fas fa-user text-gray-400"></i>
+                </div>
+                <input type="text" name="{{ form.username.name }}" id="username" required
+                       class="appearance-none block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-royal-blue focus:border-royal-blue transition-all duration-200"
+                       placeholder="Nom d'utilisateur ou adresse e-mail">
+              </div>
+            </div>
+
+            <!-- Champ Mot de passe -->
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <label for="password" class="block text-sm font-medium text-gray-700">
+                  Mot de passe
+                </label>
+                <a href="#" class="text-xs font-medium text-royal-blue hover:text-blue-700 transition-colors">
+                  Mot de passe oublié ?
+                </a>
+              </div>
+              <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <i class="fas fa-lock text-gray-400"></i>
+                </div>
+                <input type="password" name="{{ form.password.name }}" id="password" required
+                       class="appearance-none block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-royal-blue focus:border-royal-blue transition-all duration-200"
+                       placeholder="Entrez votre mot de passe">
+                <button type="button" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none transition-colors" id="toggle-password">
+                  <i class="fas fa-eye"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Se souvenir de moi -->
+            <div class="flex items-center">
+              <div class="relative inline-block w-10 mr-2 align-middle select-none">
+                <input type="checkbox" name="remember_me" id="remember_me" 
+                       class="sr-only peer">
+                <div class="block h-6 rounded-full bg-gray-200 cursor-pointer w-11 peer-checked:bg-royal-blue transition-colors duration-300"></div>
+                <div class="dot absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform duration-300 peer-checked:transform peer-checked:translate-x-5"></div>
+              </div>
+              <label for="remember_me" class="text-sm text-gray-700 cursor-pointer select-none">
+                Se souvenir de moi
+              </label>
+            </div>
+
+            <!-- Bouton de connexion -->
+            <div>
+              <button type="submit" 
+                      class="w-full flex justify-center items-center py-3 px-4 rounded-xl text-base font-semibold text-white bg-royal-blue transition-all duration-300 ease-in-out transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-royal-blue shadow-lg hover:shadow-xl hover:bg-blue-700">
+                <i class="fas fa-right-to-bracket mr-2"></i>
+                Se connecter
+              </button>
+            </div>
+          </form>
+
+          <!-- Séparateur -->
+          <div class="relative my-6">
+            <div class="absolute inset-0 flex items-center">
+              <div class="w-full border-t border-gray-200"></div>
+            </div>
+            <div class="relative flex justify-center text-sm">
+              <span class="px-2 bg-white text-gray-500">ou</span>
+            </div>
+          </div>
+
+          <!-- Boutons de connexion sociale -->
+          <div class="grid grid-cols-2 gap-3">
+            <button type="button" class="flex justify-center items-center py-2.5 px-4 rounded-xl border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors duration-200">
+              <i class="fab fa-google text-red-500 mr-2"></i>
+              Google
+            </button>
+            <button type="button" class="flex justify-center items-center py-2.5 px-4 rounded-xl border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors duration-200">
+              <i class="fab fa-facebook text-blue-600 mr-2"></i>
+              Facebook
+            </button>
+          </div>
+
+          <!-- Lien d'inscription -->
+          <div class="text-center mt-6">
+            <p class="text-sm text-gray-600">
+              Pas encore de compte ?
+              <a href="#" class="font-medium text-royal-blue hover:text-blue-700 transition-colors ml-1">
+                Contactez l'administrateur
+              </a>
+            </p>
+          </div>
+        </div>
+
+        <!-- Pied de page -->
+        <div class="mt-8 text-center text-xs text-gray-500">
+          <p>© {% now "Y" %} {{ school_name|default:"Scolaris" }}. Tous droits réservés.</p>
+          <div class="mt-2 space-x-4">
+            <a href="#" class="hover:text-royal-blue transition-colors">Conditions d'utilisation</a>
+            <a href="#" class="hover:text-royal-blue transition-colors">Politique de confidentialité</a>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
-<div
-  class="min-h-screen flex items-center justify-center"
-  style="background: linear-gradient(135deg, #6a82fb 0%, #fc5c7d 100%)"
->
-  <div
-    class="w-full max-w-md mx-auto bg-white rounded-2xl shadow-2xl p-8 flex flex-col items-center"
-  >
-    <h2 class="text-3xl font-bold text-gray-900 mb-6">Connexion</h2>
-    <form method="post" class="w-full space-y-4">
-      {% csrf_token %}
-      <div class="relative">
-        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-        </span>
-        {{ form.username }}
-      </div>
-      <div class="relative">
-        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+  <script>
+    // Toggle password visibility
+    document.addEventListener('DOMContentLoaded', function() {
+      const toggleButton = document.getElementById('toggle-password');
+      if (toggleButton) {
+        toggleButton.addEventListener('click', function(e) {
+          e.preventDefault();
+          const passwordInput = document.getElementById('password');
+          const currentType = passwordInput.getAttribute('type');
           
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M12 15v2m0-6v2m-6 4v-2a4 4 0 014-4h4a4 4 0 014 4v2"
-            />
-          </svg>
-        </span>
-        {{ form.password }}
-      </div>
-      <div class="flex justify-between items-center text-sm">
-        <div></div>
-        <a href="#" class="text-xs text-blue-600 hover:underline"
-          >Forgot password?</a
-        >
-      </div>
-      <button
-        type="submit"
-        class="w-full py-2 px-4 rounded-full font-semibold text-white shadow-md transition bg-gradient-to-r from-blue-400 to-pink-400 hover:from-blue-500 hover:to-pink-500"
-      >
-        LOGIN
-      </button>
-    </form>
-    <div class="flex items-center my-4 w-full">
-      <div class="flex-grow border-t border-gray-300"></div>
-      <span class="mx-2 text-gray-400 text-xs">Or Sign Up Using</span>
-      <div class="flex-grow border-t border-gray-300"></div>
-    </div>
-    <div class="flex justify-center gap-4 w-full mb-2">
-      <a
-        href="#"
-        class="w-10 h-10 flex items-center justify-center rounded-full bg-blue-800 text-white"
-        ><i class="fab fa-facebook-f"></i
-      ></a>
-      <a
-        href="#"
-        class="w-10 h-10 flex items-center justify-center rounded-full bg-blue-400 text-white"
-        ><i class="fab fa-twitter"></i
-      ></a>
-      <a
-        href="#"
-        class="w-10 h-10 flex items-center justify-center rounded-full bg-red-500 text-white"
-        ><i class="fab fa-google"></i
-      ></a>
-    </div>
-    <div class="text-center mt-2 text-sm text-gray-500">
-      Or Sign Up Using
-      <a href="#" class="text-blue-600 hover:underline font-semibold"
-        >SIGN UP</a
-      >
-    </div>
-  </div>
-</div>
-
-<script>
-    // Disparition automatique des toasts après 3 secondes
-    window.addEventListener('DOMContentLoaded', () => {
-      setTimeout(() => {
-        document.querySelectorAll('.toast-message').forEach(el => {
-          el.style.opacity = '0';
+          if (currentType === 'password') {
+            passwordInput.setAttribute('type', 'text');
+            toggleButton.querySelector('i').classList.remove('fa-eye');
+            toggleButton.querySelector('i').classList.add('fa-eye-slash');
+          } else {
+            passwordInput.setAttribute('type', 'password');
+            toggleButton.querySelector('i').classList.remove('fa-eye-slash');
+            toggleButton.querySelector('i').classList.add('fa-eye');
+          }
         });
-      }, 3000);
+      }
+
+      // Animation d'entrée pour le formulaire
+      const loginForm = document.querySelector('.max-w-md');
+      if (loginForm) {
+        loginForm.classList.add('animate-fadeIn');
+      }
     });
   </script>
 </body>

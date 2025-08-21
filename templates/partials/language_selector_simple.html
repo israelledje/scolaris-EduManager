@@ -1,0 +1,103 @@
+{% load i18n %}
+<div class="language-selector-simple">
+  <form method="post" action="{% url 'set_language' %}" class="inline">
+    {% csrf_token %}
+    <input name="next" type="hidden" value="{{ request.path }}">
+    
+    <div class="language-buttons">
+      <button type="submit" name="language" value="fr" 
+              class="language-btn {% if LANGUAGE_CODE == 'fr' or LANGUAGE_CODE == 'fr-fr' %}active{% endif %}">
+        🇫🇷 Français
+      </button>
+      
+      <button type="submit" name="language" value="en" 
+              class="language-btn {% if LANGUAGE_CODE == 'en' or LANGUAGE_CODE == 'en-us' %}active{% endif %}">
+        🇬🇧 English
+      </button>
+    </div>
+  </form>
+</div>
+
+<style>
+.language-selector-simple {
+  display: inline-block;
+}
+
+.language-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.language-btn {
+  padding: 0.75rem 1rem;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  color: #374151;
+  font-family: system-ui, -apple-system, sans-serif;
+  min-width: 120px;
+  text-align: center;
+}
+
+.language-btn:hover {
+  border-color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.95);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.language-btn:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 4px rgba(99, 102, 246, 0.2);
+}
+
+.language-btn.active {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: white;
+  border-color: #6366f1;
+  box-shadow: 0 8px 25px rgba(99, 102, 246, 0.3);
+}
+
+.language-btn.active:hover {
+  background: linear-gradient(135deg, #5855eb, #7c3aed);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(99, 102, 246, 0.4);
+}
+
+/* Animation d'apparition */
+.language-selector-simple {
+  animation: fadeInDown 0.6s ease-out;
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .language-buttons {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  
+  .language-btn {
+    min-width: 100px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+  }
+}
+</style>

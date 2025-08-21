@@ -13,18 +13,35 @@ from classes.models import SchoolClass, TimetableSlot
 from school.models import SchoolYear
 from students.models import Student
 from django.views.decorators.http import require_POST, require_GET
+from django.contrib.auth.mixins import LoginRequiredMixin
 
 # Liste des matières
 
 def subject_list(request):
     subjects = Subject.objects.all().prefetch_related('teachers')
     teachers = Teacher.objects.all()
-    # Pour chaque matière, on prépare les enseignants principaux
-    subject_main_teachers = {subject.id: Teacher.objects.filter(main_subject=subject) for subject in subjects}
+    
+    # Préparer les enseignants principaux pour chaque matière
+    # Format: {subject_id: [teacher1, teacher2, ...]}
+    subject_main_teachers = {}
+    for subject in subjects:
+        main_teachers = Teacher.objects.filter(main_subject=subject)
+        subject_main_teachers[subject.id] = list(main_teachers)
+    
+    # Ajouter les variables pour le sidebar (compatibilité avec le template)
+    from students.models import Student
+    from classes.models import SchoolClass
+    subject_main_teachers['students_count'] = Student.objects.filter(is_active=True).count()
+    subject_main_teachers['teachers_count'] = Teacher.objects.filter(is_active=True).count()
+    subject_main_teachers['classes_count'] = SchoolClass.objects.filter(is_active=True).count()
+    
     return render(request, 'subjects/subject_list.html', {
         'subjects': subjects,
         'teachers': teachers,
         'subject_main_teachers': subject_main_teachers,
+        'students_count': subject_main_teachers['students_count'],
+        'teachers_count': subject_main_teachers['teachers_count'],
+        'classes_count': subject_main_teachers['classes_count'],
     })
 
 # Détail d'une matière

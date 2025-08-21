@@ -1,0 +1,167 @@
+{% load i18n %}
+<div class="language-selector-advanced" x-data="{ 
+  open: false, 
+  currentLang: '{% if LANGUAGE_CODE == 'en' or LANGUAGE_CODE == 'en-us' %}en{% else %}fr{% endif %}',
+  serverLang: '{% if LANGUAGE_CODE == 'en' or LANGUAGE_CODE == 'en-us' %}en{% else %}fr{% endif %}'
+}" x-init="currentLang = serverLang">
+  <!-- Bouton principal -->
+  <button @click="open = !open" class="language-button">
+    <span x-show="currentLang === 'fr'" class="language-option">
+      🇫🇷 <span class="hidden sm:inline">Français</span>
+    </span>
+    <span x-show="currentLang === 'en'" class="language-option">
+      🇬🇧 <span class="hidden sm:inline">English</span>
+    </span>
+    <svg class="chevron" :class="{ 'rotate-180': open }" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+    </svg>
+  </button>
+
+  <!-- Menu déroulant -->
+  <div x-show="open" @click.away="open = false" x-transition class="language-menu">
+    <form method="post" action="{% url 'set_language' %}" @submit="open = false">
+      {% csrf_token %}
+      <input name="next" type="hidden" value="{{ request.path }}">
+      
+      <button type="submit" name="language" value="fr" 
+              class="language-menu-item" 
+              :class="{ 'active': serverLang === 'fr' }">
+        🇫🇷 Français
+        <span x-show="serverLang === 'fr'" class="checkmark">✓</span>
+      </button>
+      
+      <button type="submit" name="language" value="en" 
+              class="language-menu-item"
+              :class="{ 'active': serverLang === 'en' }">
+        🇬🇧 English
+        <span x-show="serverLang === 'en'" class="checkmark">✓</span>
+      </button>
+    </form>
+  </div>
+</div>
+
+<style>
+.language-selector-advanced {
+  position: relative;
+  display: inline-block;
+}
+
+.language-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  color: #374151;
+  min-width: 120px;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.language-button:hover {
+  border-color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.95);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.language-button:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 4px rgba(99, 102, 246, 0.2);
+}
+
+.language-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.chevron {
+  width: 1rem;
+  height: 1rem;
+  transition: transform 0.2s ease;
+  margin-left: auto;
+}
+
+.language-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0.5rem;
+  background: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  z-index: 50;
+  min-width: 160px;
+}
+
+.language-menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-size: 0.9rem;
+  color: #374151;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.language-menu-item:hover {
+  background-color: #f9fafb;
+}
+
+.language-menu-item.active {
+  background-color: #f3f4f6;
+  color: #6366f1;
+  font-weight: 600;
+}
+
+.checkmark {
+  color: #10b981;
+  font-weight: bold;
+}
+
+/* Animation d'apparition */
+.language-selector-advanced {
+  animation: fadeInDown 0.6s ease-out;
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .language-button {
+    min-width: 60px;
+    padding: 0.5rem 0.75rem;
+  }
+  
+  .language-menu {
+    right: 0;
+    left: auto;
+  }
+}
+</style>
