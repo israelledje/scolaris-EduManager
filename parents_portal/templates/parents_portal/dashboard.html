@@ -1,0 +1,335 @@
+{% extends 'parents_portal/base.html' %}
+{% load static %}
+
+{% block title %}Tableau de Bord - Portail Parents{% endblock %}
+{% block page_title %}Tableau de Bord{% endblock %}
+{% block breadcrumb_current %}Tableau de bord{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+    <!-- Cartes de statistiques principales -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- Mes Enfants -->
+        <div class="card-modern p-6 text-center group hover:scale-105 transition-transform duration-300">
+            <div class="w-16 h-16 bg-gradient-to-br from-blue-100 to-blue-200 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:shadow-lg transition-shadow duration-300">
+                <i class="fas fa-user-graduate text-2xl text-blue-600"></i>
+            </div>
+            <h3 class="text-2xl font-bold text-gray-900 mb-2">{{ students_count|default:"0" }}</h3>
+            <p class="text-gray-600 font-medium">Mes Enfants</p>
+            <div class="mt-4">
+                <a href="{% url 'parents_portal:student_list' %}" class="text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors duration-200">
+                    Voir détails <i class="fas fa-arrow-right ml-1"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Moyenne Générale -->
+        <div class="card-modern p-6 text-center group hover:scale-105 transition-transform duration-300">
+            <div class="w-16 h-16 bg-gradient-to-br from-emerald-100 to-emerald-200 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:shadow-lg transition-shadow duration-300">
+                <i class="fas fa-chart-line text-2xl text-emerald-600"></i>
+            </div>
+            <h3 class="text-2xl font-bold text-gray-900 mb-2">{{ average_grade|default:"--" }}/20</h3>
+            <p class="text-gray-600 font-medium">Moyenne Générale</p>
+            <div class="mt-4">
+                <a href="#" class="text-emerald-600 hover:text-emerald-700 text-sm font-medium transition-colors duration-200">
+                    Voir bulletins <i class="fas fa-arrow-right ml-1"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Paiements en attente -->
+        <div class="card-modern p-6 text-center group hover:scale-105 transition-transform duration-300">
+            <div class="w-16 h-16 bg-gradient-to-br from-amber-100 to-amber-200 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:shadow-lg transition-shadow duration-300">
+                <i class="fas fa-clock text-2xl text-amber-600"></i>
+            </div>
+            <h3 class="text-2xl font-bold text-gray-900 mb-2">{{ pending_payments|default:"0" }}</h3>
+            <p class="text-gray-600 font-medium">Paiements en attente</p>
+            <div class="mt-4">
+                <a href="{% url 'parents_portal:financial_overview' %}" class="text-amber-600 hover:text-amber-700 text-sm font-medium transition-colors duration-200">
+                    Gérer <i class="fas fa-arrow-right ml-1"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Nouvelles notifications -->
+        <div class="card-modern p-6 text-center group hover:scale-105 transition-transform duration-300">
+            <div class="w-16 h-16 bg-gradient-to-br from-red-100 to-red-200 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:shadow-lg transition-shadow duration-300">
+                <i class="fas fa-bell text-2xl text-red-600"></i>
+            </div>
+            <h3 class="text-2xl font-bold text-gray-900 mb-2">{{ unread_notifications|default:"0" }}</h3>
+            <p class="text-gray-600 font-medium">Nouvelles notifications</p>
+            <div class="mt-4">
+                <a href="{% url 'parents_portal:notifications' %}" class="text-red-600 hover:text-red-700 text-sm font-medium transition-colors duration-200">
+                    Voir tout <i class="fas fa-arrow-right ml-1"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section Mes Enfants et Dernières Notes -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Mes Enfants -->
+        <div class="card-modern">
+            <div class="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
+                <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                    <i class="fas fa-user-graduate text-blue-600 mr-3"></i>
+                    Mes Enfants
+                </h3>
+            </div>
+            <div class="p-6">
+                {% if students %}
+                    <div class="space-y-4">
+                        {% for student in students %}
+                        <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors duration-200">
+                            <div class="flex items-center space-x-4">
+                                <div class="w-12 h-12 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl flex items-center justify-center">
+                                    <i class="fas fa-user-graduate text-blue-600"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold text-gray-900">{{ student.first_name }} {{ student.last_name }}</h4>
+                                    <p class="text-sm text-gray-600">{{ student.current_class.name|default:"Classe non définie" }}</p>
+                                    <p class="text-xs text-gray-500">Matricule: {{ student.matricule|default:"Non défini" }}</p>
+                                </div>
+                            </div>
+                            <a href="{% url 'parents_portal:student_detail' student.id %}" class="btn-primary text-sm px-4 py-2">
+                                Voir détails
+                            </a>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-8">
+                        <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-user-graduate text-gray-400 text-xl"></i>
+                        </div>
+                        <p class="text-gray-500">Aucun enfant enregistré</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Dernières Notes -->
+        <div class="card-modern">
+            <div class="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-emerald-50 to-green-50">
+                <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                    <i class="fas fa-chart-line text-emerald-600 mr-3"></i>
+                    Dernières Notes
+                </h3>
+            </div>
+            <div class="p-6">
+                {% if recent_grades %}
+                    <div class="space-y-4">
+                        {% for grade in recent_grades %}
+                        <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                            <div class="flex items-center space-x-4">
+                                <div class="w-10 h-10 bg-gradient-to-br from-emerald-100 to-emerald-200 rounded-lg flex items-center justify-center">
+                                    <span class="font-bold text-emerald-600">{{ grade.grade }}/20</span>
+                                </div>
+                                <div>
+                                    <h4 class="font-medium text-gray-900">{{ grade.subject.name }}</h4>
+                                    <p class="text-sm text-gray-600">{{ grade.student.first_name }} {{ grade.student.last_name }}</p>
+                                    <p class="text-xs text-gray-500">{{ grade.date|date:"d/m/Y" }}</p>
+                                </div>
+                            </div>
+                            <span class="text-xs px-2 py-1 bg-emerald-100 text-emerald-700 rounded-full font-medium">
+                                {{ grade.evaluation_type }}
+                            </span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-8">
+                        <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-chart-line text-gray-400 text-xl"></i>
+                        </div>
+                        <p class="text-gray-500">Aucune note récente</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Section Échéances de Paiement -->
+    <div class="card-modern">
+        <div class="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-green-50 to-emerald-50">
+            <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                <i class="fas fa-calendar-check text-green-600 mr-3"></i>
+                Échéances de Paiement
+            </h3>
+        </div>
+        <div class="p-6">
+            {% if payment_deadlines %}
+                <div class="space-y-4">
+                    {% for deadline in payment_deadlines %}
+                    <div class="flex items-center justify-between p-4 {% if deadline.is_overdue %}bg-red-50 border border-red-200{% elif deadline.is_due_soon %}bg-amber-50 border border-amber-200{% else %}bg-green-50 border border-green-200{% endif %} rounded-xl">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-10 h-10 {% if deadline.is_overdue %}bg-red-100{% elif deadline.is_due_soon %}bg-amber-100{% else %}bg-green-100{% endif %} rounded-lg flex items-center justify-center">
+                                {% if deadline.is_overdue %}
+                                    <i class="fas fa-exclamation-triangle text-red-600"></i>
+                                {% elif deadline.is_due_soon %}
+                                    <i class="fas fa-clock text-amber-600"></i>
+                                {% else %}
+                                    <i class="fas fa-check text-green-600"></i>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <h4 class="font-medium text-gray-900">{{ deadline.name }}</h4>
+                                <p class="text-sm text-gray-600">{{ deadline.student.first_name }} {{ deadline.student.last_name }}</p>
+                                <p class="text-xs text-gray-500">
+                                    Échéance: {{ deadline.due_date|date:"d/m/Y" }}
+                                    {% if deadline.days_until_due > 0 %}
+                                        (dans {{ deadline.days_until_due }} jour(s))
+                                    {% elif deadline.days_until_due < 0 %}
+                                        (en retard de {% widthratio deadline.days_until_due -1 1 %} jour(s))
+                                    {% else %}
+                                        (aujourd'hui)
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-lg font-bold text-gray-900">{{ deadline.amount }} FCFA</p>
+                            {% if deadline.status != 'PAID' %}
+                                <a href="{% url 'parents_portal:make_payment' deadline.student.id deadline.id %}" class="btn-primary text-sm px-4 py-2 mt-2 inline-block">
+                                    Payer maintenant
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-12">
+                    <div class="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <i class="fas fa-check text-green-600 text-4xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-green-800 mb-2">Aucune échéance de paiement</h3>
+                    <p class="text-green-600">Tous vos paiements sont à jour</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Section Notifications Récentes -->
+    <div class="card-modern">
+        <div class="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-purple-50 to-pink-50">
+            <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                <i class="fas fa-bell text-purple-600 mr-3"></i>
+                Notifications Récentes
+            </h3>
+        </div>
+        <div class="p-6">
+            {% if recent_notifications %}
+                <div class="space-y-4">
+                    {% for notification in recent_notifications %}
+                    <div class="flex items-center justify-between p-4 {% if not notification.is_read %}bg-blue-50 border border-blue-200{% else %}bg-gray-50{% endif %} rounded-xl">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-10 h-10 {% if not notification.is_read %}bg-blue-100{% else %}bg-gray-100{% endif %} rounded-lg flex items-center justify-center">
+                                <i class="fas fa-bell {% if not notification.is_read %}text-blue-600{% else %}text-gray-400{% endif %}"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-medium text-gray-900">{{ notification.title }}</h4>
+                                <p class="text-sm text-gray-600">{{ notification.message }}</p>
+                                <p class="text-xs text-gray-500">{{ notification.created_at|date:"d/m/Y H:i" }}</p>
+                            </div>
+                        </div>
+                        {% if not notification.is_read %}
+                            <span class="w-3 h-3 bg-blue-500 rounded-full"></span>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="mt-6 text-center">
+                    <a href="{% url 'parents_portal:notifications' %}" class="btn-primary">
+                        Voir toutes les notifications
+                    </a>
+                </div>
+            {% else %}
+                <div class="text-center py-12">
+                    <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <i class="fas fa-bell text-gray-400 text-4xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-600 mb-2">Aucune notification</h3>
+                    <p class="text-gray-500">Vous êtes à jour avec toutes vos notifications</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Section Actions Rapides -->
+    <div class="card-modern">
+        <div class="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-indigo-50 to-blue-50">
+            <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                <i class="fas fa-bolt text-indigo-600 mr-3"></i>
+                Actions Rapides
+            </h3>
+        </div>
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <a href="{% url 'parents_portal:student_list' %}" class="group p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl hover:from-blue-100 hover:to-indigo-100 transition-all duration-300 hover:scale-105">
+                    <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-3 group-hover:bg-blue-200 transition-colors duration-300">
+                        <i class="fas fa-user-graduate text-blue-600 text-xl"></i>
+                    </div>
+                    <h4 class="font-semibold text-gray-900 mb-1">Gérer mes enfants</h4>
+                    <p class="text-sm text-gray-600">Voir les informations académiques</p>
+                </a>
+
+                <a href="{% url 'parents_portal:financial_overview' %}" class="group p-4 bg-gradient-to-br from-emerald-50 to-green-50 rounded-xl hover:from-emerald-100 hover:to-green-100 transition-all duration-300 hover:scale-105">
+                    <div class="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center mb-3 group-hover:bg-emerald-200 transition-colors duration-300">
+                        <i class="fas fa-money-bill-wave text-emerald-600 text-xl"></i>
+                    </div>
+                    <h4 class="font-semibold text-gray-900 mb-1">Finances</h4>
+                    <p class="text-sm text-gray-600">Gérer les paiements</p>
+                </a>
+
+                <a href="{% url 'parents_portal:notifications' %}" class="group p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl hover:from-purple-100 hover:to-pink-100 transition-all duration-300 hover:scale-105">
+                    <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mb-3 group-hover:bg-purple-200 transition-colors duration-300">
+                        <i class="fas fa-bell text-purple-600 text-xl"></i>
+                    </div>
+                    <h4 class="font-semibold text-gray-900 mb-1">Notifications</h4>
+                    <p class="text-sm text-gray-600">Voir les alertes</p>
+                </a>
+
+                <a href="{% url 'parents_portal:profile' %}" class="group p-4 bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl hover:from-amber-100 hover:to-orange-100 transition-all duration-300 hover:scale-105">
+                    <div class="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center mb-3 group-hover:bg-amber-200 transition-colors duration-300">
+                        <i class="fas fa-user-cog text-amber-600 text-xl"></i>
+                    </div>
+                    <h4 class="font-semibold text-gray-900 mb-1">Mon Profil</h4>
+                    <p class="text-sm text-gray-600">Modifier mes informations</p>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Animation des cartes au chargement
+        const cards = document.querySelectorAll('.card-modern');
+        cards.forEach((card, index) => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            
+            setTimeout(() => {
+                card.style.transition = 'all 0.6s ease';
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, index * 100);
+        });
+        
+        // Effet hover sur les cartes de statistiques
+        const statCards = document.querySelectorAll('.card-modern');
+        statCards.forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-8px) scale(1.02)';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0) scale(1)';
+            });
+        });
+    });
+</script>
+{% endblock %}

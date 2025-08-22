@@ -1,0 +1,452 @@
+{% extends 'parents_portal/base.html' %}
+{% load static %}
+
+{% block title %}Notifications - Portail Parents{% endblock %}
+{% block page_title %}Notifications{% endblock %}
+{% block breadcrumb_current %}Notifications{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- En-tête avec statistiques -->
+    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h2 class="text-xl font-semibold text-blue-900 mb-2">Centre de Notifications</h2>
+                <p class="text-blue-700">Restez informé des dernières nouvelles concernant vos enfants</p>
+            </div>
+            <div class="flex items-center space-x-6">
+                <div class="text-center">
+                    <p class="text-2xl font-bold text-blue-900">{{ unread_count|default:"0" }}</p>
+                    <p class="text-blue-600 text-sm">Non lues</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-2xl font-bold text-blue-900">{{ total_count|default:"0" }}</p>
+                    <p class="text-blue-600 text-sm">Total</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Filtres et actions -->
+    <div class="card-hover bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6">
+        <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <select id="typeFilter" class="px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">Tous les types</option>
+                    <option value="BULLETIN">Bulletins</option>
+                    <option value="PAYMENT">Paiements</option>
+                    <option value="REMINDER">Rappels</option>
+                    <option value="GENERAL">Général</option>
+                </select>
+                
+                <select id="statusFilter" class="px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">Tous les statuts</option>
+                    <option value="unread">Non lues</option>
+                    <option value="read">Lues</option>
+                </select>
+                
+                <div class="relative">
+                    <input type="text" id="searchInput" placeholder="Rechercher..." 
+                           class="pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-2">
+                <button id="markAllReadBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                    <i class="fas fa-check-double mr-2"></i>
+                    Tout marquer comme lu
+                </button>
+                <button id="clearAllBtn" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors duration-200">
+                    <i class="fas fa-trash mr-2"></i>
+                    Tout effacer
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Liste des notifications -->
+    {% if notifications %}
+        <div class="space-y-4">
+            {% for notification in notifications %}
+            <div class="card-hover bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden {% if not notification.is_read %}ring-2 ring-blue-200{% endif %}">
+                <div class="p-6">
+                    <div class="flex items-start space-x-4">
+                        <!-- Icône de type -->
+                        <div class="w-12 h-12 {% if not notification.is_read %}bg-blue-100{% else %}bg-slate-100{% endif %} rounded-xl flex items-center justify-center flex-shrink-0">
+                            {% if notification.notification_type == 'BULLETIN' %}
+                                <i class="fas fa-file-alt text-blue-600"></i>
+                            {% elif notification.notification_type == 'PAYMENT' %}
+                                <i class="fas fa-money-bill-wave text-green-600"></i>
+                            {% elif notification.notification_type == 'REMINDER' %}
+                                <i class="fas fa-clock text-amber-600"></i>
+                            {% else %}
+                                <i class="fas fa-info-circle text-slate-600"></i>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Contenu de la notification -->
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-start justify-between mb-2">
+                                <h3 class="text-lg font-semibold text-slate-900 {% if not notification.is_read %}font-bold{% endif %}">
+                                    {{ notification.title }}
+                                </h3>
+                                <div class="flex items-center space-x-2">
+                                    {% if not notification.is_read %}
+                                        <span class="w-3 h-3 bg-blue-500 rounded-full"></span>
+                                    {% endif %}
+                                    <span class="text-sm text-slate-500">{{ notification.created_at|timesince }} ago</span>
+                                </div>
+                            </div>
+                            
+                            <p class="text-slate-600 mb-3">{{ notification.message }}</p>
+                            
+                            <!-- Métadonnées -->
+                            <div class="flex items-center space-x-4 text-sm text-slate-500">
+                                <span class="flex items-center">
+                                    <i class="fas fa-tag mr-2"></i>
+                                    {{ notification.get_notification_type_display }}
+                                </span>
+                                
+                                {% if notification.student %}
+                                <span class="flex items-center">
+                                    <i class="fas fa-user-graduate mr-2"></i>
+                                    {{ notification.student.first_name }} {{ notification.student.last_name }}
+                                </span>
+                                {% endif %}
+                                
+                                <span class="flex items-center">
+                                    <i class="fas fa-calendar mr-2"></i>
+                                    {{ notification.created_at|date:"d/m/Y à H:i" }}
+                                </span>
+                            </div>
+                            
+                            <!-- Actions -->
+                            <div class="flex items-center space-x-3 mt-4">
+                                {% if not notification.is_read %}
+                                <button onclick="markAsRead('{{ notification.id }}')" 
+                                        class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                                    <i class="fas fa-check mr-2"></i>
+                                    Marquer comme lu
+                                </button>
+                                {% endif %}
+                                
+                                {% if notification.notification_type == 'BULLETIN' and notification.bulletin %}
+                                <a href="{% url 'parents_portal:bulletin_view' notification.bulletin.id %}" 
+                                   class="px-4 py-2 bg-emerald-600 text-white text-sm rounded-lg hover:bg-emerald-700 transition-colors duration-200">
+                                    <i class="fas fa-eye mr-2"></i>
+                                    Voir le bulletin
+                                </a>
+                                {% endif %}
+                                
+                                {% if notification.notification_type == 'PAYMENT' %}
+                                <a href="{% url 'parents_portal:financial_overview' %}" 
+                                   class="px-4 py-2 bg-amber-600 text-white text-sm rounded-lg hover:bg-amber-700 transition-colors duration-200">
+                                    <i class="fas fa-credit-card mr-2"></i>
+                                    Voir les finances
+                                </a>
+                                {% endif %}
+                                
+                                <button onclick="deleteNotification('{{ notification.id }}')" 
+                                        class="px-3 py-2 bg-slate-100 text-slate-700 text-sm rounded-lg hover:bg-slate-200 transition-colors duration-200">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <div class="card-hover bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6">
+            <div class="flex items-center justify-between">
+                <div class="text-sm text-slate-600">
+                    Affichage de {{ page_obj.start_index }} à {{ page_obj.end_index }} sur {{ page_obj.paginator.count }} notifications
+                </div>
+                
+                <div class="flex items-center space-x-2">
+                    {% if page_obj.has_previous %}
+                        <a href="?page=1" class="px-3 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors duration-200">
+                            <i class="fas fa-angle-double-left"></i>
+                        </a>
+                        <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors duration-200">
+                            <i class="fas fa-angle-left"></i>
+                        </a>
+                    {% endif %}
+                    
+                    <span class="px-3 py-2 bg-blue-600 text-white rounded-lg">
+                        Page {{ page_obj.number }} sur {{ page_obj.paginator.num_pages }}
+                    </span>
+                    
+                    {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors duration-200">
+                            <i class="fas fa-angle-right"></i>
+                        </a>
+                        <a href="?page={{ page_obj.paginator.num_pages }}" class="px-3 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors duration-200">
+                            <i class="fas fa-angle-double-right"></i>
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+    {% else %}
+        <!-- État vide -->
+        <div class="card-hover bg-white rounded-2xl shadow-sm border border-slate-200/60 p-12 text-center">
+            <div class="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i class="fas fa-bell text-slate-400 text-3xl"></i>
+            </div>
+            <h3 class="text-2xl font-bold text-slate-900 mb-3">Aucune notification</h3>
+            <p class="text-slate-600 text-lg mb-8 max-w-md mx-auto">
+                Vous n'avez actuellement aucune notification. 
+                Les nouvelles notifications apparaîtront ici automatiquement.
+            </p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="{% url 'parents_portal:dashboard' %}" 
+                   class="bg-blue-600 text-white font-semibold py-3 px-8 rounded-xl hover:bg-blue-700 transition-colors duration-200">
+                    <i class="fas fa-arrow-left mr-2"></i>
+                    Retour au tableau de bord
+                </a>
+                <button onclick="refreshNotifications()" 
+                        class="bg-slate-100 text-slate-700 font-semibold py-3 px-8 rounded-xl hover:bg-slate-200 transition-colors duration-200">
+                    <i class="fas fa-sync-alt mr-2"></i>
+                    Actualiser
+                </button>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Animation des cartes au chargement
+        const cards = document.querySelectorAll('.card-hover');
+        cards.forEach((card, index) => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            
+            setTimeout(() => {
+                card.style.transition = 'all 0.6s ease';
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, index * 100);
+        });
+        
+        // Filtrage des notifications
+        const typeFilter = document.getElementById('typeFilter');
+        const statusFilter = document.getElementById('statusFilter');
+        const searchInput = document.getElementById('searchInput');
+        
+        if (typeFilter) {
+            typeFilter.addEventListener('change', filterNotifications);
+        }
+        
+        if (statusFilter) {
+            statusFilter.addEventListener('change', filterNotifications);
+        }
+        
+        if (searchInput) {
+            searchInput.addEventListener('input', filterNotifications);
+        }
+        
+        // Boutons d'action
+        const markAllReadBtn = document.getElementById('markAllReadBtn');
+        const clearAllBtn = document.getElementById('clearAllBtn');
+        
+        if (markAllReadBtn) {
+            markAllReadBtn.addEventListener('click', markAllAsRead);
+        }
+        
+        if (clearAllBtn) {
+            clearAllBtn.addEventListener('click', clearAllNotifications);
+        }
+    });
+    
+    function filterNotifications() {
+        const typeFilter = document.getElementById('typeFilter').value;
+        const statusFilter = document.getElementById('statusFilter').value;
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        
+        const notificationCards = document.querySelectorAll('.card-hover');
+        
+        notificationCards.forEach(card => {
+            let shouldShow = true;
+            
+            // Filtre par type
+            if (typeFilter && !card.querySelector(`[data-type="${typeFilter}"]`)) {
+                shouldShow = false;
+            }
+            
+            // Filtre par statut
+            if (statusFilter === 'unread' && !card.classList.contains('ring-2')) {
+                shouldShow = false;
+            } else if (statusFilter === 'read' && card.classList.contains('ring-2')) {
+                shouldShow = false;
+            }
+            
+            // Filtre par recherche
+            if (searchTerm) {
+                const title = card.querySelector('h3').textContent.toLowerCase();
+                const message = card.querySelector('p').textContent.toLowerCase();
+                if (!title.includes(searchTerm) && !message.includes(searchTerm)) {
+                    shouldShow = false;
+                }
+            }
+            
+            card.style.display = shouldShow ? 'block' : 'none';
+        });
+    }
+    
+    function markAsRead(notificationId) {
+        // Appel AJAX pour marquer comme lu
+        fetch(`/parents/api/notifications/${notificationId}/mark-read/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Mettre à jour l'interface
+                const notificationCard = document.querySelector(`[data-notification-id="${notificationId}"]`);
+                if (notificationCard) {
+                    notificationCard.classList.remove('ring-2', 'ring-blue-200');
+                    notificationCard.querySelector('.w-3.h-3').style.display = 'none';
+                    
+                    // Mettre à jour le compteur
+                    updateNotificationCount();
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+        });
+    }
+    
+    function deleteNotification(notificationId) {
+        if (confirm('Êtes-vous sûr de vouloir supprimer cette notification ?')) {
+            // Appel AJAX pour supprimer
+            fetch(`/parents/api/notifications/${notificationId}/delete/`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Supprimer la carte de la notification
+                    const notificationCard = document.querySelector(`[data-notification-id="${notificationId}"]`);
+                    if (notificationCard) {
+                        notificationCard.style.opacity = '0';
+                        notificationCard.style.transform = 'translateX(100%)';
+                        setTimeout(() => {
+                            notificationCard.remove();
+                            updateNotificationCount();
+                        }, 300);
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+            });
+        }
+    }
+    
+    function markAllAsRead() {
+        if (confirm('Marquer toutes les notifications comme lues ?')) {
+            // Appel AJAX pour tout marquer comme lu
+            fetch('/parents/api/notifications/mark-all-read/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Mettre à jour l'interface
+                    const unreadCards = document.querySelectorAll('.ring-2.ring-blue-200');
+                    unreadCards.forEach(card => {
+                        card.classList.remove('ring-2', 'ring-blue-200');
+                        const dot = card.querySelector('.w-3.h-3');
+                        if (dot) dot.style.display = 'none';
+                    });
+                    
+                    updateNotificationCount();
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+            });
+        }
+    }
+    
+    function clearAllNotifications() {
+        if (confirm('Supprimer toutes les notifications ? Cette action est irréversible.')) {
+            // Appel AJAX pour tout supprimer
+            fetch('/parents/api/notifications/clear-all/', {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Supprimer toutes les cartes
+                    const notificationCards = document.querySelectorAll('.card-hover');
+                    notificationCards.forEach((card, index) => {
+                        setTimeout(() => {
+                            card.style.opacity = '0';
+                            card.style.transform = 'translateX(100%)';
+                            setTimeout(() => card.remove(), 300);
+                        }, index * 100);
+                    });
+                    
+                    updateNotificationCount();
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+            });
+        }
+    }
+    
+    function refreshNotifications() {
+        location.reload();
+    }
+    
+    function updateNotificationCount() {
+        const unreadCount = document.querySelectorAll('.ring-2.ring-blue-200').length;
+        const countElement = document.querySelector('.text-2xl.font-bold.text-blue-900');
+        if (countElement) {
+            countElement.textContent = unreadCount;
+        }
+    }
+    
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+</script>
+{% endblock %}

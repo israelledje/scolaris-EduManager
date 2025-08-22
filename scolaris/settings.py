@@ -58,6 +58,8 @@ INSTALLED_APPS = [
     'notes',
     'documents',
     'notifications',
+    'parents_portal',
+    'settings',
 ]
 
 MIDDLEWARE = [
@@ -71,8 +73,10 @@ MIDDLEWARE = [
     "django_htmx.middleware.HtmxMiddleware",
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'scolaris.middleware.LastVisitedMiddleware',
-    'scolaris.middleware.AutoLogoutMiddleware',
+    'scolaris.middleware.PermissionDeniedMiddleware',  # Middleware pour les erreurs de permissions
+    'scolaris.middleware.SecurityHeadersMiddleware',    # Headers de sécurité
+    'scolaris.middleware.LastVisitedMiddleware',       # Tracking des pages visitées
+    'scolaris.middleware.AutoLogoutMiddleware',        # Déconnexion automatique
 ]
 
 ROOT_URLCONF = 'scolaris.urls'
@@ -88,6 +92,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'scolaris.context_processors.global_stats',
+                'authentication.context_processors.user_permissions',
             ],
         },
     },
@@ -99,8 +104,14 @@ WSGI_APPLICATION = 'scolaris.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 DATABASES = {
-    'default': dj_database_url.parse(config('DATABASE_URL'))
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
 }
+#DATABASES = {
+#    'default': dj_database_url.parse(config('DATABASE_URL'))
+#}
 
 
 
@@ -290,23 +301,20 @@ LOGGING = {
     },
 }
 
-# Configuration Email - Mode TEST (console)
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-EMAIL_HOST = 'localhost'
-EMAIL_PORT = 1025
+# Configuration Email - Mode SMTP normal
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', 465))
+EMAIL_HOST_USER = os.getenv('EMAIL_USER', 'israelled@gmail.com')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_PASSWORD', '')
+EMAIL_USE_SSL = True
 EMAIL_USE_TLS = False
-EMAIL_HOST_USER = 'test@scolaris.com'
-EMAIL_HOST_PASSWORD = 'test'
 DEFAULT_FROM_EMAIL = 'SCOLARIS <noreply@scolaris.com>'
 
+# URL du site pour les liens dans les emails
+SITE_URL = os.getenv('SITE_URL', 'http://localhost:8000')
+
 # Configuration SMS (API SMSVAS) - Variables d'environnement
-import os
-from dotenv import load_dotenv
-
-# Charger les variables d'environnement depuis .env
-load_dotenv()
-
-# Configuration SMSVAS - Paramètres corrects basés sur les tests
 SMS_USER = os.getenv('SMS_USER')
 SMS_PASSWORD = os.getenv('SMS_PASSWORD')
 SMS_SENDER_ID = os.getenv('SMS_SENDER_ID')

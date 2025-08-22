@@ -353,6 +353,18 @@
             </div>
           </form>
 
+          <!-- Lien vers le portail parents -->
+          <div class="text-center py-4 border-t border-gray-200">
+            <p class="text-sm text-gray-600 mb-3">
+              Vous êtes un parent d'élève ?
+            </p>
+            <a href="{% url 'parents_portal:login' %}" 
+               class="inline-flex items-center justify-center px-6 py-3 border border-transparent text-sm font-medium rounded-xl text-white bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
+              <i class="fas fa-users mr-2"></i>
+              Accéder au Portail Parents
+            </a>
+          </div>
+
           <!-- Séparateur -->
           <div class="relative my-6">
             <div class="absolute inset-0 flex items-center">

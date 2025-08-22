@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'src/dist/styles.css' %}">
+<style>
+    .permission-error-container {
+        min-height: 60vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .permission-icon {
+        animation: shake 0.5s ease-in-out;
+    }
+    
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-5px); }
+        75% { transform: translateX(5px); }
+    }
+    
+    .role-badge {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        margin: 2px;
+    }
+    
+    .role-admin { background: #fef3c7; color: #92400e; }
+    .role-direction { background: #ddd6fe; color: #6b46c1; }
+    .role-professeur { background: #dcfce7; color: #166534; }
+    .role-surveillance { background: #fed7d7; color: #991b1b; }
+</style>
+{% endblock %}
+
+{% block page_title %}Accès refusé{% endblock %}
+{% block breadcrumb_current %}Erreur de permissions{% endblock %}
+
+{% block content %}
+<div class="permission-error-container">
+    <div class="max-w-md mx-auto text-center">
+        <div class="permission-icon mb-6">
+            <div class="w-20 h-20 mx-auto bg-red-100 rounded-full flex items-center justify-center">
+                <i class="fas fa-shield-alt text-red-600 text-3xl"></i>
+            </div>
+        </div>
+        
+        <h1 class="text-2xl font-bold text-gray-900 mb-4">{% trans "Accès refusé" %}</h1>
+        
+        <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <p class="text-red-800 text-sm">
+                <i class="fas fa-exclamation-triangle mr-2"></i>
+                {{ error_message }}
+            </p>
+        </div>
+        
+        {% if user_role %}
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <h3 class="text-blue-900 font-medium mb-2">{% trans "Informations sur votre compte" %}</h3>
+            <div class="text-blue-700 text-sm">
+                <p class="mb-2">
+                    <strong>{% trans "Votre rôle actuel :" %}</strong>
+                    <span class="role-badge role-{{ user_role|lower }}">{{ user_role }}</span>
+                </p>
+                
+                {% if required_roles %}
+                <p>
+                    <strong>{% trans "Rôles requis :" %}</strong>
+                    {% for role in required_roles %}
+                        <span class="role-badge role-{{ role|lower }}">{{ role }}</span>
+                    {% endfor %}
+                </p>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <div class="space-y-3">
+            <button onclick="history.back()" class="w-full bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors">
+                <i class="fas fa-arrow-left mr-2"></i>{% trans "Retour à la page précédente" %}
+            </button>
+            
+            <a href="{% url 'dashboard:dashboard' %}" class="block w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                <i class="fas fa-home mr-2"></i>{% trans "Retour au tableau de bord" %}
+            </a>
+            
+            {% if user.role == 'PROFESSEUR' %}
+            <div class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p class="text-yellow-800 text-sm">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    {% trans "En tant qu'enseignant, vous avez accès uniquement à vos classes et matières assignées." %}
+                </p>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="mt-8 text-sm text-gray-500">
+            {% trans "Si vous pensez qu'il s'agit d'une erreur, contactez l'administrateur système." %}
+        </div>
+    </div>
+</div>
+
+<!-- Auto-redirection après 10 secondes -->
+<script>
+    let countdown = 10;
+    const redirectTimer = setInterval(() => {
+        countdown--;
+        if (countdown <= 0) {
+            clearInterval(redirectTimer);
+            window.location.href = '{% url "dashboard:dashboard" %}';
+        }
+    }, 1000);
+    
+    // Arrêter le timer si l'utilisateur interagit avec la page
+    document.addEventListener('click', () => {
+        clearInterval(redirectTimer);
+    });
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Afficher automatiquement la modale si demandé
+document.addEventListener('DOMContentLoaded', function() {
+    {% if show_permission_modal %}
+        showPermissionDeniedModal({
+            message: "{{ error_message|escapejs }}",
+            userRole: "{{ user_role|escapejs }}",
+            requiredRoles: {{ required_roles|safe }},
+            currentUrl: "{{ current_url|escapejs }}"
+        });
+    {% endif %}
+});
+</script>
+{% endblock %}

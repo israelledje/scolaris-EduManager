@@ -263,3 +263,50 @@ class CurrentSchoolYear(models.Model):
         if not self.pk and CurrentSchoolYear.objects.exists():
             raise ValidationError("Il ne peut y avoir qu'une seule année scolaire active.")
         super().save(*args, **kwargs)
+
+class MatriculeSequence(models.Model):
+    """
+    Modèle pour gérer les séquences de matricules paramétrables
+    """
+    SEQUENCE_TYPES = [
+        ('STUDENT', 'Élève'),
+        ('TEACHER', 'Enseignant'),
+    ]
+    
+    sequence_type = models.CharField(max_length=20, choices=SEQUENCE_TYPES, unique=True, verbose_name="Type de séquence")
+    prefix = models.CharField(max_length=10, verbose_name="Préfixe", help_text="Préfixe du matricule (ex: STU, TCH)")
+    current_year = models.PositiveIntegerField(verbose_name="Année courante", help_text="Année pour laquelle la séquence est active")
+    last_number = models.PositiveIntegerField(default=0, verbose_name="Dernier numéro utilisé")
+    format_pattern = models.CharField(
+        max_length=50, 
+        default="{prefix}{year}{number:04d}", 
+        verbose_name="Format du matricule",
+        help_text="Format: {prefix} pour préfixe, {year} pour année, {number} pour numéro séquentiel"
+    )
+    auto_generation = models.BooleanField(default=True, verbose_name="Génération automatique", help_text="Générer automatiquement les matricules")
+    is_active = models.BooleanField(default=True, verbose_name="Actif")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "Séquence de matricule"
+        verbose_name_plural = "Séquences de matricules"
+        ordering = ['sequence_type']
+    
+    def __str__(self):
+        return f"{self.get_sequence_type_display()} - {self.current_year} ({self.prefix})"
+    
+    def get_next_number(self):
+        """Retourne le prochain numéro de la séquence"""
+        self.last_number += 1
+        self.save()
+        return self.last_number
+    
+    def generate_matricule(self):
+        """Génère le prochain matricule selon le format défini"""
+        next_number = self.get_next_number()
+        return self.format_pattern.format(
+            prefix=self.prefix,
+            year=self.current_year,
+            number=next_number
+        )

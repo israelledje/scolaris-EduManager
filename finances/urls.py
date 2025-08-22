@@ -86,6 +86,9 @@ urlpatterns = [
     path('api/extra-fee-amount/<int:extra_fee_id>/', views.extra_fee_amount, name='extra_fee_amount'),
     path('api/search-students/', views.search_students_api, name='search_students_api'),
     
+    # ==================== API DASHBOARD ====================
+    path('api/dashboard-chart-data/', views.dashboard_chart_data, name='dashboard_chart_data'),
+    
     # ==================== RAPPORTS SPÉCIALISÉS ====================
     path('reports/', views.reports_dashboard, name='reports_dashboard'),
     

@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="fr">
+{% load static %}
+{% load widget_tweaks %}
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}Portail Parents - Scolaris{% endblock %}</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
+    <link rel="shortcut icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
+    
+    <!-- Tailwind CSS -->
+    <link rel="stylesheet" href="{% static 'src/dist/styles.css' %}">
+    
+    <!-- htmx.js -->
+    <script src="{% static 'js/htmx.min.js' %}"></script>
+    
+    <!-- Alpine.js -->
+    <script defer src="{% static 'js/alpine.min.js' %}"></script>
+    
+    <!-- Font Awesome local -->
+    <link rel="stylesheet" href="{% static 'fontawesome-free-7.0.0-web/css/all.min.css' %}">
+    
+    <!-- Styles professionnels pour le portail parents -->
+    <style>
+        /* Typography moderne */
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #1f2937;
+        }
+        
+        /* Variables CSS pour la cohérence des couleurs */
+        :root {
+            --primary-50: #eff6ff;
+            --primary-100: #dbeafe;
+            --primary-500: #3b82f6;
+            --primary-600: #2563eb;
+            --primary-700: #1d4ed8;
+            --primary-900: #1e3a8a;
+            --success-50: #f0fdf4;
+            --success-500: #22c55e;
+            --success-600: #16a34a;
+            --warning-50: #fffbeb;
+            --warning-500: #f59e0b;
+            --warning-600: #d97706;
+            --danger-50: #fef2f2;
+            --danger-500: #ef4444;
+            --danger-600: #dc2626;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-400: #9ca3af;
+            --gray-500: #6b7280;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+        }
+        
+        /* Header moderne avec gradient subtil */
+        .header-modern {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        /* Navigation élégante */
+        .nav-item {
+            position: relative;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 12px;
+            margin: 0 4px;
+            overflow: hidden;
+        }
+        
+        .nav-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+            transition: left 0.6s ease;
+        }
+        
+        .nav-item:hover::before {
+            left: 100%;
+        }
+        
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+        
+        .nav-item.active {
+            background: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+            border-left: 4px solid #10b981;
+        }
+        
+        /* Cartes avec design moderne */
+        .card-modern {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(229, 231, 235, 0.5);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+        }
+        
+        .card-modern:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+            border-color: rgba(59, 130, 246, 0.2);
+        }
+        
+        /* Boutons avec design moderne */
+        .btn-modern {
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        }
+        
+        .btn-success:hover {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+        }
+        
+        /* Animations sophistiquées */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        .animate-fade-in-up {
+            animation: fadeInUp 0.6s ease-out;
+        }
+        
+        .animate-slide-in-left {
+            animation: slideInLeft 0.6s ease-out;
+        }
+        
+        /* Notification dot avec animation */
+        .notification-dot {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { 
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% { 
+                opacity: 0.7;
+                transform: scale(1.1);
+            }
+        }
+        
+        /* Responsive design amélioré */
+        @media (max-width: 768px) {
+            .nav-item {
+                margin: 0 2px;
+                padding: 0.75rem 1rem;
+            }
+            
+            .card-modern {
+                border-radius: 12px;
+                margin: 0 8px;
+            }
+        }
+        
+        /* Scrollbar personnalisée */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        
+        /* Effet de verre moderne */
+        .glass-effect {
+            backdrop-filter: blur(20px);
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        /* Gradient de fond subtil */
+        .bg-gradient-subtle {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        }
+        
+        /* Classes pour les cartes modernes */
+        .card-modern {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border: 1px solid rgba(229, 231, 235, 0.5);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .card-modern:hover {
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            transform: translateY(-2px);
+        }
+        
+        /* Classes pour les boutons */
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: none;
+            cursor: pointer;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3);
+        }
+        
+        /* Classes pour les animations */
+        .animate-fade-in-up {
+            animation: fadeInUp 0.6s ease-out;
+        }
+        
+        .animate-slide-in-left {
+            animation: slideInLeft 0.6s ease-out;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        /* Classes pour les menus déroulants */
+        .dropdown-menu {
+            animation: fadeInUp 0.3s ease-out;
+        }
+        
+        /* Classes pour les notifications */
+        .notification-dot {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body class="bg-gradient-subtle font-sans antialiased min-h-screen">
+    <!-- Header moderne du Portail Parents -->
+    <header class="header-modern text-white sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                <!-- Logo et titre avec design moderne -->
+                <div class="flex items-center space-x-6">
+                    <div class="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm border border-white/30">
+                        <i class="fas fa-users text-2xl text-white"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold tracking-tight">Portail Parents</h1>
+                        <p class="text-white/80 text-sm font-medium">Scolaris</p>
+                    </div>
+                    
+                    <!-- Lien vers le portail principal avec design moderne -->
+                    <div class="ml-6 pl-6 border-l border-white/20">
+                        <a href="{% url 'login' %}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-white/90 hover:text-white bg-white/10 hover:bg-white/20 rounded-xl transition-all duration-300 hover:scale-105 border border-white/20 hover:border-white/30" title="Accéder au portail principal">
+                            <i class="fas fa-external-link-alt mr-2"></i>
+                            Portail Principal
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Navigation principale avec design moderne -->
+                <nav class="hidden lg:flex items-center space-x-2">
+                    <a href="{% url 'parents_portal:dashboard' %}" class="nav-item flex items-center px-5 py-3 text-white/90 hover:text-white {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                        <i class="fas fa-tachometer-alt w-5 mr-3"></i>
+                        <span class="font-medium">Tableau de bord</span>
+                    </a>
+                    
+                    <a href="{% url 'parents_portal:student_list' %}" class="nav-item flex items-center px-5 py-3 text-white/90 hover:text-white {% if 'student' in request.resolver_match.url_name %}active{% endif %}">
+                        <i class="fas fa-user-graduate w-5 mr-3"></i>
+                        <span class="font-medium">Mes Enfants</span>
+                    </a>
+                    
+                    <a href="{% url 'parents_portal:financial_overview' %}" class="nav-item flex items-center px-5 py-3 text-white/90 hover:text-white {% if 'financial' in request.resolver_match.url_name %}active{% endif %}">
+                        <i class="fas fa-money-bill-wave w-5 mr-3"></i>
+                        <span class="font-medium">Finances</span>
+                    </a>
+                    
+                    <a href="{% url 'parents_portal:notifications' %}" class="nav-item flex items-center px-5 py-3 text-white/90 hover:text-white {% if request.resolver_match.url_name == 'notifications' %}active{% endif %}">
+                        <i class="fas fa-bell w-5 mr-3"></i>
+                        <span class="font-medium">Notifications</span>
+                        {% if unread_notifications_count > 0 %}
+                            <span class="ml-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full font-bold">{{ unread_notifications_count }}</span>
+                        {% endif %}
+                    </a>
+                    
+                    <a href="{% url 'parents_portal:profile' %}" class="nav-item flex items-center px-5 py-3 text-white/90 hover:text-white {% if request.resolver_match.url_name == 'profile' %}active{% endif %}">
+                        <i class="fas fa-user-cog w-5 mr-3"></i>
+                        <span class="font-medium">Mon Profil</span>
+                    </a>
+                </nav>
+                
+                <!-- Menu utilisateur avec design moderne -->
+                <div class="flex items-center space-x-4">
+                    <!-- Notifications rapides -->
+                    <div class="relative">
+                        <button id="quickNotificationsBtn" class="p-3 rounded-xl bg-white/20 hover:bg-white/30 text-white transition-all duration-300 hover:scale-105 relative border border-white/20 hover:border-white/30">
+                            <i class="fas fa-bell text-lg"></i>
+                            {% if unread_notifications_count > 0 %}
+                                <span class="notification-dot absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center font-bold">{{ unread_notifications_count }}</span>
+                            {% endif %}
+                        </button>
+                    </div>
+                    
+                    <!-- Profil utilisateur avec design moderne -->
+                    <div class="relative">
+                        <button id="userMenuBtn" class="flex items-center space-x-4 p-3 rounded-xl hover:bg-white/20 transition-all duration-300 hover:scale-105 border border-white/20 hover:border-white/30">
+                            <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center text-white font-bold text-lg border border-white/30">
+                                {% if user.first_name %}
+                                    {{ user.first_name.0 }}{% if user.last_name %}{{ user.last_name.0 }}{% endif %}
+                                {% else %}
+                                    {{ user.username.0|upper }}
+                                {% endif %}
+                            </div>
+                            <div class="hidden sm:block text-left">
+                                <p class="text-white font-semibold text-sm">
+                                    {% if user.first_name or user.last_name %}
+                                        {{ user.get_full_name }}
+                                    {% else %}
+                                        {{ user.username }}
+                                    {% endif %}
+                                </p>
+                                <p class="text-white/70 text-xs font-medium">Parent</p>
+                            </div>
+                            <i id="userMenuChevron" class="fas fa-chevron-down text-white/70 text-sm transition-transform duration-300"></i>
+                        </button>
+                        
+                        <!-- Menu déroulant utilisateur avec design moderne -->
+                        <div id="userDropdown" class="dropdown-menu absolute right-0 mt-3 w-64 bg-white rounded-2xl shadow-2xl py-3 z-50 border border-gray-200/60 backdrop-blur-sm hidden animate-fade-in-up">
+                            <div class="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
+                                <p class="text-sm font-semibold text-gray-800">
+                                    {% if user.first_name or user.last_name %}
+                                        {{ user.get_full_name }}
+                                    {% else %}
+                                        {{ user.username }}
+                                    {% endif %}
+                                </p>
+                                <p class="text-xs text-gray-600 mt-1">{{ user.email }}</p>
+                                <span class="inline-block mt-2 px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-full font-medium">Parent</span>
+                            </div>
+                            
+                            <div class="py-2">
+                                <a href="{% url 'parents_portal:profile' %}" class="flex items-center px-6 py-3 text-sm text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-all duration-200 group">
+                                    <i class="fas fa-user mr-3 text-gray-400 w-4 group-hover:text-blue-500 transition-colors"></i>Mon Profil
+                                </a>
+                                
+                                <a href="{% url 'parents_portal:notifications' %}" class="flex items-center px-6 py-3 text-sm text-gray-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 transition-all duration-200 group">
+                                    <i class="fas fa-bell mr-3 text-gray-400 w-4 group-hover:text-purple-500 transition-colors"></i>Notifications
+                                </a>
+                                
+                                <a href="#" class="flex items-center px-6 py-3 text-sm text-gray-700 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 transition-all duration-200 group">
+                                    <i class="fas fa-question-circle mr-3 text-gray-400 w-4 group-hover:text-green-500 transition-colors"></i>Aide
+                                </a>
+                            </div>
+                            
+                            <hr class="my-2 border-gray-100" />
+                            
+                            <div class="px-2">
+                                <a href="{% url 'parents_portal:logout' %}" class="flex items-center px-4 py-3 text-sm text-red-600 hover:bg-gradient-to-r hover:from-red-50 hover:to-pink-50 transition-all duration-200 group font-medium rounded-xl">
+                                    <i class="fas fa-sign-out-alt mr-3 w-4 group-hover:text-red-700 transition-colors"></i>Déconnexion
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Navigation mobile avec design moderne -->
+        <div class="lg:hidden border-t border-white/20">
+            <nav class="flex items-center justify-around py-3">
+                <a href="{% url 'parents_portal:dashboard' %}" class="nav-item flex flex-col items-center px-4 py-2 text-white/90 hover:text-white text-xs {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                    <i class="fas fa-tachometer-alt w-5 mb-1"></i>
+                    <span class="font-medium">Accueil</span>
+                </a>
+                
+                <a href="{% url 'parents_portal:student_list' %}" class="nav-item flex flex-col items-center px-4 py-2 text-white/90 hover:text-white text-xs {% if 'student' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="fas fa-user-graduate w-5 mb-1"></i>
+                    <span class="font-medium">Enfants</span>
+                </a>
+                
+                <a href="{% url 'parents_portal:financial_overview' %}" class="nav-item flex flex-col items-center px-4 py-2 text-white/90 hover:text-white text-xs {% if 'financial' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="fas fa-money-bill-wave w-5 mb-1"></i>
+                    <span class="font-medium">Finances</span>
+                </a>
+                
+                <a href="{% url 'parents_portal:notifications' %}" class="nav-item flex flex-col items-center px-4 py-2 text-white/90 hover:text-white text-xs {% if request.resolver_match.url_name == 'notifications' %}active{% endif %}">
+                    <i class="fas fa-bell w-5 mb-1"></i>
+                    <span class="font-medium">Alertes</span>
+                    {% if unread_notifications_count > 0 %}
+                        <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-bold">{{ unread_notifications_count }}</span>
+                    {% endif %}
+                </a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Contenu principal avec design moderne -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Messages Django avec design moderne -->
+        {% if messages %}
+        <div id="messagesContainer" class="mb-8 space-y-4">
+            {% for message in messages %}
+            <div class="alert card-modern px-6 py-4 relative animate-fade-in-up {% if message.tags == 'error' %}bg-red-50 border-red-200 text-red-800 {% elif message.tags == 'success' %}bg-emerald-50 border-emerald-200 text-emerald-800 {% elif message.tags == 'warning' %}bg-amber-50 border-amber-200 text-amber-800 {% else %}bg-blue-50 border-blue-200 text-blue-800 {% endif %}">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        {% if message.tags == 'error' %}
+                            <i class="fas fa-exclamation-circle text-red-500 text-xl"></i>
+                        {% elif message.tags == 'success' %}
+                            <i class="fas fa-check-circle text-emerald-500 text-xl"></i>
+                        {% elif message.tags == 'warning' %}
+                            <i class="fas fa-exclamation-triangle text-amber-500 text-xl"></i>
+                        {% else %}
+                            <i class="fas fa-info-circle text-blue-500 text-xl"></i>
+                        {% endif %}
+                    </div>
+                    <div class="ml-4 flex-1">
+                        <p class="font-medium">{{ message }}</p>
+                    </div>
+                    <button class="alert-close ml-4 flex-shrink-0 text-current opacity-60 hover:opacity-100 transition-opacity duration-200">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <!-- En-tête de page avec design moderne -->
+        <div class="mb-8 animate-slide-in-left">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h1 class="text-4xl font-bold text-gray-900 mb-3 tracking-tight">
+                        {% block page_title %}Portail Parents{% endblock %}
+                    </h1>
+                    <nav class="flex items-center space-x-3 text-sm" aria-label="Breadcrumb">
+                        <a href="{% url 'parents_portal:dashboard' %}" class="text-gray-500 hover:text-gray-700 transition-colors duration-200">
+                            <i class="fas fa-home"></i>
+                        </a>
+                        <i class="fas fa-chevron-right text-gray-300 text-xs"></i>
+                        <span class="text-gray-700 font-medium">{% block breadcrumb_current %}Accueil{% endblock %}</span>
+                        {% block breadcrumb %}{% endblock %}
+                    </nav>
+                </div>
+                {% block page_actions %}{% endblock %}
+            </div>
+        </div>
+        
+        <!-- Contenu principal avec design moderne -->
+        {% block content %}
+        <div class="text-center py-16 animate-fade-in-up">
+            <div class="mx-auto w-32 h-32 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-3xl flex items-center justify-center mb-8 shadow-lg">
+                <i class="fas fa-users text-6xl bg-gradient-to-br from-blue-600 to-indigo-600 bg-clip-text text-transparent"></i>
+            </div>
+            <h3 class="text-3xl font-bold text-gray-900 mb-4 tracking-tight">
+                Bienvenue dans votre Portail Parents
+            </h3>
+            <p class="text-gray-600 text-xl mb-10 max-w-2xl mx-auto leading-relaxed">
+                Accédez aux informations de vos enfants et gérez leurs scolarités en toute simplicité avec notre interface moderne et intuitive
+            </p>
+        </div>
+        {% endblock %}
+    </main>
+
+    <!-- Footer avec design moderne -->
+    <footer class="bg-gray-900 text-white py-12 mt-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div>
+                    <h3 class="text-xl font-semibold mb-4">Portail Parents</h3>
+                    <p class="text-gray-400 text-base leading-relaxed">
+                        Votre espace personnel pour suivre la scolarité de vos enfants avec une interface moderne et sécurisée
+                    </p>
+                </div>
+                <div>
+                    <h3 class="text-xl font-semibold mb-4">Support</h3>
+                    <ul class="space-y-3 text-base text-gray-400">
+                        <li><a href="#" class="hover:text-white transition-colors duration-200">Centre d'aide</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors duration-200">Contact</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors duration-200">FAQ</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-xl font-semibold mb-4">Sécurité</h3>
+                    <p class="text-gray-400 text-base leading-relaxed">
+                        Vos données sont protégées et sécurisées selon les standards les plus élevés de l'industrie
+                    </p>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400 text-base">
+                <p>&copy; 2025 Scolaris. Tous droits réservés.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts JavaScript avec design moderne -->
+    <script>
+        // Gestion du menu utilisateur avec animations
+        document.addEventListener('DOMContentLoaded', function() {
+            const userMenuBtn = document.getElementById('userMenuBtn');
+            const userDropdown = document.getElementById('userDropdown');
+            const userMenuChevron = document.getElementById('userMenuChevron');
+            
+            if (userMenuBtn && userDropdown) {
+                userMenuBtn.addEventListener('click', function() {
+                    userDropdown.classList.toggle('hidden');
+                    userMenuChevron.style.transform = userDropdown.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
+                });
+                
+                // Fermer le menu en cliquant ailleurs
+                document.addEventListener('click', function(event) {
+                    if (!userMenuBtn.contains(event.target) && !userDropdown.contains(event.target)) {
+                        userDropdown.classList.add('hidden');
+                        userMenuChevron.style.transform = 'rotate(0deg)';
+                    }
+                });
+            }
+            
+            // Gestion des messages d'alerte avec animations
+            const alertCloseButtons = document.querySelectorAll('.alert-close');
+            alertCloseButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const alert = this.closest('.alert');
+                    if (alert) {
+                        alert.style.opacity = '0';
+                        alert.style.transform = 'translateY(-10px)';
+                        setTimeout(() => {
+                            alert.remove();
+                        }, 300);
+                    }
+                });
+            });
+            
+            // Auto-hide des messages de succès après 6 secondes
+            const successMessages = document.querySelectorAll('.alert.bg-emerald-50');
+            successMessages.forEach(message => {
+                setTimeout(() => {
+                    message.style.opacity = '0';
+                    message.style.transform = 'translateY(-10px)';
+                    setTimeout(() => {
+                        message.remove();
+                    }, 300);
+                }, 6000);
+            });
+            
+            // Animation des cartes au chargement
+            const cards = document.querySelectorAll('.card-modern');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                
+                setTimeout(() => {
+                    card.style.transition = 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+        });
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

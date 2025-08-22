@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="fr">
+{% load static %}
+{% load widget_tweaks %}
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Connexion - Portail Parents Scolaris</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
+    
+    <!-- Tailwind CSS -->
+    <link rel="stylesheet" href="{% static 'src/dist/styles.css' %}">
+    
+    <!-- Font Awesome local -->
+    <link rel="stylesheet" href="{% static 'fontawesome-free-7.0.0-web/css/all.min.css' %}">
+    
+    <!-- Styles spécifiques -->
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+        
+        .login-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .glass-effect {
+            backdrop-filter: blur(12px);
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .floating-shapes {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 1;
+        }
+        
+        .floating-shape {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        .floating-shape:nth-child(1) {
+            width: 80px;
+            height: 80px;
+            top: 20%;
+            left: 10%;
+            animation-delay: 0s;
+        }
+        
+        .floating-shape:nth-child(2) {
+            width: 120px;
+            height: 120px;
+            top: 60%;
+            right: 10%;
+            animation-delay: 2s;
+        }
+        
+        .floating-shape:nth-child(3) {
+            width: 60px;
+            height: 60px;
+            bottom: 20%;
+            left: 20%;
+            animation-delay: 4s;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+        }
+        
+        .form-input {
+            transition: all 0.3s ease;
+        }
+        
+        .form-input:focus {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.2);
+        }
+        
+        .btn-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-gradient:hover {
+            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+        
+        .social-btn {
+            transition: all 0.3s ease;
+        }
+        
+        .social-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+    </style>
+</head>
+
+<body class="login-gradient min-h-screen flex items-center justify-center p-4 relative">
+    <!-- Formes flottantes décoratives -->
+    <div class="floating-shapes">
+        <div class="floating-shape"></div>
+        <div class="floating-shape"></div>
+        <div class="floating-shape"></div>
+    </div>
+    
+    <!-- Conteneur principal -->
+    <div class="w-full max-w-md relative z-10">
+        <!-- Logo et titre -->
+        <div class="text-center mb-8">
+            <div class="mx-auto w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm mb-6">
+                <i class="fas fa-users text-4xl text-white"></i>
+            </div>
+            <h1 class="text-3xl font-bold text-white mb-2">Portail Parents</h1>
+            <p class="text-white/80 text-lg">Scolaris</p>
+        </div>
+        
+        <!-- Formulaire de connexion -->
+        <div class="glass-effect rounded-2xl shadow-2xl p-8">
+            <div class="text-center mb-6">
+                <h2 class="text-2xl font-bold text-slate-800 mb-2">Connexion</h2>
+                <p class="text-slate-600">Accédez à votre espace parent</p>
+            </div>
+            
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+                
+                <!-- Affichage des erreurs -->
+                {% if form.non_field_errors %}
+                <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                    {% for error in form.non_field_errors %}
+                    <p class="text-red-600 text-sm">{{ error }}</p>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
+                <!-- Champ identifiant/email -->
+                <div class="space-y-2">
+                    <label for="{{ form.username.id_for_label }}" class="block text-sm font-medium text-slate-700">
+                        {{ form.username.label }}
+                    </label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-user text-slate-400"></i>
+                        </div>
+                        {{ form.username|add_class:"form-input appearance-none block w-full pl-10 pr-3 py-3 border border-slate-300 rounded-xl shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" }}
+                        {% if form.username.errors %}
+                        <div class="mt-1">
+                            {% for error in form.username.errors %}
+                            <p class="text-red-500 text-xs">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Champ mot de passe -->
+                <div class="space-y-2">
+                    <label for="{{ form.password.id_for_label }}" class="block text-sm font-medium text-slate-700">
+                        {{ form.password.label }}
+                    </label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-lock text-slate-400"></i>
+                        </div>
+                        {{ form.password|add_class:"form-input appearance-none block w-full pl-10 pr-3 py-3 border border-slate-300 rounded-xl shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" }}
+                        {% if form.password.errors %}
+                        <div class="mt-1">
+                            {% for error in form.password.errors %}
+                            <p class="text-red-500 text-xs">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Options de connexion -->
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        {{ form.remember_me|add_class:"h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded" }}
+                        <label for="{{ form.remember_me.id_for_label }}" class="ml-2 block text-sm text-slate-700">
+                            {{ form.remember_me.label }}
+                        </label>
+                    </div>
+                    <a href="#" class="text-sm text-blue-600 hover:text-blue-500 transition-colors">
+                        Mot de passe oublié ?
+                    </a>
+                </div>
+                
+                <!-- Bouton de connexion -->
+                <button type="submit" class="btn-gradient w-full text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200">
+                    <i class="fas fa-sign-in-alt mr-2"></i>
+                    Se connecter
+                </button>
+            </form>
+            
+            <!-- Séparateur -->
+            <div class="relative my-6">
+                <div class="absolute inset-0 flex items-center">
+                    <div class="w-full border-t border-slate-300"></div>
+                </div>
+                <div class="relative flex justify-center text-sm">
+                    <span class="px-2 bg-white text-slate-500">Ou</span>
+                </div>
+            </div>
+            
+            <!-- Connexion sociale -->
+            <div class="space-y-3">
+                <button class="social-btn w-full flex items-center justify-center px-4 py-3 border border-slate-300 rounded-xl text-slate-700 bg-white hover:bg-slate-50 transition-all duration-200">
+                    <i class="fab fa-google text-red-500 mr-3"></i>
+                    Continuer avec Google
+                </button>
+                
+                <button class="social-btn w-full flex items-center justify-center px-4 py-3 border border-slate-300 rounded-xl text-slate-700 bg-white hover:bg-slate-50 transition-all duration-200">
+                    <i class="fab fa-facebook text-blue-600 mr-3"></i>
+                    Continuer avec Facebook
+                </button>
+            </div>
+            
+            <!-- Lien d'inscription -->
+            <div class="text-center mt-6">
+                <p class="text-slate-600 text-sm">
+                    Pas encore de compte ? 
+                    <a href="{% url 'parents_portal:register' %}" class="text-blue-600 hover:text-blue-500 font-medium transition-colors">
+                        Créer un compte
+                    </a>
+                </p>
+            </div>
+            
+            <!-- Lien vers le portail principal -->
+            <div class="text-center mt-4 pt-4 border-t border-slate-200">
+                <p class="text-slate-500 text-xs mb-2">
+                    Vous êtes un membre du personnel ?
+                </p>
+                <a href="{% url 'login' %}" class="text-blue-600 hover:text-blue-500 text-sm font-medium transition-colors">
+                    <i class="fas fa-arrow-left mr-1"></i>
+                    Retour au portail principal
+                </a>
+            </div>
+        </div>
+        
+        <!-- Informations supplémentaires -->
+        <div class="text-center mt-6">
+            <p class="text-white/70 text-sm">
+                Besoin d'aide ? 
+                <a href="#" class="text-white hover:text-white/90 underline transition-colors">
+                    Contactez le support
+                </a>
+            </p>
+        </div>
+    </div>
+    
+    <!-- Footer -->
+    <footer class="absolute bottom-4 left-0 right-0 text-center">
+        <p class="text-white/60 text-sm">
+            &copy; 2025 Scolaris. Tous droits réservés.
+        </p>
+    </footer>
+    
+    <!-- Scripts JavaScript -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animation des champs de formulaire
+            const inputs = document.querySelectorAll('.form-input');
+            inputs.forEach(input => {
+                input.addEventListener('focus', function() {
+                    this.parentElement.classList.add('scale-105');
+                });
+                
+                input.addEventListener('blur', function() {
+                    this.parentElement.classList.remove('scale-105');
+                });
+            });
+            
+            // Gestion de la soumission du formulaire
+            const form = document.querySelector('form');
+            form.addEventListener('submit', function(e) {
+                const submitBtn = this.querySelector('button[type="submit"]');
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Connexion...';
+                submitBtn.disabled = true;
+            });
+        });
+    </script>
+</body>
+</html>

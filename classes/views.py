@@ -117,22 +117,46 @@ def timetable_list_classes(request):
 
 @login_required
 def schoolclass_list(request):
-    all_classes = SchoolClass.objects.select_related('level', 'year', 'school', 'main_teacher').prefetch_related('students').order_by('name')
-    # Statistiques sur toutes les classes
+    # Vérifier les permissions du professeur
+    if request.user.role == 'PROFESSEUR':
+        from authentication.permissions import TeacherPermissionManager, require_teacher_assignment
+        require_teacher_assignment(request.user)
+        permission_manager = TeacherPermissionManager(request.user)
+        
+        # Récupérer seulement les classes accessibles
+        accessible_class_ids = permission_manager.get_accessible_classes()
+        if not accessible_class_ids:
+            assignment_info = permission_manager.get_assignment_info()
+            if not assignment_info['has_assignments']:
+                from django.core.exceptions import PermissionDenied
+                raise PermissionDenied(
+                    "Vous n'avez pas encore été assigné à des classes. "
+                    "Contactez l'administration pour obtenir vos assignations."
+                )
+        
+        all_classes = SchoolClass.objects.filter(id__in=accessible_class_ids).select_related('level', 'year', 'school', 'main_teacher').prefetch_related('students').order_by('name')
+    else:
+        # Pour les non-professeurs, afficher toutes les classes
+        all_classes = SchoolClass.objects.select_related('level', 'year', 'school', 'main_teacher').prefetch_related('students').order_by('name')
+    
+    # Statistiques sur les classes accessibles
     total_classes = all_classes.count()
     active_classes = all_classes.filter(is_active=True).count()
     total_students = sum(c.student_count for c in all_classes)
     average_capacity = int(sum(c.capacity for c in all_classes) / total_classes) if total_classes else 0
+    
     # Recherche simple
     search = request.GET.get('search', '').strip()
     classes = all_classes
     if search:
         classes = classes.filter(name__icontains=search)
+    
     systems = EducationSystem.objects.all()
     class_success = request.session.pop('class_success', None)
     subjects = Subject.objects.all().order_by('name')
     schoolyears = SchoolYear.objects.all().order_by('-annee')
-    return render(request, 'classes/schoolclass_list.html', {
+    
+    context = {
         'classes': classes,
         'total_classes': total_classes,
         'active_classes': active_classes,
@@ -143,7 +167,14 @@ def schoolclass_list(request):
         'class_success': class_success,
         'subjects': subjects,
         'schoolyears': schoolyears,
-    })
+    }
+    
+    # Ajouter des informations d'assignation pour les professeurs
+    if request.user.role == 'PROFESSEUR':
+        context['assignment_info'] = permission_manager.get_assignment_info()
+        context['is_teacher_view'] = True
+    
+    return render(request, 'classes/schoolclass_list.html', context)
 
 @login_required
 def schoolclass_detail(request, pk):

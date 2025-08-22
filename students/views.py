@@ -7,6 +7,8 @@ from django.db import models
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.exceptions import PermissionDenied
+from authentication.permissions import TeacherPermissionManager, require_teacher_assignment
 from .models import Student, StudentClassHistory, Guardian, StudentDocument, Scholarship
 from .forms import StudentForm
 from school.models import SchoolYear
@@ -30,11 +32,37 @@ class StudentListView(LoginRequiredMixin, ListView):
         return self.request.GET.get('page_size', self.paginate_by)
 
     def get_queryset(self):
+        # Vérifier les permissions du professeur
+        if self.request.user.role == 'PROFESSEUR':
+            require_teacher_assignment(self.request.user)
+            permission_manager = TeacherPermissionManager(self.request.user)
+        
         queryset = Student.objects.select_related('current_class', 'year', 'school').all()
         
-        # Filtre par classe
+        # Filtrer selon les permissions du professeur
+        if self.request.user.role == 'PROFESSEUR':
+            queryset = permission_manager.filter_queryset_students(queryset)
+            # Si aucun étudiant accessible, afficher un message d'information
+            if not queryset.exists():
+                # Lever une exception avec un message informatif
+                assignment_info = permission_manager.get_assignment_info()
+                if not assignment_info['has_assignments']:
+                    raise PermissionDenied(
+                        "Vous n'avez pas encore été assigné à des classes. "
+                        "Contactez l'administration pour obtenir vos assignations."
+                    )
+                else:
+                    raise PermissionDenied(
+                        "Aucun étudiant trouvé dans vos classes assignées."
+                    )
+        
+        # Filtre par classe (filtré selon les permissions)
         classe = self.request.GET.get('class')
         if classe and classe != 'all':
+            # Vérifier si le professeur peut accéder à cette classe
+            if self.request.user.role == 'PROFESSEUR':
+                if not permission_manager.can_access_class(int(classe)):
+                    raise PermissionDenied("Vous n'avez pas accès à cette classe.")
             queryset = queryset.filter(current_class_id=classe)
         
         # Filtre par année scolaire
@@ -83,14 +111,31 @@ class StudentListView(LoginRequiredMixin, ListView):
             'page_size': self.request.GET.get('page_size', '25'),
         }
         
-        # Récupérer les options de filtrage
-        context['classes'] = SchoolClass.objects.all().order_by('name')
-        context['years'] = SchoolYear.objects.all().order_by('-annee')
+        # Filtrer les options selon les permissions du professeur
+        if self.request.user.role == 'PROFESSEUR':
+            permission_manager = TeacherPermissionManager(self.request.user)
+            accessible_class_ids = permission_manager.get_accessible_classes()
+            context['classes'] = SchoolClass.objects.filter(id__in=accessible_class_ids).order_by('name')
+            
+            # Statistiques limitées aux classes accessibles
+            student_queryset = permission_manager.filter_queryset_students(Student.objects.all())
+            total_students = student_queryset.count()
+            active_students = student_queryset.filter(is_active=True).count()
+            inactive_students = student_queryset.filter(is_active=False).count()
+            
+            # Informations sur les assignations
+            assignment_info = permission_manager.get_assignment_info()
+            context['assignment_info'] = assignment_info
+        else:
+            # Pour les non-professeurs, afficher toutes les classes
+            context['classes'] = SchoolClass.objects.all().order_by('name')
+            
+            # Statistiques globales
+            total_students = Student.objects.count()
+            active_students = Student.objects.filter(is_active=True).count()
+            inactive_students = Student.objects.filter(is_active=False).count()
         
-        # Statistiques
-        total_students = Student.objects.count()
-        active_students = Student.objects.filter(is_active=True).count()
-        inactive_students = Student.objects.filter(is_active=False).count()
+        context['years'] = SchoolYear.objects.all().order_by('-annee')
         
         context['stats'] = {
             'total': total_students,

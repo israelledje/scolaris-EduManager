@@ -1,5 +1,7 @@
 from django.db import models
+from django.core.exceptions import ValidationError
 from school.models import SchoolYear, School
+from school.services import MatriculeService
 from authentication.models import User
 from subjects.models import Subject
 import logging
@@ -11,7 +13,7 @@ logger = logging.getLogger(__name__)
 class Teacher(models.Model):
     SEX_CHOICES = [('M', 'Masculin'), ('F', 'Féminin')]
 
-    matricule = models.CharField(max_length=20, unique=True)
+    matricule = models.CharField(max_length=20, unique=True, blank=True, help_text="Laissez vide pour génération automatique")
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
     birth_date = models.DateField()
@@ -30,6 +32,11 @@ class Teacher(models.Model):
     main_subject = models.ForeignKey(
         Subject, on_delete=models.SET_NULL, null=True, blank=True, related_name='main_teachers'
     )
+    
+    # Liaison avec le compte utilisateur pour l'authentification
+    user = models.OneToOneField(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name='teacher_profile'
+    )
 
     is_active = models.BooleanField(default=True)
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
@@ -39,6 +46,25 @@ class Teacher(models.Model):
 
     def __str__(self):
         return f"{self.last_name.upper()} {self.first_name} ({self.matricule})"
+
+    def clean(self):
+        """Validation personnalisée"""
+        super().clean()
+        
+        # Valider l'unicité du matricule si fourni manuellement
+        if self.matricule:
+            MatriculeService.validate_matricule_uniqueness(
+                self.matricule, 
+                Teacher, 
+                exclude_id=self.id if self.pk else None
+            )
+    
+    def save(self, *args, **kwargs):
+        """Override save pour valider l'unicité"""
+        # Valider l'unicité avant la sauvegarde (seulement si le matricule existe)
+        if self.matricule:
+            self.clean()
+        super().save(*args, **kwargs)
 
 class TeachingAssignment(models.Model):
     """

@@ -1,0 +1,398 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'src/dist/styles.css' %}">
+{% endblock %}
+
+{% block page_title %}Gestion des comptes utilisateurs{% endblock %}
+{% block breadcrumb_current %}Comptes utilisateurs{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <div class="bg-white border-b border-gray-200 px-6 py-4">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-semibold text-gray-900">{% trans "Gestion des comptes utilisateurs" %}</h1>
+                <p class="text-gray-600 mt-1">{% trans "Créez et gérez les comptes d'accès des enseignants au système" %}</p>
+            </div>
+            <div class="flex space-x-3">
+                <a href="{% url 'settings:matricule_settings' %}" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors">
+                    <i class="fas fa-id-card mr-2"></i>{% trans "Matricules" %}
+                </a>
+                <a href="{% url 'dashboard:dashboard' %}" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors">
+                    <i class="fas fa-arrow-left mr-2"></i>{% trans "Retour" %}
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="px-6 py-6">
+        <!-- Messages d'alerte -->
+        {% if messages %}
+            <div class="mb-6">
+                {% for message in messages %}
+                    <div class="p-4 rounded-lg mb-3 {% if message.tags == 'error' %}bg-red-100 text-red-700 border border-red-300{% elif message.tags == 'success' %}bg-green-100 text-green-700 border border-green-300{% elif message.tags == 'warning' %}bg-yellow-100 text-yellow-700 border border-yellow-300{% else %}bg-blue-100 text-blue-700 border border-blue-300{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <!-- Statistiques -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-users text-blue-600 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Total enseignants</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ teachers_total }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-user-check text-green-600 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Avec compte</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ teachers_with_account }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-user-plus text-orange-600 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">À créer</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ teachers_without_account }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Sans email</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ teachers_without_email }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Onglets -->
+        <div class="bg-white rounded-xl shadow-lg">
+            <div class="border-b border-gray-200">
+                <nav class="-mb-px flex">
+                    <button onclick="showTab('create-accounts')" id="tab-create-accounts" class="tab-button active">
+                        <i class="fas fa-user-plus mr-2"></i>
+                        {% trans "Créer des comptes" %}
+                        {% if teachers_without_account > 0 %}
+                            <span class="ml-2 bg-orange-500 text-white text-xs px-2 py-1 rounded-full">{{ teachers_without_account }}</span>
+                        {% endif %}
+                    </button>
+                    <button onclick="showTab('manage-passwords')" id="tab-manage-passwords" class="tab-button">
+                        <i class="fas fa-key mr-2"></i>
+                        {% trans "Gérer les mots de passe" %}
+                        {% if teachers_with_account > 0 %}
+                            <span class="ml-2 bg-blue-500 text-white text-xs px-2 py-1 rounded-full">{{ teachers_with_account }}</span>
+                        {% endif %}
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Onglet 1: Créer des comptes -->
+            <div id="create-accounts" class="tab-content">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900">{% trans "Enseignants sans compte utilisateur" %}</h3>
+                            <p class="text-gray-600 mt-1">{% trans "Sélectionnez les enseignants pour lesquels créer un compte d'accès" %}</p>
+                        </div>
+                        {% if teachers_list %}
+                        <div class="flex space-x-3">
+                            <button onclick="selectAll()" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
+                                <i class="fas fa-check-square mr-2"></i>{% trans "Tout sélectionner" %}
+                            </button>
+                            <button onclick="createSelectedAccounts()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                                <i class="fas fa-plus mr-2"></i>{% trans "Créer les comptes sélectionnés" %}
+                            </button>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    {% if teachers_list %}
+                    <form id="createAccountsForm" method="POST" action="{% url 'settings:create_teacher_accounts_bulk' %}">
+                        {% csrf_token %}
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {% for teacher in teachers_list %}
+                            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                <div class="flex items-start">
+                                    <input type="checkbox" name="teacher_ids" value="{{ teacher.id }}" 
+                                           class="teacher-checkbox mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                    <div class="ml-3 flex-1">
+                                        <div class="flex items-center">
+                                            <h4 class="text-sm font-medium text-gray-900">
+                                                {{ teacher.first_name }} {{ teacher.last_name }}
+                                            </h4>
+                                            {% if teacher.main_subject %}
+                                            <span class="ml-2 inline-block px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
+                                                {{ teacher.main_subject.name }}
+                                            </span>
+                                            {% endif %}
+                                        </div>
+                                        <p class="text-sm text-gray-600 mt-1">
+                                            <i class="fas fa-id-card mr-1"></i>{{ teacher.matricule }}
+                                        </p>
+                                        <p class="text-sm text-gray-600 mt-1">
+                                            <i class="fas fa-envelope mr-1"></i>{{ teacher.email }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </form>
+                    {% else %}
+                    <div class="text-center py-12">
+                        <i class="fas fa-user-check text-green-400 text-6xl mb-4"></i>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">{% trans "Tous les enseignants ont un compte" %}</h3>
+                        <p class="text-gray-500">{% trans "Tous les enseignants actifs avec une adresse email ont déjà un compte utilisateur." %}</p>
+                        {% if teachers_without_email > 0 %}
+                        <div class="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg inline-block">
+                            <p class="text-yellow-800 text-sm">
+                                <i class="fas fa-info-circle mr-2"></i>
+                                {{ teachers_without_email }} enseignant(s) n'ont pas d'adresse email renseignée.
+                            </p>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Onglet 2: Gérer les mots de passe -->
+            <div id="manage-passwords" class="tab-content hidden">
+                <div class="p-6">
+                    <div class="mb-6">
+                        <h3 class="text-lg font-semibold text-gray-900">{% trans "Enseignants avec compte utilisateur" %}</h3>
+                        <p class="text-gray-600 mt-1">{% trans "Réinitialisez le mot de passe d'un enseignant si nécessaire" %}</p>
+                    </div>
+
+                    {% if teachers_with_accounts %}
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Enseignant</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nom d'utilisateur</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                {% for teacher in teachers_with_accounts %}
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center">
+                                            <div class="flex-shrink-0 h-10 w-10">
+                                                <div class="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                                                    <span class="text-sm font-medium text-blue-800">
+                                                        {{ teacher.first_name.0 }}{{ teacher.last_name.0 }}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div class="ml-4">
+                                                <div class="text-sm font-medium text-gray-900">
+                                                    {{ teacher.first_name }} {{ teacher.last_name }}
+                                                </div>
+                                                <div class="text-sm text-gray-500">{{ teacher.matricule }}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-900 font-mono">{{ teacher.user.username }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-900">{{ teacher.email }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        {% if teacher.user.is_active %}
+                                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                            <i class="fas fa-check-circle mr-1"></i>Actif
+                                        </span>
+                                        {% else %}
+                                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                                            <i class="fas fa-times-circle mr-1"></i>Inactif
+                                        </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button onclick="resetPassword({{ teacher.id }}, '{{ teacher.first_name }} {{ teacher.last_name }}')"
+                                                class="text-red-600 hover:text-red-900 transition-colors">
+                                            <i class="fas fa-key mr-1"></i>{% trans "Réinitialiser" %}
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-12">
+                        <i class="fas fa-user-slash text-gray-400 text-6xl mb-4"></i>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">{% trans "Aucun compte utilisateur" %}</h3>
+                        <p class="text-gray-500">{% trans "Aucun enseignant n'a encore de compte utilisateur." %}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Informations importantes -->
+        <div class="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div class="flex items-start">
+                <i class="fas fa-info-circle text-blue-500 mt-1 mr-3"></i>
+                <div>
+                    <h3 class="text-blue-900 font-medium">{% trans "Informations importantes" %}</h3>
+                    <ul class="text-blue-700 text-sm mt-2 space-y-1">
+                        <li>• Les mots de passe sont générés automatiquement (12 caractères sécurisés)</li>
+                        <li>• Les identifiants sont envoyés automatiquement par email</li>
+                        <li>• Les enseignants doivent changer leur mot de passe à la première connexion</li>
+                        <li>• Seuls les enseignants ayant besoin d'accéder au système nécessitent un compte</li>
+                        <li>• Cette fonction est réservée aux administrateurs uniquement</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmation pour réinitialisation -->
+<div id="resetPasswordModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <div class="flex items-center mb-4">
+                <i class="fas fa-exclamation-triangle text-red-500 text-2xl mr-3"></i>
+                <h3 class="text-lg font-medium text-gray-900">{% trans "Confirmer la réinitialisation" %}</h3>
+            </div>
+            <p class="text-gray-600 mb-6">
+                {% trans "Êtes-vous sûr de vouloir réinitialiser le mot de passe de" %} <strong id="teacherName"></strong> ?
+                <br><br>
+                {% trans "Un nouveau mot de passe sera généré et envoyé par email." %}
+            </p>
+            <div class="flex justify-end space-x-3">
+                <button onclick="closeResetModal()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors">
+                    {% trans "Annuler" %}
+                </button>
+                <form id="resetPasswordForm" method="POST" class="inline">
+                    {% csrf_token %}
+                    <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                        {% trans "Réinitialiser" %}
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Gestion des onglets
+function showTab(tabName) {
+    // Masquer tous les contenus d'onglets
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.add('hidden');
+    });
+    
+    // Supprimer la classe active de tous les boutons
+    document.querySelectorAll('.tab-button').forEach(button => {
+        button.classList.remove('active');
+    });
+    
+    // Afficher l'onglet sélectionné
+    document.getElementById(tabName).classList.remove('hidden');
+    document.getElementById('tab-' + tabName).classList.add('active');
+}
+
+// Sélection de tous les enseignants
+function selectAll() {
+    const checkboxes = document.querySelectorAll('.teacher-checkbox');
+    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = !allChecked;
+    });
+}
+
+// Créer les comptes sélectionnés
+function createSelectedAccounts() {
+    const selectedCheckboxes = document.querySelectorAll('.teacher-checkbox:checked');
+    
+    if (selectedCheckboxes.length === 0) {
+        alert('{% trans "Veuillez sélectionner au moins un enseignant." %}');
+        return;
+    }
+    
+    const count = selectedCheckboxes.length;
+    const message = `{% trans "Créer des comptes pour" %} ${count} {% trans "enseignant(s) sélectionné(s) ?" %}\n\n{% trans "Les identifiants seront envoyés automatiquement par email." %}`;
+    
+    if (confirm(message)) {
+        document.getElementById('createAccountsForm').submit();
+    }
+}
+
+// Réinitialiser le mot de passe
+function resetPassword(teacherId, teacherName) {
+    document.getElementById('teacherName').textContent = teacherName;
+    document.getElementById('resetPasswordForm').action = 
+        '{% url "settings:reset_teacher_password" 0 %}'.replace('0', teacherId);
+    document.getElementById('resetPasswordModal').classList.remove('hidden');
+}
+
+// Fermer le modal de réinitialisation
+function closeResetModal() {
+    document.getElementById('resetPasswordModal').classList.add('hidden');
+}
+
+// Styles CSS pour les onglets
+document.addEventListener('DOMContentLoaded', function() {
+    const style = document.createElement('style');
+    style.textContent = `
+        .tab-button {
+            padding: 12px 24px;
+            font-medium: 500;
+            color: #6b7280;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+        }
+        .tab-button:hover {
+            color: #374151;
+            background-color: #f9fafb;
+        }
+        .tab-button.active {
+            color: #3b82f6;
+            border-bottom-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+    `;
+    document.head.appendChild(style);
+});
+</script>
+{% endblock %}

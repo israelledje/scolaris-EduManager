@@ -273,7 +273,7 @@
             <i class="fas fa-exclamation-triangle text-red-500 mr-3"></i>
             <div>
               <p class="text-sm font-medium text-gray-900">{% trans "Retard de paiement" %}</p>
-              <p class="text-xs text-gray-500">5 élèves concernés</p>
+              <p class="text-xs text-gray-500">{{ overdue_count }} élève{{ overdue_count|pluralize }} concerné{{ overdue_count|pluralize }}</p>
             </div>
           </div>
           <div class="flex items-center p-3 bg-yellow-50 rounded-lg border-l-4 border-yellow-500">
@@ -301,9 +301,9 @@
     <div class="bg-white rounded-xl p-6 shadow-lg mb-8">
       <div class="flex items-center justify-between mb-6">
         <h3 class="text-lg font-semibold text-gray-900">{% trans "Élèves avec retards de paiement" %}</h3>
-        <button class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors">
+        <a href="{% url 'finances:overdue_report' %}" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors">
           <i class="fas fa-exclamation-triangle mr-2"></i>{% trans "Actions urgentes" %}
-        </button>
+        </a>
       </div>
       <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
@@ -317,56 +317,88 @@
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
-            <tr class="hover:bg-gray-50">
-              <td class="px-6 py-4 whitespace-nowrap">
-                <div class="flex items-center">
-                  <div class="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
-                    <span class="text-primary-600 font-medium">JD</span>
-                  </div>
-                  <div class="ml-4">
-                    <div class="text-sm font-medium text-gray-900">Jean Dupont</div>
-                    <div class="text-sm text-gray-500">jean.dupont@email.com</div>
-                  </div>
-                </div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">6ème A</td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-red-600">75,000 FCFA</td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                  45 jours
-                </span>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                <button class="text-primary-600 hover:text-primary-900 mr-3">{% trans "Contacter" %}</button>
-                <button class="text-red-600 hover:text-red-900">{% trans "Rappeler" %}</button>
-              </td>
-            </tr>
-            <tr class="hover:bg-gray-50">
-              <td class="px-6 py-4 whitespace-nowrap">
-                <div class="flex items-center">
-                  <div class="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
-                    <span class="text-green-600 font-medium">ML</span>
-                  </div>
-                  <div class="ml-4">
-                    <div class="text-sm font-medium text-gray-900">Marie Laurent</div>
-                    <div class="text-sm text-gray-500">marie.laurent@email.com</div>
-                  </div>
-                </div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">5ème B</td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-red-600">60,000 FCFA</td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                  30 jours
-                </span>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                <button class="text-primary-600 hover:text-primary-900 mr-3">{% trans "Contacter" %}</button>
-                <button class="text-red-600 hover:text-red-900">{% trans "Rappeler" %}</button>
-              </td>
-            </tr>
+            {% if overdue_students %}
+              {% for overdue in overdue_students|slice:":5" %}
+                <tr class="hover:bg-gray-50">
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center">
+                      <div class="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
+                        <span class="text-primary-600 font-medium">{{ overdue.student.first_name|first }}{{ overdue.student.last_name|first }}</span>
+                      </div>
+                      <div class="ml-4">
+                        <div class="text-sm font-medium text-gray-900">{{ overdue.student.first_name }} {{ overdue.student.last_name }}</div>
+                        <div class="text-sm text-gray-500">{{ overdue.student.email|default:"Aucun email" }}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ overdue.student.current_class.name|default:"Non assigné" }}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-red-600">{{ overdue.total_overdue|floatformat:0 }} FCFA</td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    {% if overdue.severity == 'high' %}
+                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                        {{ overdue.max_days_overdue }} jours
+                      </span>
+                    {% elif overdue.severity == 'medium' %}
+                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                        {{ overdue.max_days_overdue }} jours
+                      </span>
+                    {% else %}
+                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                        {{ overdue.max_days_overdue }} jours
+                      </span>
+                    {% endif %}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <a href="{% url 'finances:student_financial_status' overdue.student.id %}" class="text-primary-600 hover:text-primary-900 mr-3">{% trans "Détails" %}</a>
+                    <button class="text-red-600 hover:text-red-900">{% trans "Rappeler" %}</button>
+                  </td>
+                </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">
+                  {% trans "Aucun élève en retard de paiement" %}
+                </td>
+              </tr>
+            {% endif %}
           </tbody>
         </table>
+      </div>
+    </div>
+
+    <!-- Derniers paiements -->
+    <div class="bg-white rounded-xl p-6 shadow-lg mb-8">
+      <div class="flex items-center justify-between mb-6">
+        <h3 class="text-lg font-semibold text-gray-900">{% trans "Derniers paiements" %}</h3>
+        <a href="{% url 'finances:payment_list' %}" class="text-primary-600 text-sm font-medium hover:text-primary-700">
+          {% trans "Voir tous les paiements" %} →
+        </a>
+      </div>
+      <div class="space-y-4">
+        {% if last_payments %}
+          {% for payment in last_payments %}
+            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+              <div class="flex items-center">
+                <div class="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                  <span class="text-green-600 font-medium">{{ payment.student.first_name|first }}{{ payment.student.last_name|first }}</span>
+                </div>
+                <div class="ml-4">
+                  <div class="text-sm font-medium text-gray-900">{{ payment.student.first_name }} {{ payment.student.last_name }}</div>
+                  <div class="text-sm text-gray-500">{{ payment.description }}</div>
+                  <div class="text-xs text-gray-400">{{ payment.payment_date|date:"d/m/Y" }} - {{ payment.mode|title }}</div>
+                </div>
+              </div>
+              <div class="text-right">
+                <div class="text-sm font-medium text-green-600">{{ payment.amount|floatformat:0 }} FCFA</div>
+                <div class="text-xs text-gray-500">{{ payment.type }}</div>
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="text-center py-8 text-gray-500">
+            {% trans "Aucun paiement récent" %}
+          </div>
+        {% endif %}
       </div>
     </div>
 
@@ -388,7 +420,7 @@
               <i class="fas fa-chalkboard-teacher text-green-600 mr-3"></i>
               <span>{% trans "Nouvel enseignant" %}</span>
             </a>
-            <a href="#" class="flex items-center p-3 text-gray-700 hover:bg-gray-50 rounded-md transition-colors">
+            <a href="{% url 'finances:payment_create' %}" class="flex items-center p-3 text-gray-700 hover:bg-gray-50 rounded-md transition-colors">
               <i class="fas fa-money-bill text-yellow-600 mr-3"></i>
               <span>{% trans "Nouveau paiement" %}</span>
             </a>
@@ -413,20 +445,29 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Graphique répartition des élèves par niveau
     const studentsCtx = document.getElementById('studentsDistributionChart').getContext('2d');
-    new Chart(studentsCtx, {
-        type: 'doughnut',
-        data: {
-            labels: ['6ème', '5ème', '4ème', '3ème', '2nde', '1ère', 'Tle'],
-            datasets: [{
-                data: [45, 52, 48, 43, 38, 35, 32],
-                backgroundColor: [
-                    '#3B82F6', '#10B981', '#8B5CF6', '#F59E0B',
-                    '#EF4444', '#06B6D4', '#EC4899'
-                ],
-                borderWidth: 0,
-                hoverOffset: 4
-            }]
-        },
+    
+    // Charger les vraies données depuis l'API finances
+    fetch('{% url "finances:dashboard_chart_data" %}')
+        .then(response => response.json())
+        .then(data => {
+            // Données des élèves par classe
+            const classLabels = data.students_by_class.map(item => item.name);
+            const classData = data.students_by_class.map(item => item.count);
+            
+            new Chart(studentsCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: classLabels.length > 0 ? classLabels : ['6ème', '5ème', '4ème', '3ème', '2nde', '1ère', 'Tle'],
+                    datasets: [{
+                        data: classData.length > 0 ? classData : [45, 52, 48, 43, 38, 35, 32],
+                        backgroundColor: [
+                            '#3B82F6', '#10B981', '#8B5CF6', '#F59E0B',
+                            '#EF4444', '#06B6D4', '#EC4899'
+                        ],
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
         options: {
             responsive: true,
             maintainAspectRatio: false,
@@ -444,28 +485,91 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
+        })
+        .catch(error => {
+            console.error('Erreur lors du chargement des données:', error);
+            // Utiliser les données par défaut en cas d'erreur
+            new Chart(studentsCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['6ème', '5ème', '4ème', '3ème', '2nde', '1ère', 'Tle'],
+                    datasets: [{
+                        data: [45, 52, 48, 43, 38, 35, 32],
+                        backgroundColor: [
+                            '#3B82F6', '#10B981', '#8B5CF6', '#F59E0B',
+                            '#EF4444', '#06B6D4', '#EC4899'
+                        ],
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true,
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        });
     
     // Graphique évolution des paiements
     const paymentsCtx = document.getElementById('paymentsEvolutionChart').getContext('2d');
-    new Chart(paymentsCtx, {
+    
+    // Charger les vraies données depuis l'API finances
+    fetch('{% url "finances:dashboard_chart_data" %}')
+        .then(response => response.json())
+        .then(data => {
+            // Données des paiements mensuels
+            const labels = data.monthly_payments.map(item => item.month);
+            const amounts = data.monthly_payments.map(item => item.amount);
+            const trancheAmounts = data.monthly_payments.map(item => item.tranche);
+            const inscriptionAmounts = data.monthly_payments.map(item => item.inscription);
+            const extraFeesAmounts = data.monthly_payments.map(item => item.extra_fees);
+            
+            new Chart(paymentsCtx, {
         type: 'line',
         data: {
-            labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'],
+            labels: labels,
             datasets: [{
-                label: 'Paiements reçus',
-                data: [120000, 190000, 300000, 250000, 200000, 300000, 280000, 320000, 350000, 380000, 400000, 420000],
+                label: 'Total des paiements',
+                data: amounts,
                 borderColor: '#3B82F6',
                 backgroundColor: 'rgba(59, 130, 246, 0.1)',
                 borderWidth: 3,
                 fill: true,
                 tension: 0.4
             }, {
-                label: 'Objectif mensuel',
-                data: [150000, 200000, 280000, 280000, 280000, 320000, 320000, 350000, 350000, 380000, 400000, 450000],
+                label: 'Paiements de tranches',
+                data: trancheAmounts,
                 borderColor: '#10B981',
                 backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                borderWidth: 3,
-                borderDash: [5, 5],
+                borderWidth: 2,
+                fill: false,
+                tension: 0.4
+            }, {
+                label: 'Paiements d\'inscription',
+                data: inscriptionAmounts,
+                borderColor: '#F59E0B',
+                backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                borderWidth: 2,
+                fill: false,
+                tension: 0.4
+            }, {
+                label: 'Frais annexes',
+                data: extraFeesAmounts,
+                borderColor: '#8B5CF6',
+                backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                borderWidth: 2,
                 fill: false,
                 tension: 0.4
             }]
@@ -494,6 +598,79 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
+        })
+        .catch(error => {
+            console.error('Erreur lors du chargement des données de paiements:', error);
+            // Utiliser les données par défaut en cas d'erreur
+            const labels = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun'];
+            const amounts = [120000, 190000, 300000, 250000, 200000, 300000];
+            const trancheAmounts = [100000, 150000, 250000, 200000, 180000, 250000];
+            const inscriptionAmounts = [15000, 25000, 35000, 30000, 15000, 35000];
+            const extraFeesAmounts = [5000, 15000, 15000, 20000, 5000, 15000];
+            
+            new Chart(paymentsCtx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Total des paiements',
+                        data: amounts,
+                        borderColor: '#3B82F6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4
+                    }, {
+                        label: 'Paiements de tranches',
+                        data: trancheAmounts,
+                        borderColor: '#10B981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.4
+                    }, {
+                        label: 'Paiements d\'inscription',
+                        data: inscriptionAmounts,
+                        borderColor: '#F59E0B',
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.4
+                    }, {
+                        label: 'Frais annexes',
+                        data: extraFeesAmounts,
+                        borderColor: '#8B5CF6',
+                        backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return (value / 1000) + 'k FCFA';
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true
+                            }
+                        }
+                    }
+                }
+            });
+        });
     
     // Graphique taux de réussite par classe
     const successCtx = document.getElementById('successRateChart').getContext('2d');

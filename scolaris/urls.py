@@ -52,6 +52,12 @@ urlpatterns += i18n_patterns(
     path('notes/', include(('notes.urls', 'notes'), namespace='notes')),
     path('finances/', include(('finances.urls', 'finances'), namespace='finances')),
     path('documents/', include(('documents.urls', 'documents'), namespace='documents')),
+    path('parents/', include(('parents_portal.urls', 'parents_portal'), namespace='parents_portal')),
+    path('settings/', include(('settings.urls', 'settings'), namespace='settings')),
+    
+    # API pour la vérification des permissions
+    path('api/', include('authentication.api_urls')),
+    
     path('', root_redirect, name='root'),
     prefix_default_language=False,  # Pas de préfixe pour la langue par défaut (fr)
 )

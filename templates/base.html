@@ -271,49 +271,85 @@
                 <p class="text-white/60 text-xs font-semibold uppercase tracking-wider mb-3">Navigation</p>
             </div>
             
+            <!-- Tableau de bord - visible pour tous les utilisateurs connectés -->
             <a href="{% url 'dashboard:dashboard' %}" class="sidebar-link dashboard flex items-center px-4 py-3 text-white/90 hover:text-white" data-page="dashboard">
                 <i class="fas fa-tachometer-alt w-5"></i>
                 <span class="font-medium ml-3">Tableau de bord</span>
             </a>
             
+            <!-- Étudiants - visible selon les rôles -->
+            {% if can_view_all_students or user_role == 'PROFESSEUR' %}
             <a href="{% url 'students:student_list' %}" class="sidebar-link students flex items-center px-4 py-3 text-white/90 hover:text-white" data-page="students">
                 <i class="fas fa-user-graduate w-5"></i>
                 <span class="font-medium ml-3">Étudiants</span>
+                {% if can_view_all_students %}
                 <span class="ml-auto bg-blue-500 text-white text-xs px-2 py-1 rounded-full font-medium hover:bg-blue-400 transition-colors duration-200" title="{{ students_count }} étudiants actifs">{{ students_count }}</span>
+                {% elif accessible_classes %}
+                <span class="ml-auto bg-blue-500 text-white text-xs px-2 py-1 rounded-full font-medium hover:bg-blue-400 transition-colors duration-200" title="Mes classes">{{ accessible_classes|length }}</span>
+                {% endif %}
             </a>
+            {% endif %}
             
+            <!-- Enseignants - visible pour admin, direction et surveillance -->
+            {% if user_role in 'ADMIN,DIRECTION,SURVEILLANCE' %}
             <a href="{% url 'teachers:teacher_list' %}" class="sidebar-link teachers flex items-center px-4 py-3 text-white/90 hover:text-white" data-page="teachers">
                 <i class="fas fa-chalkboard-teacher w-5"></i>
                 <span class="font-medium ml-3">Enseignants</span>
                 <span class="ml-auto bg-purple-500 text-white text-xs px-2 py-1 rounded-full font-medium hover:bg-purple-400 transition-colors duration-200" title="{{ teachers_count }} enseignants actifs">{{ teachers_count }}</span>
             </a>
+            {% endif %}
             
+            <!-- Classes - visible selon les rôles -->
+            {% if can_view_all_classes or user_role == 'PROFESSEUR' %}
             <a href="{% url 'classes:schoolclass_list' %}" class="sidebar-link classes flex items-center px-4 py-3 text-white/90 hover:text-white" data-page="classes">
                 <i class="fas fa-door-open w-5"></i>
                 <span class="font-medium ml-3">Classes</span>
+                {% if can_view_all_classes %}
                 <span class="ml-auto bg-emerald-500 text-white text-xs px-2 py-1 rounded-full font-medium hover:bg-emerald-400 transition-colors duration-200" title="{{ classes_count }} classes actives">{{ classes_count }}</span>
+                {% elif accessible_classes %}
+                <span class="ml-auto bg-emerald-500 text-white text-xs px-2 py-1 rounded-full font-medium hover:bg-emerald-400 transition-colors duration-200" title="Mes classes">{{ accessible_classes|length }}</span>
+                {% endif %}
             </a>
+            {% endif %}
             
+            <!-- Matières - visible pour admin, direction et professeurs -->
+            {% if user_role in 'ADMIN,DIRECTION,PROFESSEUR' %}
             <a href="{% url 'subjects:subject_list'%}" class="sidebar-link subjects flex items-center px-4 py-3 text-white/90 hover:text-white" data-page="subjects">
                 <i class="fas fa-book w-5"></i>
                 <span class="font-medium ml-3">Matières</span>
+                {% if user_role == 'PROFESSEUR' and accessible_subjects %}
+                <span class="ml-auto bg-amber-500 text-white text-xs px-2 py-1 rounded-full font-medium hover:bg-amber-400 transition-colors duration-200" title="Mes matières">{{ accessible_subjects|length }}</span>
+                {% endif %}
+            </a>
+            {% endif %}
+            
+            <!-- Lien vers le portail parents -->
+            <a href="{% url 'parents_portal:login' %}" class="sidebar-link flex items-center px-4 py-3 text-white/90 hover:text-white" data-page="parents-portal" target="_blank">
+                <i class="fas fa-users w-5"></i>
+                <span class="font-medium ml-3">Portail Parents</span>
+                <i class="fas fa-external-link-alt ml-auto text-xs text-white/60"></i>
             </a>
             
+            <!-- Section Académique -->
+            {% if user_role in 'ADMIN,DIRECTION,SURVEILLANCE,PROFESSEUR' %}
             <div class="px-3 mt-6 mb-4">
                 <p class="text-white/60 text-xs font-semibold uppercase tracking-wider mb-3">Académique</p>
             </div>
             
+            <!-- Emploi du temps -->
             <a href="{% url 'classes:timetable_list_classes' %}" class="sidebar-link flex items-center px-4 py-3 text-white/90 hover:text-white" data-page="timetable">
                 <i class="fas fa-calendar-alt w-5"></i>
                 <span class="font-medium ml-3">Emploi du temps</span>
             </a>
             
+            <!-- Notes et évaluations -->
             <a href="{% url 'notes:dashboard' %}" class="sidebar-link flex items-center px-4 py-3 text-white/90 hover:text-white" data-page="notes">
                 <i class="fas fa-chart-line w-5"></i>
                 <span class="font-medium ml-3">Notes</span>
             </a>
             
-            <!-- Sous-menu des notes -->
+            <!-- Sous-menu des notes - visible selon les rôles -->
+            {% if user_role in 'ADMIN,DIRECTION,SURVEILLANCE' or user_role == 'PROFESSEUR' %}
             <div class="ml-8 space-y-1">
                 <a href="{% url 'notes:evaluation_list' %}" class="sidebar-link flex items-center px-4 py-2 text-white/70 hover:text-white text-sm" data-page="evaluations">
                     <i class="fas fa-clipboard-check w-4"></i>
@@ -323,11 +359,12 @@
                     <i class="fas fa-file-alt w-4"></i>
                     <span class="ml-3">Bulletins</span>
                 </a>
+                
+                {% if user_role in 'ADMIN,DIRECTION,SURVEILLANCE' %}
                 <a href="{% url 'notes:trimester_list' %}" class="sidebar-link flex items-center px-4 py-2 text-white/70 hover:text-white text-sm" data-page="trimesters">
                     <i class="fas fa-calendar w-4"></i>
                     <span class="ml-3">Trimestres</span>
                 </a>
-                
                 <a href="{% url 'notes:reports_dashboard' %}" class="sidebar-link flex items-center px-4 py-2 text-white/70 hover:text-white text-sm" data-page="reports">
                     <i class="fas fa-chart-bar w-4"></i>
                     <span class="ml-3">Rapports</span>
@@ -336,17 +373,25 @@
                     <i class="fas fa-exchange-alt w-4"></i>
                     <span class="ml-3">Import/Export</span>
                 </a>
+                {% endif %}
             </div>
+            {% endif %}
             
+            <!-- Présences -->
             <a href="#" class="sidebar-link flex items-center px-4 py-3 text-white/90 hover:text-white" data-page="attendance">
                 <i class="fas fa-user-check w-5"></i>
                 <span class="font-medium ml-3">Présences</span>
             </a>
+            {% endif %}
             
+            <!-- Section Gestion -->
+            {% if user_role in 'ADMIN,DIRECTION,SURVEILLANCE' %}
             <div class="px-3 mt-6 mb-4">
                 <p class="text-white/60 text-xs font-semibold uppercase tracking-wider mb-3">Gestion</p>
             </div>
             
+            <!-- Finances - uniquement pour admin et direction -->
+            {% if can_view_finances %}
             <a href="{% url 'finances:financial_dashboard' %}" class="sidebar-link finance flex items-center px-4 py-3 text-white/90 hover:text-white" data-page="finance">
                 <i class="fas fa-money-bill-wave w-5"></i>
                 <span class="font-medium ml-3">Frais scolaires</span>
@@ -379,30 +424,38 @@
                     <span class="ml-3">Rapports Financiers</span>
                 </a>
             </div>
+            {% endif %}
             
+            <!-- Bibliothèque -->
             <a href="#" class="sidebar-link flex items-center px-4 py-3 text-white/90 hover:text-white" data-page="library">
                 <i class="fas fa-book-reader w-5"></i>
                 <span class="font-medium ml-3">Bibliothèque</span>
             </a>
             
+            <!-- Événements -->
             <a href="#" class="sidebar-link flex items-center px-4 py-3 text-white/90 hover:text-white" data-page="events">
                 <i class="fas fa-calendar-check w-5"></i>
                 <span class="font-medium ml-3">Événements</span>
             </a>
             
+            <!-- Rapports généraux -->
             <a href="#" class="sidebar-link flex items-center px-4 py-3 text-white/90 hover:text-white" data-page="reports">
                 <i class="fas fa-chart-bar w-5"></i>
                 <span class="font-medium ml-3">Rapports</span>
             </a>
+            {% endif %}
             
+            <!-- Section Système - uniquement pour admin et direction -->
+            {% if user_role in 'ADMIN,DIRECTION' %}
             <div class="px-3 mt-6 mb-4">
                 <p class="text-white/60 text-xs font-semibold uppercase tracking-wider mb-3">Système</p>
             </div>
             
-            <a href="#" class="sidebar-link settings flex items-center px-4 py-3 text-white/90 hover:text-white" data-page="settings">
+            <a href="{% url 'settings:matricule_settings' %}" class="sidebar-link settings flex items-center px-4 py-3 text-white/90 hover:text-white" data-page="settings">
                 <i class="fas fa-cog w-5"></i>
                 <span class="font-medium ml-3">Paramètres</span>
             </a>
+            {% endif %}
         </div>
     </nav>
     
@@ -506,7 +559,7 @@
                                 <i class="fas fa-user mr-3 text-slate-400 w-4 group-hover:text-blue-500 transition-colors"></i>Mon Profil
                             </a>
                             
-                            <a href="#" class="flex items-center px-4 py-3 text-sm text-slate-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 transition-all duration-200 group">
+                            <a href="{% url 'settings:matricule_settings' %}" class="flex items-center px-4 py-3 text-sm text-slate-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 transition-all duration-200 group">
                                 <i class="fas fa-cog mr-3 text-slate-400 w-4 group-hover:text-purple-500 transition-colors"></i>Paramètres
                             </a>
                             
@@ -616,6 +669,68 @@
             <div class="flex items-center gap-4">
                 <div class="loading-spinner"></div>
                 <span class="text-slate-700 font-medium">Chargement...</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Permission Denied Modal -->
+    <div id="permissionDeniedModal" class="fixed inset-0 bg-gray-900/75 backdrop-blur-sm z-60 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full transform transition-all duration-300 scale-95 opacity-0" id="permissionModalContent">
+            <!-- Header -->
+            <div class="bg-red-600 text-white p-6 rounded-t-2xl">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center mr-4">
+                        <i class="fas fa-shield-alt text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold">Accès refusé</h3>
+                        <p class="text-red-100 text-sm">Permissions insuffisantes</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Content -->
+            <div class="p-6">
+                <div class="mb-4">
+                    <p id="permissionModalMessage" class="text-gray-700 mb-4">
+                        Vous n'avez pas les droits nécessaires pour accéder à cette page.
+                    </p>
+                    
+                    <div id="permissionModalDetails" class="bg-gray-50 rounded-lg p-4 text-sm">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-gray-600">Votre rôle :</span>
+                            <span id="userRoleBadge" class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full font-medium"></span>
+                        </div>
+                        <div class="flex justify-between items-start">
+                            <span class="text-gray-600">Rôles requis :</span>
+                            <div id="requiredRolesBadges" class="flex flex-wrap gap-1 ml-2"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+                    <div class="flex items-start">
+                        <i class="fas fa-info-circle text-yellow-600 mt-0.5 mr-2"></i>
+                        <div class="text-yellow-800 text-sm">
+                            <p class="font-medium mb-1">Que faire ?</p>
+                            <ul class="list-disc list-inside space-y-1 text-xs">
+                                <li>Contactez votre administrateur si vous pensez avoir besoin de ces droits</li>
+                                <li>Vérifiez que vous êtes connecté avec le bon compte</li>
+                                <li>Retournez aux pages auxquelles vous avez accès</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Actions -->
+            <div class="bg-gray-50 px-6 py-4 rounded-b-2xl flex space-x-3">
+                <button onclick="history.back()" class="flex-1 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors text-sm">
+                    <i class="fas fa-arrow-left mr-2"></i>Retour
+                </button>
+                <button onclick="closePermissionModal()" class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm">
+                    <i class="fas fa-home mr-2"></i>Tableau de bord
+                </button>
             </div>
         </div>
     </div>
@@ -1113,7 +1228,125 @@
                     }
                 }, 5000);
             }
+            
+            // Gestion des permissions
+            checkPermissions(url) {
+                return fetch('/api/check-permissions/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({ url: url })
+                })
+                .then(response => response.json())
+                .catch(error => ({
+                    error: true,
+                    message: 'Erreur de vérification des permissions'
+                }));
+            }
         }
+        
+        // Fonctions globales pour la modale de permissions
+        function showPermissionDeniedModal(data) {
+            const modal = document.getElementById('permissionDeniedModal');
+            const content = document.getElementById('permissionModalContent');
+            const message = document.getElementById('permissionModalMessage');
+            const userRoleBadge = document.getElementById('userRoleBadge');
+            const requiredRolesBadges = document.getElementById('requiredRolesBadges');
+            
+            // Mettre à jour le contenu
+            if (data.message) {
+                message.textContent = data.message;
+            }
+            
+            if (data.userRole) {
+                userRoleBadge.textContent = data.userRole;
+                userRoleBadge.className = `px-3 py-1 rounded-full font-medium text-xs ${getRoleBadgeClass(data.userRole)}`;
+            }
+            
+            if (data.requiredRoles && data.requiredRoles.length > 0) {
+                requiredRolesBadges.innerHTML = data.requiredRoles.map(role => 
+                    `<span class="px-2 py-1 rounded-full font-medium text-xs ${getRoleBadgeClass(role)}">${role}</span>`
+                ).join('');
+            }
+            
+            // Afficher la modale avec animation
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            // Animation d'entrée
+            setTimeout(() => {
+                content.classList.remove('scale-95', 'opacity-0');
+                content.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+        
+        function closePermissionModal() {
+            const modal = document.getElementById('permissionDeniedModal');
+            const content = document.getElementById('permissionModalContent');
+            
+            // Animation de sortie
+            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.add('scale-95', 'opacity-0');
+            
+            setTimeout(() => {
+                modal.classList.remove('flex');
+                modal.classList.add('hidden');
+                
+                // Rediriger vers le dashboard
+                window.location.href = '/dashboard/';
+            }, 300);
+        }
+        
+        function getRoleBadgeClass(role) {
+            const roleClasses = {
+                'ADMIN': 'bg-red-100 text-red-800',
+                'DIRECTION': 'bg-purple-100 text-purple-800',
+                'PROFESSEUR': 'bg-green-100 text-green-800',
+                'SURVEILLANCE': 'bg-blue-100 text-blue-800',
+                'ELEVE': 'bg-gray-100 text-gray-800',
+                'PARENT': 'bg-yellow-100 text-yellow-800'
+            };
+            return roleClasses[role] || 'bg-gray-100 text-gray-800';
+        }
+        
+        // Intercepter les erreurs de permissions en AJAX
+        document.addEventListener('DOMContentLoaded', function() {
+            // Intercepter toutes les requêtes fetch
+            const originalFetch = window.fetch;
+            window.fetch = function(...args) {
+                return originalFetch.apply(this, args)
+                    .then(response => {
+                        if (response.status === 403) {
+                            return response.json().then(data => {
+                                if (data.permission_denied) {
+                                    showPermissionDeniedModal(data);
+                                }
+                                throw new Error('Permission denied');
+                            });
+                        }
+                        return response;
+                    });
+            };
+            
+            // Intercepter les clics sur les liens pour vérification préventive
+            document.addEventListener('click', function(e) {
+                const link = e.target.closest('a[href]');
+                if (link && !link.hasAttribute('data-no-permission-check')) {
+                    const href = link.getAttribute('href');
+                    
+                    // Ignorer les liens externes et les ancres
+                    if (href.startsWith('http') || href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:')) {
+                        return;
+                    }
+                    
+                    // Vérification rapide des permissions (optionnel)
+                    // Pour éviter de bloquer la navigation, on ne fait pas de vérification systématique
+                }
+            });
+        });
         
         // Initialize the application
         const app = new EduManagerApp();

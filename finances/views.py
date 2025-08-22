@@ -3232,3 +3232,102 @@ def export_financial_report(request):
     response['Content-Disposition'] = f'attachment; filename="rapport_financier_{period}_{start_date}_{end_date}.pdf"'
     
     return response
+
+@login_required
+def dashboard_chart_data(request):
+    """API pour fournir les données des graphiques au dashboard"""
+    from django.http import JsonResponse
+    from datetime import datetime, timedelta
+    from django.utils import timezone
+    from school.models import SchoolYear
+    
+    try:
+        # Données des paiements mensuels (6 derniers mois)
+        monthly_payments = []
+        for i in range(6):
+            month_start = datetime.now().replace(day=1) - timedelta(days=30*i)
+            month_end = month_start + timedelta(days=31)
+            
+            # Paiements des tranches
+            tranche_total = TranchePayment.objects.filter(
+                payment_date__range=[month_start, month_end]
+            ).aggregate(total=Sum('amount'))['total'] or 0
+            
+            # Paiements d'inscription
+            try:
+                inscription_total = InscriptionPayment.objects.filter(
+                    payment_date__range=[month_start, month_end]
+                ).aggregate(total=Sum('amount'))['total'] or 0
+            except:
+                inscription_total = 0
+            
+            # Paiements des frais annexes
+            try:
+                extra_fee_total = ExtraFeePayment.objects.filter(
+                    payment_date__range=[month_start, month_end]
+                ).aggregate(total=Sum('amount'))['total'] or 0
+            except:
+                extra_fee_total = 0
+            
+            # Total du mois
+            month_total = tranche_total + inscription_total + extra_fee_total
+            
+            monthly_payments.append({
+                'month': month_start.strftime('%b'),
+                'amount': float(month_total),
+                'tranche': float(tranche_total),
+                'inscription': float(inscription_total),
+                'extra_fees': float(extra_fee_total)
+            })
+        monthly_payments.reverse()
+        
+        # Données des élèves par classe
+        students_by_class = Student.objects.filter(
+            current_class__isnull=False
+        ).values(
+            'current_class__name'
+        ).annotate(
+            count=Count('id')
+        ).order_by('-count')
+        
+        class_data = []
+        for class_info in students_by_class:
+            class_data.append({
+                'name': class_info['current_class__name'],
+                'count': class_info['count']
+            })
+        
+        # Statistiques générales
+        total_students = Student.objects.count()
+        active_students = Student.objects.filter(is_active=True).count()
+        
+        # Paiements totaux
+        total_tranche_payments = TranchePayment.objects.aggregate(total=Sum('amount'))['total'] or 0
+        try:
+            total_inscription_payments = InscriptionPayment.objects.aggregate(total=Sum('amount'))['total'] or 0
+        except:
+            total_inscription_payments = 0
+        try:
+            total_extra_fee_payments = ExtraFeePayment.objects.aggregate(total=Sum('amount'))['total'] or 0
+        except:
+            total_extra_fee_payments = 0
+        
+        total_payments = total_tranche_payments + total_inscription_payments + total_extra_fee_payments
+        
+        response_data = {
+            'monthly_payments': monthly_payments,
+            'students_by_class': class_data,
+            'statistics': {
+                'total_students': total_students,
+                'active_students': active_students,
+                'total_payments': float(total_payments),
+                'total_tranche_payments': float(total_tranche_payments),
+                'total_inscription_payments': float(total_inscription_payments),
+                'total_extra_fee_payments': float(total_extra_fee_payments),
+            }
+        }
+        
+        return JsonResponse(response_data)
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)

@@ -1,0 +1,353 @@
+{% extends 'parents_portal/base.html' %}
+{% load static %}
+
+{% block title %}Rapports Financiers - Portail Parents{% endblock %}
+{% block page_title %}Rapports Financiers{% endblock %}
+{% block breadcrumb_current %}Rapports{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- En-tête avec filtres -->
+    <div class="card-modern p-6">
+        <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <h2 class="text-xl font-semibold text-slate-900">Rapports Financiers</h2>
+                <span class="text-slate-500">Année {{ selected_year.annee }}</span>
+            </div>
+            
+            <div class="flex items-center space-x-4">
+                <!-- Filtre par année -->
+                <select id="yearFilter" class="px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    {% for year in available_years %}
+                        <option value="{{ year.id }}" {% if year.id == selected_year.id %}selected{% endif %}>
+                            {{ year.annee }}
+                        </option>
+                    {% endfor %}
+                </select>
+                
+                <!-- Filtre par étudiant -->
+                <input type="text" id="studentFilter" placeholder="Rechercher un étudiant..." 
+                       class="px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                       value="{{ student_filter|default:'' }}">
+                
+                <button id="exportBtn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200">
+                    <i class="fas fa-download mr-2"></i>
+                    Exporter
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Résumé global -->
+    {% if financial_reports %}
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="card-modern p-6 text-center">
+            <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <i class="fas fa-users text-blue-600 text-xl"></i>
+            </div>
+            <p class="text-2xl font-bold text-blue-900">{{ financial_reports|length }}</p>
+            <p class="text-blue-600 text-sm">Étudiants</p>
+        </div>
+        
+        <div class="card-modern p-6 text-center">
+            <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <i class="fas fa-check-circle text-green-600 text-xl"></i>
+            </div>
+            <p class="text-2xl font-bold text-green-900">
+                {% for report in financial_reports %}
+                    {% if report.financial_info.total_remaining == 0 %}
+                        {% cycle '1' as counter %}
+                    {% endif %}
+                {% endfor %}
+                {{ counter|default:"0" }}
+            </p>
+            <p class="text-green-600 text-sm">Tout payé</p>
+        </div>
+        
+        <div class="card-modern p-6 text-center">
+            <div class="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <i class="fas fa-clock text-amber-600 text-xl"></i>
+            </div>
+            <p class="text-2xl font-bold text-amber-900">
+                {% for report in financial_reports %}
+                    {% if report.financial_info.total_remaining > 0 %}
+                        {% cycle '1' as counter %}
+                    {% endif %}
+                {% endfor %}
+                {{ counter|default:"0" }}
+            </p>
+            <p class="text-amber-600 text-sm">En attente</p>
+        </div>
+        
+        <div class="card-modern p-6 text-center">
+            <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+            </div>
+            <p class="text-2xl font-bold text-red-900">
+                {% for report in financial_reports %}
+                    {% for tranche_status in report.tranches_status %}
+                        {% if tranche_status.status == 'OVERDUE' %}
+                            {% cycle '1' as counter %}
+                        {% endif %}
+                    {% endfor %}
+                {% endfor %}
+                {{ counter|default:"0" }}
+            </p>
+            <p class="text-red-600 text-sm">En retard</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Tableau des rapports -->
+    {% if financial_reports %}
+    <div class="card-modern overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-200/60">
+            <h3 class="text-lg font-semibold text-slate-900 flex items-center">
+                <i class="fas fa-table text-slate-600 mr-2"></i>
+                Détails par étudiant
+            </h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="border-b border-slate-200 bg-slate-50">
+                        <th class="text-left py-3 px-4 font-medium text-slate-700">Étudiant</th>
+                        <th class="text-left py-3 px-4 font-medium text-slate-700">Classe</th>
+                        <th class="text-right py-3 px-4 font-medium text-slate-700">Inscription</th>
+                        <th class="text-right py-3 px-4 font-medium text-slate-700">Scolarité</th>
+                        <th class="text-right py-3 px-4 font-medium text-slate-700">Frais annexes</th>
+                        <th class="text-right py-3 px-4 font-medium text-slate-700">Total dû</th>
+                        <th class="text-right py-3 px-4 font-medium text-slate-700">Payé</th>
+                        <th class="text-right py-3 px-4 font-medium text-slate-700">Reste</th>
+                        <th class="text-center py-3 px-4 font-medium text-slate-700">Statut</th>
+                        <th class="text-center py-3 px-4 font-medium text-slate-700">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for report in financial_reports %}
+                    <tr class="border-b border-slate-100 hover:bg-slate-50">
+                        <td class="py-3 px-4">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-user-graduate text-blue-600"></i>
+                                </div>
+                                <div>
+                                    <p class="font-medium text-slate-900">{{ report.student.first_name }} {{ report.student.last_name }}</p>
+                                    <p class="text-xs text-slate-500">{{ report.student.matricule }}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-3 px-4 text-sm text-slate-600">
+                            {{ report.student.current_class.name|default:"-" }}
+                        </td>
+                        <td class="py-3 px-4 text-right">
+                            <div class="text-sm">
+                                <p class="font-medium text-slate-900">{{ report.financial_info.total_inscription_due|default:"0" }} FCFA</p>
+                                <p class="text-xs text-slate-500">
+                                    Payé: {{ report.financial_info.total_inscription_paid|default:"0" }} FCFA
+                                </p>
+                            </div>
+                        </td>
+                        <td class="py-3 px-4 text-right">
+                            <div class="text-sm">
+                                <p class="font-medium text-slate-900">{{ report.financial_info.total_tuition_due|default:"0" }} FCFA</p>
+                                <p class="text-xs text-slate-500">
+                                    Payé: {{ report.financial_info.total_tuition_paid|default:"0" }} FCFA
+                                </p>
+                            </div>
+                        </td>
+                        <td class="py-3 px-4 text-right">
+                            <div class="text-sm">
+                                <p class="font-medium text-slate-900">{{ report.financial_info.total_extra_fees_due|default:"0" }} FCFA</p>
+                                <p class="text-xs text-slate-500">
+                                    Payé: {{ report.financial_info.total_extra_fees_paid|default:"0" }} FCFA
+                                </p>
+                            </div>
+                        </td>
+                        <td class="py-3 px-4 text-right">
+                            <p class="font-bold text-slate-900">{{ report.financial_info.total_due|default:"0" }} FCFA</p>
+                        </td>
+                        <td class="py-3 px-4 text-right">
+                            <p class="font-semibold text-green-600">{{ report.financial_info.total_paid|default:"0" }} FCFA</p>
+                        </td>
+                        <td class="py-3 px-4 text-right">
+                            <p class="font-semibold {% if report.financial_info.total_remaining > 0 %}text-amber-600{% else %}text-green-600{% endif %}">
+                                {{ report.financial_info.total_remaining|default:"0" }} FCFA
+                            </p>
+                        </td>
+                        <td class="py-3 px-4 text-center">
+                            {% if report.financial_info.total_remaining == 0 %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    <i class="fas fa-check mr-1"></i>
+                                    À jour
+                                </span>
+                            {% elif report.financial_info.total_remaining > 0 %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                                    <i class="fas fa-clock mr-1"></i>
+                                    En attente
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3 px-4 text-center">
+                            <div class="flex items-center justify-center space-x-2">
+                                <a href="{% url 'parents_portal:student_financial_detail' report.student.id %}" 
+                                   class="px-3 py-1.5 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors duration-200">
+                                    <i class="fas fa-eye mr-1"></i>
+                                    Détails
+                                </a>
+                                
+                                {% if report.financial_info.total_remaining > 0 %}
+                                <a href="{% url 'parents_portal:make_tranche_payment' report.student.id 1 %}" 
+                                   class="px-3 py-1.5 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition-colors duration-200">
+                                    <i class="fas fa-credit-card mr-1"></i>
+                                    Payer
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Graphiques et statistiques -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Répartition des paiements -->
+        <div class="card-modern p-6">
+            <h4 class="text-lg font-semibold text-slate-900 mb-4">Répartition des paiements</h4>
+            <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-slate-600">Frais d'inscription</span>
+                    <div class="flex items-center space-x-2">
+                        <div class="w-24 bg-slate-200 rounded-full h-2">
+                            <div class="bg-blue-600 h-2 rounded-full" style="width: 
+                                {% if financial_reports.0.financial_info.total_inscription_due > 0 %}
+                                    {% widthratio financial_reports.0.financial_info.total_inscription_paid financial_reports.0.financial_info.total_inscription_due 100 %}%
+                                {% else %}
+                                    0%
+                                {% endif %}">
+                            </div>
+                        </div>
+                        <span class="text-sm font-medium text-slate-900">
+                            {% if financial_reports.0.financial_info.total_inscription_due > 0 %}
+                                {% widthratio financial_reports.0.financial_info.total_inscription_paid financial_reports.0.financial_info.total_inscription_due 100 %}%
+                            {% else %}
+                                0
+                            {% endif %}%
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="flex items-center justify-between">
+                    <span class="text-slate-600">Frais de scolarité</span>
+                    <div class="flex items-center space-x-2">
+                        <div class="w-24 bg-slate-200 rounded-full h-2">
+                            <div class="bg-green-600 h-2 rounded-full" style="width: 
+                                {% if financial_reports.0.financial_info.total_tuition_due > 0 %}
+                                    {% widthratio financial_reports.0.financial_info.total_tuition_paid financial_reports.0.financial_info.total_tuition_due 100 %}%
+                                {% else %}
+                                    0%
+                                {% endif %}">
+                            </div>
+                        </div>
+                        <span class="text-sm font-medium text-slate-900">
+                            {% if financial_reports.0.financial_info.total_tuition_due > 0 %}
+                                {% widthratio financial_reports.0.financial_info.total_tuition_paid financial_reports.0.financial_info.total_tuition_due 100 %}%
+                            {% else %}
+                                0
+                            {% endif %}%
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="flex items-center justify-between">
+                    <span class="text-slate-600">Frais annexes</span>
+                    <div class="flex items-center space-x-2">
+                        <div class="w-24 bg-slate-200 rounded-full h-2">
+                            <div class="bg-purple-600 h-2 rounded-full" style="width: 
+                                {% if financial_reports.0.financial_info.total_extra_fees_due > 0 %}
+                                    {% widthratio financial_reports.0.financial_info.total_extra_fees_paid financial_reports.0.financial_info.total_extra_fees_due 100 %}%
+                                {% else %}
+                                    0%
+                                {% endif %}">
+                            </div>
+                        </div>
+                        <span class="text-sm font-medium text-slate-900">
+                            {% if financial_reports.0.financial_info.total_extra_fees_due > 0 %}
+                                {% widthratio financial_reports.0.financial_info.total_extra_fees_paid financial_reports.0.financial_info.total_extra_fees_due 100 %}%
+                            {% else %}
+                                0
+                            {% endif %}%
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statut des tranches -->
+        <div class="card-modern p-6">
+            <h4 class="text-lg font-semibold text-slate-900 mb-4">Statut des tranches</h4>
+            <div class="space-y-3">
+                {% for report in financial_reports %}
+                    {% for tranche_status in report.tranches_status %}
+                        <div class="flex items-center justify-between p-2 {% if tranche_status.status == 'PAID' %}bg-green-50{% elif tranche_status.status == 'PARTIAL' %}bg-amber-50{% elif tranche_status.status == 'OVERDUE' %}bg-red-50{% else %}bg-slate-50{% endif %} rounded">
+                            <span class="text-sm text-slate-700">
+                                {{ report.student.first_name }} - T{{ tranche_status.tranche.number }}
+                            </span>
+                            <span class="text-xs px-2 py-1 rounded-full
+                                {% if tranche_status.status == 'PAID' %}bg-green-100 text-green-800
+                                {% elif tranche_status.status == 'PARTIAL' %}bg-amber-100 text-amber-800
+                                {% elif tranche_status.status == 'OVERDUE' %}bg-red-100 text-red-800
+                                {% else %}bg-slate-100 text-slate-800{% endif %}">
+                                {{ tranche_status.status }}
+                            </span>
+                        </div>
+                    {% endfor %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% else %}
+        <div class="card-modern p-12 text-center">
+            <div class="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i class="fas fa-chart-bar text-slate-400 text-3xl"></i>
+            </div>
+            <h3 class="text-xl font-semibold text-slate-900 mb-2">Aucun rapport disponible</h3>
+            <p class="text-slate-600">Aucune donnée financière n'est disponible pour la période sélectionnée.</p>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+// Filtrage par année
+document.getElementById('yearFilter').addEventListener('change', function() {
+    const yearId = this.value;
+    const currentUrl = new URL(window.location);
+    currentUrl.searchParams.set('year', yearId);
+    window.location.href = currentUrl.toString();
+});
+
+// Filtrage par étudiant
+document.getElementById('studentFilter').addEventListener('input', function() {
+    const searchTerm = this.value.toLowerCase();
+    const tableRows = document.querySelectorAll('tbody tr');
+    
+    tableRows.forEach(row => {
+        const studentName = row.querySelector('td:first-child').textContent.toLowerCase();
+        if (studentName.includes(searchTerm)) {
+            row.style.display = 'table-row';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+});
+
+// Fonctionnalité d'export
+document.getElementById('exportBtn').addEventListener('click', function() {
+    // Ici vous pouvez implémenter l'export en CSV ou PDF
+    alert('Fonctionnalité d\'export à implémenter');
+});
+</script>
+{% endblock %}

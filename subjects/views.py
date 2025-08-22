@@ -4,6 +4,8 @@ from django.urls import reverse
 from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.core.exceptions import PermissionDenied
+from authentication.mixins import admin_or_direction_required
 from django.db.models import Q, Count, Avg
 from django.utils import timezone
 from .models import Subject, SubjectProgram, LearningUnit, Lesson, LessonProgress
@@ -18,7 +20,33 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 # Liste des matières
 
 def subject_list(request):
-    subjects = Subject.objects.all().prefetch_related('teachers')
+    # Vérifier les permissions et filtrer selon le rôle
+    if request.user.role == 'PROFESSEUR':
+        from authentication.permissions import TeacherPermissionManager
+        permission_manager = TeacherPermissionManager(request.user)
+        assignment_info = permission_manager.get_assignment_info()
+        
+        # Les professeurs ne voient que leurs matières assignées
+        accessible_subject_ids = permission_manager.get_accessible_subjects()
+        subjects = Subject.objects.filter(id__in=accessible_subject_ids).prefetch_related('teachers')
+        
+        # Permissions limitées pour les professeurs
+        can_modify = False
+        can_create = False
+        can_delete = False
+        can_export = True  # Peut exporter ses propres matières
+        
+    else:
+        # Administrateurs, direction, surveillance voient toutes les matières
+        subjects = Subject.objects.all().prefetch_related('teachers')
+        assignment_info = None
+        
+        # Permissions complètes pour les non-professeurs
+        can_modify = request.user.role in ['ADMIN', 'DIRECTION']
+        can_create = request.user.role in ['ADMIN', 'DIRECTION']
+        can_delete = request.user.role in ['ADMIN', 'DIRECTION']
+        can_export = True
+    
     teachers = Teacher.objects.all()
     
     # Préparer les enseignants principaux pour chaque matière
@@ -28,32 +56,82 @@ def subject_list(request):
         main_teachers = Teacher.objects.filter(main_subject=subject)
         subject_main_teachers[subject.id] = list(main_teachers)
     
-    # Ajouter les variables pour le sidebar (compatibilité avec le template)
+    # Statistiques selon les permissions
     from students.models import Student
     from classes.models import SchoolClass
-    subject_main_teachers['students_count'] = Student.objects.filter(is_active=True).count()
-    subject_main_teachers['teachers_count'] = Teacher.objects.filter(is_active=True).count()
-    subject_main_teachers['classes_count'] = SchoolClass.objects.filter(is_active=True).count()
     
-    return render(request, 'subjects/subject_list.html', {
+    if request.user.role == 'PROFESSEUR' and assignment_info:
+        # Statistiques limitées pour les professeurs
+        students_count = assignment_info.get('total_students', 0)
+        classes_count = assignment_info.get('classes_count', 0)
+        subjects_count = len(accessible_subject_ids) if accessible_subject_ids else 0
+    else:
+        # Statistiques globales pour les autres rôles
+        students_count = Student.objects.filter(is_active=True).count()
+        classes_count = SchoolClass.objects.filter(is_active=True).count()
+        subjects_count = Subject.objects.count()
+    
+    teachers_count = Teacher.objects.filter(is_active=True).count()
+    
+    context = {
         'subjects': subjects,
         'teachers': teachers,
         'subject_main_teachers': subject_main_teachers,
-        'students_count': subject_main_teachers['students_count'],
-        'teachers_count': subject_main_teachers['teachers_count'],
-        'classes_count': subject_main_teachers['classes_count'],
-    })
+        'students_count': students_count,
+        'teachers_count': teachers_count,
+        'classes_count': classes_count,
+        'subjects_count': subjects_count,
+        # Permissions pour le template
+        'can_modify': can_modify,
+        'can_create': can_create,
+        'can_delete': can_delete,
+        'can_export': can_export,
+        'user_role': request.user.role,
+        'is_teacher_view': request.user.role == 'PROFESSEUR',
+    }
+    
+    # Ajouter les informations d'assignation pour les professeurs
+    if request.user.role == 'PROFESSEUR':
+        context['assignment_info'] = assignment_info
+        context['accessible_subject_ids'] = accessible_subject_ids
+    
+    return render(request, 'subjects/subject_list.html', context)
 
 # Détail d'une matière
 
 def subject_detail(request, pk):
     subject = get_object_or_404(Subject, pk=pk)
+    
+    # Vérifier les permissions pour les professeurs
+    if request.user.role == 'PROFESSEUR':
+        from authentication.permissions import TeacherPermissionManager
+        permission_manager = TeacherPermissionManager(request.user)
+        accessible_subject_ids = permission_manager.get_accessible_subjects()
+        
+        # Vérifier si le professeur peut accéder à cette matière
+        if int(pk) not in accessible_subject_ids:
+            from django.core.exceptions import PermissionDenied
+            raise PermissionDenied(
+                f"Vous n'avez pas accès aux détails de la matière '{subject.name}'. "
+                "Vous ne pouvez consulter que les matières qui vous sont assignées."
+            )
+        
+        assignment_info = permission_manager.get_assignment_info()
+        can_modify = False
+        can_delete = False
+    else:
+        assignment_info = None
+        can_modify = request.user.role in ['ADMIN', 'DIRECTION']
+        can_delete = request.user.role in ['ADMIN', 'DIRECTION']
+    
     teachers = subject.teachers.all()
     main_teachers = Teacher.objects.filter(main_subject=subject)
+    
     # Ajout des valeurs par défaut si attributs absents
     classes_count = subject.classes.count() if hasattr(subject, 'classes') else 0
     total_students = getattr(subject, 'total_students', 0)
     average_grade = getattr(subject, 'average_grade', "N/A")
+    
     return render(request, 'subjects/subject_detail.html', {
         'subject': subject,
         'teachers': teachers,
@@ -61,9 +139,14 @@ def subject_detail(request, pk):
         'classes_count': classes_count,
         'total_students': total_students,
         'average_grade': average_grade,
+        'can_modify': can_modify,
+        'can_delete': can_delete,
+        'is_teacher_view': request.user.role == 'PROFESSEUR',
+        'assignment_info': assignment_info,
     })
 
 # Création (htmx)
+@admin_or_direction_required
 def subject_create_htmx(request):
     if request.method == 'POST':
         form = SubjectForm(request.POST)
@@ -75,6 +158,7 @@ def subject_create_htmx(request):
     return render(request, 'subjects/partials/subject_form.html', {'form': form, 'subject': None})
 
 # Modification (htmx)
+@admin_or_direction_required
 def subject_update_htmx(request, pk):
     subject = get_object_or_404(Subject, pk=pk)
     if request.method == 'POST':
@@ -87,6 +171,7 @@ def subject_update_htmx(request, pk):
     return render(request, 'subjects/partials/subject_form.html', {'form': form, 'subject': subject})
 
 # Suppression (htmx)
+@admin_or_direction_required
 def subject_delete_htmx(request, pk):
     subject = get_object_or_404(Subject, pk=pk)
     if request.method == 'POST':

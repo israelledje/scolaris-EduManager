@@ -1,0 +1,353 @@
+{% extends 'parents_portal/base.html' %}
+{% load static %}
+
+{% block title %}Mes Enfants - Portail Parents{% endblock %}
+{% block page_title %}Mes Enfants{% endblock %}
+{% block breadcrumb_current %}Mes Enfants{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+    <!-- En-tête avec statistiques -->
+    <div class="card-modern p-8 text-center bg-gradient-to-br from-blue-50 to-indigo-50">
+        <div class="w-20 h-20 bg-gradient-to-br from-blue-100 to-blue-200 rounded-3xl flex items-center justify-center mx-auto mb-6">
+            <i class="fas fa-users text-blue-600 text-3xl"></i>
+        </div>
+        <h2 class="text-3xl font-bold text-gray-900 mb-4">Mes Enfants</h2>
+        <p class="text-gray-600 text-lg mb-6 max-w-2xl mx-auto">
+            Suivez la progression académique de vos enfants et accédez à toutes leurs informations scolaires
+        </p>
+        <div class="flex items-center justify-center space-x-8">
+            <div class="text-center">
+                <p class="text-2xl font-bold text-blue-600">{{ children_count|default:"0" }}</p>
+                <p class="text-gray-600 text-sm">Enfants inscrits</p>
+            </div>
+            <div class="w-px h-12 bg-gray-300"></div>
+            <div class="text-center">
+                <p class="text-2xl font-bold text-emerald-600">{{ active_children|default:"0" }}</p>
+                <p class="text-gray-600 text-sm">Actuellement actifs</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtres et recherche -->
+    <div class="card-modern p-6">
+        <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <div class="relative">
+                    <input type="text" id="searchInput" placeholder="Rechercher un enfant..." 
+                           class="pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-64 transition-all duration-200">
+                    <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                </div>
+                
+                <select id="classFilter" class="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200">
+                    <option value="">Toutes les classes</option>
+                    {% for class in available_classes %}
+                        <option value="{{ class.id }}">{{ class.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="flex items-center space-x-3">
+                <button id="refreshBtn" class="p-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all duration-200 hover:scale-105">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+                <button id="exportBtn" class="btn-primary">
+                    <i class="fas fa-download mr-2"></i>
+                    Exporter
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des enfants -->
+    {% if children %}
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {% for child in children %}
+            <div class="card-modern overflow-hidden group hover:scale-105 transition-all duration-300">
+                <!-- En-tête de l'enfant -->
+                <div class="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-16 h-16 bg-gradient-to-br from-blue-100 to-blue-200 rounded-2xl flex items-center justify-center group-hover:shadow-lg transition-shadow duration-300">
+                                <i class="fas fa-user-graduate text-blue-600 text-2xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-bold text-gray-900">{{ child.first_name }} {{ child.last_name }}</h3>
+                                <p class="text-blue-600 font-medium">{{ child.current_class.name|default:"Classe non définie" }}</p>
+                                <p class="text-gray-500 text-sm">Matricule: {{ child.matricule|default:"Non défini" }}</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                <span class="w-2 h-2 bg-green-400 rounded-full mr-2"></span>
+                                Actif
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Informations détaillées -->
+                <div class="p-6">
+                    <div class="grid grid-cols-2 gap-6 mb-6">
+                        <div class="text-center p-4 bg-gray-50 rounded-xl">
+                            <div class="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                                <i class="fas fa-chart-line text-emerald-600"></i>
+                            </div>
+                            <p class="text-2xl font-bold text-gray-900">{{ child.average_grade|default:"--" }}/20</p>
+                            <p class="text-gray-600 text-sm">Moyenne générale</p>
+                        </div>
+                        
+                        <div class="text-center p-4 bg-gray-50 rounded-xl">
+                            <div class="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                                <i class="fas fa-calendar-alt text-amber-600"></i>
+                            </div>
+                            <p class="text-2xl font-bold text-gray-900">{{ child.attendance_rate|default:"--" }}%</p>
+                            <p class="text-gray-600 text-sm">Taux de présence</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Dernières activités -->
+                    <div class="mb-6">
+                        <h4 class="font-semibold text-gray-900 mb-3 flex items-center">
+                            <i class="fas fa-history text-gray-500 mr-2"></i>
+                            Dernières activités
+                        </h4>
+                        <div class="space-y-2">
+                            {% if child.recent_activities %}
+                                {% for activity in child.recent_activities|slice:":3" %}
+                                <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                                    <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                                        <i class="fas fa-file-alt text-blue-600 text-sm"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <p class="text-sm font-medium text-gray-900">{{ activity.title }}</p>
+                                        <p class="text-xs text-gray-500">{{ activity.date|date:"d/m/Y" }}</p>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <p class="text-gray-500 text-sm text-center py-4">Aucune activité récente</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Actions -->
+                    <div class="flex items-center space-x-3">
+                        <a href="{% url 'parents_portal:student_detail' child.id %}" class="btn-primary flex-1 text-center">
+                            <i class="fas fa-eye mr-2"></i>
+                            Voir détails
+                        </a>
+                        <a href="#" class="p-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all duration-200 hover:scale-105" title="Bulletins">
+                            <i class="fas fa-file-alt"></i>
+                        </a>
+                        <a href="#" class="p-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all duration-200 hover:scale-105" title="Emploi du temps">
+                            <i class="fas fa-calendar"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <div class="card-modern p-6">
+            <div class="flex items-center justify-between">
+                <div class="text-sm text-gray-700">
+                    Affichage de {{ page_obj.start_index }} à {{ page_obj.end_index }} sur {{ page_obj.paginator.count }} enfants
+                </div>
+                <div class="flex items-center space-x-2">
+                    {% if page_obj.has_previous %}
+                        <a href="?page={{ page_obj.previous_page_number }}" class="p-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-200">
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <span class="px-3 py-2 bg-blue-600 text-white rounded-lg font-medium">{{ num }}</span>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <a href="?page={{ num }}" class="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-200">{{ num }}</a>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}" class="p-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-200">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+    {% else %}
+        <!-- État vide -->
+        <div class="card-modern p-16 text-center">
+            <div class="w-32 h-32 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-8">
+                <i class="fas fa-user-graduate text-gray-400 text-5xl"></i>
+            </div>
+            <h3 class="text-2xl font-bold text-gray-900 mb-4">Aucun enfant enregistré</h3>
+            <p class="text-gray-600 text-lg mb-8 max-w-md mx-auto">
+                Il semble qu'aucun enfant ne soit actuellement associé à votre compte. Contactez l'administration de l'école pour résoudre ce problème.
+            </p>
+            <div class="flex items-center justify-center space-x-4">
+                <a href="{% url 'parents_portal:dashboard' %}" class="btn-primary">
+                    <i class="fas fa-arrow-left mr-2"></i>
+                    Retour au tableau de bord
+                </a>
+                <a href="#" class="btn-success">
+                    <i class="fas fa-plus mr-2"></i>
+                    Ajouter un enfant
+                </a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Modal de détails rapides -->
+<div id="quickDetailsModal" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 hidden">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 animate-fade-in-up">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-semibold text-gray-900">Détails Rapides</h3>
+                <button onclick="hideQuickDetailsModal()" class="text-gray-400 hover:text-gray-600 transition-colors duration-200">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div id="quickDetailsContent" class="space-y-4">
+                <!-- Le contenu sera rempli dynamiquement -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Animation des cartes au chargement
+        const cards = document.querySelectorAll('.card-modern');
+        cards.forEach((card, index) => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            
+            setTimeout(() => {
+                card.style.transition = 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)';
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, index * 100);
+        });
+        
+        // Filtrage et recherche
+        const searchInput = document.getElementById('searchInput');
+        const classFilter = document.getElementById('classFilter');
+        
+        if (searchInput) {
+            searchInput.addEventListener('input', filterStudents);
+        }
+        
+        if (classFilter) {
+            classFilter.addEventListener('change', filterStudents);
+        }
+        
+        // Bouton d'export
+        const exportBtn = document.getElementById('exportBtn');
+        if (exportBtn) {
+            exportBtn.addEventListener('click', exportStudentData);
+        }
+        
+        // Bouton de rafraîchissement
+        const refreshBtn = document.getElementById('refreshBtn');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', refreshData);
+        }
+    });
+    
+    function filterStudents() {
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        const classFilter = document.getElementById('classFilter').value;
+        
+        const studentCards = document.querySelectorAll('.card-modern');
+        
+        studentCards.forEach(card => {
+            const studentName = card.querySelector('h3').textContent.toLowerCase();
+            const studentClass = card.querySelector('.text-blue-600').textContent;
+            const hasMatchingClass = !classFilter || studentClass.includes(classFilter);
+            
+            if (studentName.includes(searchTerm) && hasMatchingClass) {
+                card.style.display = 'block';
+                card.style.opacity = '1';
+                card.style.transform = 'scale(1)';
+            } else {
+                card.style.opacity = '0';
+                card.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    card.style.display = 'none';
+                }, 200);
+            }
+        });
+    }
+    
+    function exportStudentData() {
+        // Implémentation de l'export
+        alert('Fonctionnalité d\'export en cours de développement');
+    }
+    
+    function refreshData() {
+        location.reload();
+    }
+    
+    function showQuickDetails(studentId) {
+        // Récupérer les détails de l'étudiant via AJAX ou afficher des données statiques
+        const modal = document.getElementById('quickDetailsModal');
+        const contentContainer = document.getElementById('quickDetailsContent');
+        
+        // Exemple de contenu statique
+        contentContainer.innerHTML = `
+            <div class="space-y-4">
+                <div class="flex items-center space-x-4">
+                    <div class="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center">
+                        <i class="fas fa-user-graduate text-blue-600 text-2xl"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-gray-900">Nom de l'étudiant</h4>
+                        <p class="text-gray-600">Classe actuelle</p>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="text-center p-3 bg-gray-50 rounded-xl">
+                        <p class="text-lg font-bold text-gray-900">15.5/20</p>
+                        <p class="text-gray-600 text-sm">Moyenne</p>
+                    </div>
+                    <div class="text-center p-3 bg-gray-50 rounded-xl">
+                        <p class="text-lg font-bold text-gray-900">95%</p>
+                        <p class="text-gray-600 text-sm">Présence</p>
+                    </div>
+                </div>
+                
+                <div class="text-center">
+                    <a href="#" class="btn-primary w-full">
+                        Voir le profil complet
+                    </a>
+                </div>
+            </div>
+        `;
+        
+        modal.classList.remove('hidden');
+    }
+    
+    function hideQuickDetailsModal() {
+        const modal = document.getElementById('quickDetailsModal');
+        modal.classList.add('hidden');
+    }
+    
+    // Fermer le modal en cliquant à l'extérieur
+    document.getElementById('quickDetailsModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            hideQuickDetailsModal();
+        }
+    });
+</script>
+{% endblock %}

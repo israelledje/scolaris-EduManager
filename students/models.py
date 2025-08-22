@@ -1,12 +1,14 @@
 from django.db import models
+from django.core.exceptions import ValidationError
 from school.models import SchoolYear, School
+from school.services import MatriculeService
 from authentication.models import User
 # -------------------- ÉLÈVES --------------------
 
 class Student(models.Model):
     SEX_CHOICES = [('M', 'Masculin'), ('F', 'Féminin')]
 
-    matricule = models.CharField(max_length=20, unique=True)
+    matricule = models.CharField(max_length=20, unique=True, blank=True, help_text="Laissez vide pour génération automatique")
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
     birth_date = models.DateField()
@@ -29,6 +31,25 @@ class Student(models.Model):
 
     def __str__(self):
         return f"{self.last_name.upper()} {self.first_name} ({self.matricule})"
+
+    def clean(self):
+        """Validation personnalisée"""
+        super().clean()
+        
+        # Valider l'unicité du matricule si fourni manuellement
+        if self.matricule:
+            MatriculeService.validate_matricule_uniqueness(
+                self.matricule, 
+                Student, 
+                exclude_id=self.id if self.pk else None
+            )
+    
+    def save(self, *args, **kwargs):
+        """Override save pour valider l'unicité"""
+        # Valider l'unicité avant la sauvegarde (seulement si le matricule existe)
+        if self.matricule:
+            self.clean()
+        super().save(*args, **kwargs)
 
     # --- MÉTHODES UTILITAIRES FINANCIÈRES ---
     def get_tranche_status(self, year):
@@ -108,6 +129,8 @@ class Guardian(models.Model):
     email = models.EmailField(blank=True, null=True)
     profession = models.CharField(max_length=100, blank=True)
     is_emergency_contact = models.BooleanField(default=False)
+    # Ajout du lien vers ParentUser
+    parent_user = models.ForeignKey('parents_portal.ParentUser', on_delete=models.SET_NULL, null=True, blank=True, related_name='guardian_profiles')
 
     def __str__(self):
         return f"{self.relation} de {self.student}"
