@@ -85,37 +85,41 @@ class AutoLogoutMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        # Vérifier si l'utilisateur est connecté
-        if request.user.is_authenticated:
-            # Récupérer le timestamp de la dernière activité
-            last_activity = request.session.get('last_activity')
-            
-            if last_activity:
-                # Convertir en datetime si c'est un string
-                if isinstance(last_activity, str):
-                    try:
-                        last_activity = datetime.datetime.fromisoformat(last_activity)
-                    except ValueError:
-                        last_activity = timezone.now()
+        try:
+            # Vérifier si l'utilisateur est connecté
+            if request.user.is_authenticated:
+                # Récupérer le timestamp de la dernière activité
+                last_activity = request.session.get('last_activity')
                 
-                # Calculer le temps d'inactivité
-                inactive_duration = timezone.now() - last_activity
-                max_inactive_time = datetime.timedelta(seconds=getattr(settings, 'SESSION_COOKIE_AGE', 3600))
-                
-                # Si l'utilisateur est inactif depuis trop longtemps
-                if inactive_duration > max_inactive_time:
-                    # Déconnecter l'utilisateur
-                    logout(request)
-                    messages.warning(request, "Votre session a expiré en raison d'une inactivité prolongée.")
+                if last_activity:
+                    # Convertir en datetime si c'est un string
+                    if isinstance(last_activity, str):
+                        try:
+                            last_activity = datetime.datetime.fromisoformat(last_activity)
+                        except ValueError:
+                            last_activity = timezone.now()
                     
-                    # Rediriger vers la page de connexion si ce n'est pas déjà une page publique
-                    if not self._is_public_url(request.path):
-                        return redirect('login')
-            
-            # Mettre à jour le timestamp de la dernière activité pour les requêtes non-AJAX
-            if not request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                request.session['last_activity'] = timezone.now().isoformat()
-                request.session.modified = True
+                    # Calculer le temps d'inactivité
+                    inactive_duration = timezone.now() - last_activity
+                    max_inactive_time = datetime.timedelta(seconds=getattr(settings, 'SESSION_COOKIE_AGE', 3600))
+                    
+                    # Si l'utilisateur est inactif depuis trop longtemps
+                    if inactive_duration > max_inactive_time:
+                        # Déconnecter l'utilisateur
+                        logout(request)
+                        messages.warning(request, "Votre session a expiré en raison d'une inactivité prolongée.")
+                        
+                        # Rediriger vers la page de connexion si ce n'est pas déjà une page publique
+                        if not self._is_public_url(request.path):
+                            return redirect('login')
+                
+                # Mettre à jour le timestamp de la dernière activité pour les requêtes non-AJAX
+                if not request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    request.session['last_activity'] = timezone.now().isoformat()
+                    request.session.modified = True
+        except Exception:
+            # Ignorer les erreurs de session/auth (ex: tables non créées, utilisateur non authentifié)
+            pass
 
         response = self.get_response(request)
         return response
@@ -169,16 +173,20 @@ class LastVisitedMiddleware:
         response = self.get_response(request)
         
         # Sauvegarder l'URL visitée si l'utilisateur est connecté et si on doit la traquer
-        if (request.user.is_authenticated and should_track and 
-            response.status_code == 200 and 
-            request.method == 'GET'):
-            
-            # Éviter de sauvegarder la même URL de façon répétitive
-            last_visited = request.session.get('last_visited_url')
-            if last_visited != current_url:
-                request.session['last_visited_url'] = current_url
-                request.session['last_visited_time'] = timezone.now().isoformat()
-                request.session.modified = True
+        try:
+            if (request.user.is_authenticated and should_track and 
+                response.status_code == 200 and 
+                request.method == 'GET'):
+                
+                # Éviter de sauvegarder la même URL de façon répétitive
+                last_visited = request.session.get('last_visited_url')
+                if last_visited != current_url:
+                    request.session['last_visited_url'] = current_url
+                    request.session['last_visited_time'] = timezone.now().isoformat()
+                    request.session.modified = True
+        except Exception:
+            # Ignorer les erreurs de session (ex: tables non créées)
+            pass
         
         return response
 
