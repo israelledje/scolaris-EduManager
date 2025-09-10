@@ -34,4 +34,15 @@ urlpatterns = [
     # Gestion des créneaux d'emploi du temps
     path('timetable-slot/update/', views.update_timetable_slot, name='update_timetable_slot'),
     path('timetable-slot/delete/', views.delete_timetable_slot, name='delete_timetable_slot'),
+    
+    # Gestion de la discipline
+    path('discipline/save-attendance/', views.save_attendance, name='save_attendance'),
+    path('discipline/save-sanction/', views.save_sanction, name='save_sanction'),
+    path('discipline/save-convocation/', views.save_convocation, name='save_convocation'),
+    path('<int:class_id>/parent-convocation-pdf/', views.parent_convocation_pdf, name='parent_convocation_pdf'),
+    path('<int:class_id>/discipline-report-export/', views.discipline_report_export, name='discipline_report_export'),
+    
+    # Détails des sanctions et présences
+    path('<int:class_id>/sanctions-detail/', views.sanctions_detail_htmx, name='sanctions_detail_htmx'),
+    path('<int:class_id>/attendance-history/', views.attendance_history_htmx, name='attendance_history_htmx'),
 ] 

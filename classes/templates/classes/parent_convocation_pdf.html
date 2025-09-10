@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Convocation Parent - {{ schoolclass.name }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #1e40af;
+            padding-bottom: 20px;
+        }
+        
+        .school-logo {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 15px;
+            border: 2px solid #1e40af;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8fafc;
+        }
+        
+        .school-name {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1e40af;
+            margin-bottom: 5px;
+        }
+        
+        .school-address {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        
+        .document-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #dc2626;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 20px;
+        }
+        
+        .content {
+            margin: 30px 0;
+        }
+        
+        .student-info {
+            background: #f1f5f9;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            border-left: 4px solid #1e40af;
+        }
+        
+        .info-row {
+            display: flex;
+            margin-bottom: 10px;
+        }
+        
+        .info-label {
+            font-weight: bold;
+            width: 150px;
+            color: #374151;
+        }
+        
+        .info-value {
+            color: #1f2937;
+        }
+        
+        .convocation-details {
+            background: #fef3c7;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            border-left: 4px solid #f59e0b;
+        }
+        
+        .meeting-info {
+            background: #ecfdf5;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            border-left: 4px solid #10b981;
+        }
+        
+        .signature-section {
+            margin-top: 40px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .signature-box {
+            width: 200px;
+            text-align: center;
+        }
+        
+        .signature-line {
+            border-bottom: 1px solid #333;
+            height: 40px;
+            margin-bottom: 10px;
+        }
+        
+        .signature-label {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .footer {
+            margin-top: 40px;
+            text-align: center;
+            font-size: 10px;
+            color: #666;
+            border-top: 1px solid #e5e7eb;
+            padding-top: 15px;
+        }
+        
+        .urgent {
+            background: #fef2f2;
+            border: 2px solid #dc2626;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .urgent-text {
+            color: #dc2626;
+            font-weight: bold;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="school-logo">
+            <div style="font-size: 24px; font-weight: bold; color: #1e40af;">LOGO</div>
+        </div>
+        <div class="school-name">{{ school_name|default:"ÉCOLE SECONDAIRE" }}</div>
+        <div class="school-address">
+            {{ school_address|default:"Adresse de l'école" }}<br>
+            Tél: {{ school_phone|default:"+237 XXX XX XX XX" }}
+        </div>
+        <div class="document-title">Convocation Parent</div>
+    </div>
+
+    <div class="content">
+        <div class="urgent">
+            <div class="urgent-text">⚠️ CONVOCATION URGENTE ⚠️</div>
+        </div>
+
+        <div class="student-info">
+            <h3 style="margin-top: 0; color: #1e40af;">Informations sur l'élève</h3>
+            <div class="info-row">
+                <div class="info-label">Nom complet:</div>
+                <div class="info-value">{{ student.last_name|upper }} {{ student.first_name }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Matricule:</div>
+                <div class="info-value">{{ student.matricule }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Classe:</div>
+                <div class="info-value">{{ schoolclass.name }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Année scolaire:</div>
+                <div class="info-value">{{ schoolclass.year }}</div>
+            </div>
+            {% if student.parent_name %}
+            <div class="info-row">
+                <div class="info-label">Parent/Responsable:</div>
+                <div class="info-value">{{ student.parent_name }}</div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="convocation-details">
+            <h3 style="margin-top: 0; color: #f59e0b;">Motif de la convocation</h3>
+            <p><strong>Type:</strong> {{ convocation_reason|default:"Problème de comportement" }}</p>
+            <p><strong>Détails:</strong></p>
+            <p style="margin-left: 20px; font-style: italic;">
+                {{ details|default:"L'élève présente des difficultés comportementales qui nécessitent une rencontre avec les parents pour discuter des mesures à prendre." }}
+            </p>
+        </div>
+
+        <div class="meeting-info">
+            <h3 style="margin-top: 0; color: #10b981;">Informations de la rencontre</h3>
+            <div class="info-row">
+                <div class="info-label">Date proposée:</div>
+                <div class="info-value">{{ proposed_date|default:"À définir" }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Heure proposée:</div>
+                <div class="info-value">{{ proposed_time|default:"À définir" }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Personne à rencontrer:</div>
+                <div class="info-value">{{ meeting_person|default:"Professeur titulaire" }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Lieu:</div>
+                <div class="info-value">Bureau de la direction / Salle des professeurs</div>
+            </div>
+        </div>
+
+        <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin-bottom: 25px;">
+            <h3 style="margin-top: 0; color: #374151;">Instructions importantes</h3>
+            <ul style="margin: 0; padding-left: 20px;">
+                <li>Veuillez confirmer votre présence par téléphone au plus tard 24h avant la date proposée</li>
+                <li>En cas d'empêchement, contactez-nous pour reporter le rendez-vous</li>
+                <li>Merci de vous présenter avec une pièce d'identité</li>
+                <li>Cette convocation est obligatoire et concerne l'avenir scolaire de votre enfant</li>
+            </ul>
+        </div>
+
+        <div style="text-align: center; margin: 30px 0;">
+            <p style="font-size: 14px; color: #666;">
+                <strong>Nous comptons sur votre présence pour le bien-être de votre enfant.</strong>
+            </p>
+        </div>
+    </div>
+
+    <div class="signature-section">
+        <div class="signature-box">
+            <div class="signature-line"></div>
+            <div class="signature-label">Signature du parent</div>
+        </div>
+        <div class="signature-box">
+            <div class="signature-line"></div>
+            <div class="signature-label">Signature du responsable</div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>Document généré le {{ current_date|date:"d/m/Y à H:i" }} | {{ school_name|default:"École Secondaire" }}</p>
+        <p>Pour toute question, contactez-nous au {{ school_phone|default:"+237 620 13 07 08" }}</p>
+    </div>
+</body>
+</html>

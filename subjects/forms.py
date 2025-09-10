@@ -7,7 +7,30 @@ from school.models import SchoolYear
 class SubjectForm(forms.ModelForm):
     class Meta:
         model = Subject
-        fields = ['name', 'code', 'description']
+        fields = ['name', 'code', 'description', 'group']
+        widgets = {
+            'name': forms.TextInput(attrs={
+                'class': 'w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200',
+                'placeholder': 'Nom de la matière'
+            }),
+            'code': forms.TextInput(attrs={
+                'class': 'w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200',
+                'placeholder': 'Code de la matière (ex: MATH, FR)'
+            }),
+            'description': forms.Textarea(attrs={
+                'class': 'w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200',
+                'rows': 3,
+                'placeholder': 'Description de la matière'
+            }),
+            'group': forms.Select(attrs={
+                'class': 'w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200'
+            })
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # S'assurer que les choix du groupe sont bien définis
+        self.fields['group'].choices = Subject.GROUP_CHOICES
 
 class SubjectProgramForm(forms.ModelForm):
     """Formulaire pour la création et modification de programmes pédagogiques"""

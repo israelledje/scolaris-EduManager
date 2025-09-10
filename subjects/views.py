@@ -20,6 +20,12 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 # Liste des matières
 
 def subject_list(request):
+    # Vérifier si l'utilisateur est connecté
+    if not request.user.is_authenticated:
+
+        from django.shortcuts import redirect
+        return redirect('login')
+    
     # Vérifier les permissions et filtrer selon le rôle
     if request.user.role == 'PROFESSEUR':
         from authentication.permissions import TeacherPermissionManager
@@ -100,6 +106,9 @@ def subject_list(request):
 # Détail d'une matière
 
 def subject_detail(request, pk):
+    if not request.user.is_authenticated:
+        return redirect('login')
+    
     subject = get_object_or_404(Subject, pk=pk)
     
     # Vérifier les permissions pour les professeurs
@@ -212,6 +221,7 @@ def subject_detail_ajax(request, pk):
         'name': getattr(subject, 'name', ''),
         'code': getattr(subject, 'code', ''),
         'description': getattr(subject, 'description', ''),
+        'group': getattr(subject, 'group', 1),
         'teachers': [t.id for t in subject.teachers.all()],
     }
     return JsonResponse({'success': True, 'subject': data})

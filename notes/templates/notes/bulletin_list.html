@@ -10,558 +10,387 @@
     <span class="text-slate-700 font-medium">Bulletins</span>
 {% endblock %}
 
-{% block extra_css %}
-<style>
-    /* Animations personnalisées pour interface solennelle */
-    @keyframes slideInDown {
-        from {
-            opacity: 0;
-            transform: translateY(-20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    @keyframes fadeInUp {
-        from {
-            opacity: 0;
-            transform: translateY(20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    @keyframes scaleIn {
-        from {
-            opacity: 0;
-            transform: scale(0.95);
-        }
-        to {
-            opacity: 1;
-            transform: scale(1);
-        }
-    }
-
-    @keyframes shimmer {
-        0% {
-            background-position: -200px 0;
-        }
-        100% {
-            background-position: calc(200px + 100%) 0;
-        }
-    }
-
-    .animate-slide-in-down {
-        animation: slideInDown 0.6s ease-out;
-    }
-
-    .animate-fade-in-up {
-        animation: fadeInUp 0.5s ease-out;
-    }
-
-    .animate-scale-in {
-        animation: scaleIn 0.4s ease-out;
-    }
-
-    .animate-shimmer {
-        animation: shimmer 2s infinite linear;
-        background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
-        background-size: 200px 100%;
-    }
-
-    .animation-delay-100 { animation-delay: 0.1s; }
-    .animation-delay-200 { animation-delay: 0.2s; }
-    .animation-delay-300 { animation-delay: 0.3s; }
-    .animation-delay-400 { animation-delay: 0.4s; }
-    .animation-delay-500 { animation-delay: 0.5s; }
-
-    /* Gradients professionnels */
-    .bg-gradient-header {
-        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-    }
-
-    .bg-gradient-primary {
-        background: linear-gradient(135deg, #1e40af 0%, #1d4ed8 100%);
-    }
-
-    .bg-gradient-success {
-        background: linear-gradient(135deg, #059669 0%, #10b981 100%);
-    }
-
-    .bg-gradient-warning {
-        background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
-    }
-
-    .bg-gradient-card {
-        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-    }
-
-    .bg-gradient-filter {
-        background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
-    }
-
-    /* Hover effects élégants */
-    .hover-lift {
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .hover-lift:hover {
-        transform: translateY(-8px) scale(1.02);
-    }
-
-    .hover-glow:hover {
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-    }
-
-    .hover-border:hover {
-        border-color: #1e40af;
-    }
-
-    /* Focus ring professionnel */
-    .focus-ring:focus {
-        outline: none;
-        box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
-        border-color: #1e40af;
-    }
-
-    /* États des bulletins */
-    .bulletin-approved {
-        border-left: 4px solid #10b981;
-        background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-    }
-
-    .bulletin-draft {
-        border-left: 4px solid #f59e0b;
-        background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
-    }
-
-    /* Séparateurs élégants */
-    .section-divider {
-        background: linear-gradient(90deg, transparent, #e5e7eb, transparent);
-        height: 1px;
-    }
-
-    /* Pagination moderne */
-    .pagination-modern .page-item {
-        margin: 0 2px;
-    }
-
-    .pagination-modern .page-link {
-        border: none;
-        border-radius: 12px;
-        padding: 12px 16px;
-        font-weight: 600;
-        transition: all 0.3s ease;
-    }
-
-    .pagination-modern .page-item.active .page-link {
-        background: linear-gradient(135deg, #1e40af 0%, #1d4ed8 100%);
-        color: white;
-        box-shadow: 0 4px 12px rgba(30, 64, 175, 0.3);
-    }
-
-    .pagination-modern .page-link:hover {
-        background-color: #f1f5f9;
-        transform: translateY(-2px);
-    }
-</style>
-{% endblock %}
-
 {% block content %}
-<div class="min-h-screen bg-gradient-header">
-    <!-- En-tête principal -->
-    <div class="bg-white border-b border-gray-200 shadow-sm">
-        <div class="max-w-7xl mx-auto px-6 py-8">
-            <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 animate-slide-in-down">
-                <div class="flex items-center gap-4">
-                    <div class="w-16 h-16 bg-gradient-primary rounded-2xl flex items-center justify-center text-white shadow-lg">
-                        <i class="fas fa-file-alt text-2xl" aria-hidden="true"></i>
+<div class="space-y-6">
+    <!-- Statistics Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200/50">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="text-2xl font-bold text-slate-900">
+                        {{ classes_data|length|default:0 }}
                     </div>
-                    <div>
-                        <h1 class="text-4xl font-black text-gray-900 mb-2">
-                            Gestion des Bulletins
-                        </h1>
-                        <p class="text-lg text-gray-600 font-medium">
-                            Générer et superviser les bulletins de notes des étudiants
-                        </p>
-                    </div>
+                    <div class="text-blue-700 font-medium">Classes avec bulletins</div>
                 </div>
-                <div class="flex items-center gap-4">
-                    {% if current_trimester %}
-                    <a href="{% url 'notes:generate_bulletins' current_trimester.id %}" 
-                       class="inline-flex items-center px-6 py-3 bg-gradient-primary text-white rounded-xl font-bold hover-lift hover-glow transition-all duration-300 shadow-lg">
-                        <i class="fas fa-plus mr-3" aria-hidden="true"></i>
-                        Générer les Bulletins
-                    </a>
-                    <a href="{% url 'notes:bulletin_pdf_batch' %}" 
-                       class="inline-flex items-center px-6 py-3 bg-gradient-success text-white rounded-xl font-bold hover-lift hover-glow transition-all duration-300 shadow-lg">
-                        <i class="fas fa-file-pdf mr-3" aria-hidden="true"></i>
-                        Générer PDF Groupé
-                    </a>
-                    {% endif %}
-                    <a href="{% url 'notes:dashboard' %}" 
-                       class="inline-flex items-center px-6 py-3 bg-gray-100 border border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 hover:border-gray-400 hover-lift transition-all duration-300">
-                        <i class="fas fa-arrow-left mr-3" aria-hidden="true"></i>
-                        Retour au Dashboard
-                    </a>
+                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center text-white">
+                    <i class="fas fa-school text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-6 border border-emerald-200/50">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="text-2xl font-bold text-slate-900">
+                        {{ total_bulletins_all|default:0 }}
+                    </div>
+                    <div class="text-emerald-700 font-medium">Bulletins total</div>
+                </div>
+                <div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center text-white">
+                    <i class="fas fa-file-alt text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-6 border border-amber-200/50">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="text-2xl font-bold text-slate-900">
+                        {{ total_approved_all|default:0 }}
+                    </div>
+                    <div class="text-amber-700 font-medium">Bulletins approuvés</div>
+                </div>
+                <div class="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center text-white">
+                    <i class="fas fa-check-circle text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-6 border border-purple-200/50">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="text-2xl font-bold text-slate-900">
+                        {{ total_draft_all|default:0 }}
+                    </div>
+                    <div class="text-purple-700 font-medium">Brouillons</div>
+                </div>
+                <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center text-white">
+                    <i class="fas fa-clock text-xl"></i>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Contenu principal -->
-    <div class="max-w-7xl mx-auto px-6 py-12">
-        <!-- Section de filtres -->
-        <div class="mb-12 animate-fade-in-up animation-delay-100">
-            <div class="bg-white rounded-3xl shadow-xl border border-gray-200 overflow-hidden">
-                <div class="px-8 py-6 bg-gradient-filter border-b border-gray-100">
-                    <div class="flex items-center gap-4">
-                        <div class="w-12 h-12 bg-gradient-primary rounded-xl flex items-center justify-center text-white shadow-md">
-                            <i class="fas fa-filter text-lg" aria-hidden="true"></i>
-                        </div>
-                        <div>
-                            <h2 class="text-2xl font-bold text-gray-900">Filtres de Recherche</h2>
-                            <p class="text-gray-600 mt-1">Affinez votre recherche de bulletins</p>
-                        </div>
+    <!-- Filters and Search -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6">
+        <div class="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+            <!-- Search Bar -->
+            <div class="flex-1 max-w-md">
+                <form method="get" class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <i class="fas fa-search text-slate-400"></i>
                     </div>
-                </div>
-                
-                <div class="p-8">
-                    <form method="get" class="space-y-6">
-                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                            <!-- Trimestre -->
-                            <div class="form-group">
-                                <label for="trimester" class="block text-sm font-bold text-gray-800 mb-3 uppercase tracking-wide">
-                                    Trimestre
-                                </label>
-                                <select name="trimester" id="trimester" 
-                                        class="w-full px-5 py-4 border-2 border-gray-300 rounded-xl focus-ring transition-all duration-300 bg-white hover:border-gray-400 text-lg font-medium">
-                                    <option value="">Tous les trimestres</option>
-                                    {% for trimester in trimesters %}
-                                    <option value="{{ trimester.id }}" {% if selected_trimester == trimester.id %}selected{% endif %}>
-                                        {{ trimester.get_trimester_display }}
-                                    </option>
-                                    {% endfor %}
-                                </select>
-                            </div>
+                    <input type="text" name="search" value="{{ search|default:'' }}"
+                        class="w-full pl-11 pr-4 py-3 border border-slate-200 rounded-xl bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 placeholder-slate-400"
+                        placeholder="Rechercher un bulletin..." />
+                </form>
+            </div>
 
-                            <!-- Classe -->
-                            <div class="form-group">
-                                <label for="class" class="block text-sm font-bold text-gray-800 mb-3 uppercase tracking-wide">
-                                    Classe
-                                </label>
-                                <select name="class" id="class" 
-                                        class="w-full px-5 py-4 border-2 border-gray-300 rounded-xl focus-ring transition-all duration-300 bg-white hover:border-gray-400 text-lg font-medium">
-                                    <option value="">Toutes les classes</option>
-                                    {% for class in classes %}
-                                    <option value="{{ class.id }}" {% if selected_class == class.id %}selected{% endif %}>
-                                        {{ class.name }}
-                                    </option>
-                                    {% endfor %}
-                                </select>
-                            </div>
+            <!-- Filters -->
+            <div class="flex flex-wrap gap-3">
+                <!-- Trimestre Filter -->
+                <select name="trimester" class="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors duration-200">
+                    <option value="">Tous les trimestres</option>
+                    {% for trimester in trimesters %}
+                    <option value="{{ trimester.id }}" {% if selected_trimester == trimester.id %}selected{% endif %}>
+                        {{ trimester.get_trimester_display }}
+                    </option>
+                    {% endfor %}
+                </select>
 
-                            <!-- Statut -->
-                            <div class="form-group">
-                                <label for="status" class="block text-sm font-bold text-gray-800 mb-3 uppercase tracking-wide">
-                                    Statut
-                                </label>
-                                <select name="status" id="status" 
-                                        class="w-full px-5 py-4 border-2 border-gray-300 rounded-xl focus-ring transition-all duration-300 bg-white hover:border-gray-400 text-lg font-medium">
-                                    <option value="">Tous les statuts</option>
-                                    <option value="draft" {% if status_filter == 'draft' %}selected{% endif %}>Brouillon</option>
-                                    <option value="approved" {% if status_filter == 'approved' %}selected{% endif %}>Approuvé</option>
-                                </select>
-                            </div>
-                        </div>
+                <!-- Classe Filter -->
+                <select name="class_filter" class="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors duration-200">
+                    <option value="">Toutes les classes</option>
+                    {% for class in classes %}
+                    <option value="{{ class.id }}" {% if selected_class == class.id %}selected{% endif %}>
+                        {{ class.name }}
+                    </option>
+                    {% endfor %}
+                </select>
 
-                        <div class="flex items-center gap-4 pt-4 border-t border-gray-200">
-                            <button type="submit" 
-                                    class="inline-flex items-center px-8 py-4 bg-gradient-primary text-white rounded-xl font-bold hover-lift hover-glow transition-all duration-300 shadow-lg">
-                                <i class="fas fa-filter mr-3" aria-hidden="true"></i>
-                                Appliquer les Filtres
-                            </button>
-                            {% if request.GET %}
-                            <a href="{% url 'notes:bulletin_list' %}" 
-                               class="inline-flex items-center px-8 py-4 bg-white border-2 border-gray-300 text-gray-700 rounded-xl font-bold hover:bg-gray-50 hover:border-gray-400 hover-lift transition-all duration-300">
-                                <i class="fas fa-times mr-3" aria-hidden="true"></i>
-                                Effacer les Filtres
-                            </a>
-                            {% endif %}
-                        </div>
-                    </form>
+                <!-- Statut Filter -->
+                <select name="status" class="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors duration-200">
+                    <option value="">Tous les statuts</option>
+                    <option value="draft" {% if status_filter == 'draft' %}selected{% endif %}>Brouillon</option>
+                    <option value="approved" {% if status_filter == 'approved' %}selected{% endif %}>Approuvé</option>
+                </select>
+
+                <!-- Reset Filters -->
+                <a href="{% url 'notes:bulletin_list' %}"
+                    class="flex items-center gap-2 px-4 py-3 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors duration-200">
+                    <i class="fas fa-undo text-slate-500"></i>
+                    <span class="text-slate-700 font-medium">Reset</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions principales -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6">
+        <div class="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+            <div>
+                <h3 class="text-lg font-semibold text-slate-900">Actions rapides</h3>
+                <p class="text-sm text-slate-500">Générer et gérer les bulletins</p>
+            </div>
+            <div class="flex flex-wrap gap-3">
+                {% if current_trimester %}
+                    {% if user_can_generate_all %}
+                    <a href="{% url 'notes:generate_bulletins' current_trimester.id %}" 
+                       class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl">
+                        <i class="fas fa-plus mr-2"></i>
+                        Générer Tous les Bulletins
+                    </a>
+                    {% endif %}
+                    
+                    <a href="{% url 'notes:bulletin_pdf_batch' %}" 
+                       class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-amber-600 to-orange-600 text-white rounded-xl font-semibold hover:from-amber-700 hover:to-orange-700 transition-all duration-200 shadow-lg hover:shadow-xl">
+                        <i class="fas fa-file-pdf mr-2"></i>
+                        Générer PDF Groupé
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Classes avec bulletins -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">
+        <!-- Header -->
+        <div class="px-6 py-4 border-b border-slate-200 bg-slate-50">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-lg font-semibold text-slate-900">
+                        Classes avec bulletins
+                    </h3>
+                    <p class="text-sm text-slate-500">
+                        {{ classes_data|length }} classe{{ classes_data|length|pluralize }} avec des bulletins
+                    </p>
                 </div>
             </div>
         </div>
 
-        <!-- Liste des bulletins -->
-        {% if bulletins %}
-        <div class="mb-8">
-            <div class="flex items-center gap-3 mb-8">
-                <div class="w-10 h-10 bg-gradient-primary rounded-xl flex items-center justify-center text-white">
-                    <i class="fas fa-list text-lg" aria-hidden="true"></i>
-                </div>
-                <h2 class="text-2xl font-bold text-gray-900">Bulletins Disponibles</h2>
-                <div class="flex-1 h-px bg-gradient-to-r from-gray-300 to-transparent"></div>
-                <span class="text-sm font-semibold text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-                    {{ bulletins|length }} bulletin{{ bulletins|length|pluralize }}
-                </span>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
-                {% for bulletin in bulletins %}
-                <div class="group animate-scale-in animation-delay-{{ forloop.counter }}00">
-                    <div class="bg-white rounded-3xl shadow-lg border-2 border-gray-100 hover-lift hover-glow hover-border transition-all duration-400 overflow-hidden {% if bulletin.is_approved %}bulletin-approved{% else %}bulletin-draft{% endif %}">
-                        <!-- En-tête de la carte -->
-                        <div class="p-6 border-b border-gray-100 bg-gradient-card">
-                            <div class="flex justify-between items-start mb-4">
-                                <div class="flex-1">
-                                    <h3 class="text-xl font-bold text-gray-900 mb-2">
-                                        {{ bulletin.student.get_full_name }}
-                                    </h3>
-                                    <p class="text-gray-600 font-medium">
-                                        {{ bulletin.student.school_class.name }}
+        <!-- Classes Content -->
+        <div class="p-6">
+            {% if classes_data %}
+            <div class="space-y-8">
+                {% for class_data in classes_data %}
+                <div class="border border-slate-200 rounded-xl overflow-hidden">
+                    <!-- Classe Header -->
+                    <div class="bg-gradient-to-r from-slate-50 to-slate-100 px-6 py-4 border-b border-slate-200">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center text-white font-bold text-lg">
+                                    <span>{{ class_data.class.name|slice:":2" }}</span>
+                                </div>
+                                <div>
+                                    <h4 class="text-xl font-bold text-slate-900">{{ class_data.class.name }}</h4>
+                                    <p class="text-slate-600">
+                                        {% if class_data.class.main_teacher %}
+                                            Titulaire: {{ class_data.class.main_teacher.last_name|upper }} {{ class_data.class.main_teacher.first_name }}
+                                        {% else %}
+                                            Aucun titulaire assigné
+                                        {% endif %}
                                     </p>
                                 </div>
-                                <div class="flex-shrink-0">
-                                    {% if bulletin.is_approved %}
-                                    <div class="inline-flex items-center px-3 py-1 bg-green-500 text-white rounded-full text-sm font-bold">
-                                        <i class="fas fa-check-circle mr-2" aria-hidden="true"></i>
-                                        Approuvé
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <!-- Statistiques de la classe -->
+                                <div class="flex items-center gap-6 text-sm">
+                                    <div class="text-center">
+                                        <div class="text-lg font-bold text-slate-900">{{ class_data.total_bulletins }}</div>
+                                        <div class="text-slate-600">Total</div>
                                     </div>
-                                    {% else %}
-                                    <div class="inline-flex items-center px-3 py-1 bg-amber-500 text-white rounded-full text-sm font-bold">
-                                        <i class="fas fa-clock mr-2" aria-hidden="true"></i>
-                                        Brouillon
+                                    <div class="text-center">
+                                        <div class="text-lg font-bold text-emerald-600">{{ class_data.approved_bulletins }}</div>
+                                        <div class="text-slate-600">Approuvés</div>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="text-lg font-bold text-amber-600">{{ class_data.draft_bulletins }}</div>
+                                        <div class="text-slate-600">Brouillons</div>
+                                    </div>
+                                    {% if class_data.class_average > 0 %}
+                                    <div class="text-center">
+                                        <div class="text-lg font-bold text-blue-600">{{ class_data.class_average|floatformat:2 }}</div>
+                                        <div class="text-slate-600">Moy. classe</div>
                                     </div>
                                     {% endif %}
                                 </div>
-                            </div>
-
-                            <!-- Informations temporelles -->
-                            <div class="flex items-center gap-2 text-gray-500 text-sm font-medium">
-                                <i class="fas fa-calendar-alt text-blue-500" aria-hidden="true"></i>
-                                <span>{{ bulletin.trimester.get_trimester_display }} - {{ bulletin.created_at|date:"d/m/Y" }}</span>
-                            </div>
-                        </div>
-
-                        <!-- Statistiques -->
-                        <div class="p-6">
-                            <div class="grid grid-cols-3 gap-4 mb-6">
-                                <div class="text-center p-4 bg-blue-50 rounded-xl border border-blue-200">
-                                    <div class="text-2xl font-black text-blue-600 mb-1">
-                                        {{ bulletin.student_average|floatformat:2 }}
-                                    </div>
-                                    <div class="text-xs font-semibold text-blue-700 uppercase tracking-wider">
-                                        Moyenne
-                                    </div>
-                                </div>
-                                <div class="text-center p-4 bg-green-50 rounded-xl border border-green-200">
-                                    <div class="text-2xl font-black text-green-600 mb-1">
-                                        {{ bulletin.lines.count }}
-                                    </div>
-                                    <div class="text-xs font-semibold text-green-700 uppercase tracking-wider">
-                                        Matières
-                                    </div>
-                                </div>
-                                <div class="text-center p-4 bg-purple-50 rounded-xl border border-purple-200">
-                                    <div class="text-2xl font-black text-purple-600 mb-1">
-                                        {{ bulletin.student_rank|default:"-" }}
-                                    </div>
-                                    <div class="text-xs font-semibold text-purple-700 uppercase tracking-wider">
-                                        Rang
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Actions -->
-                            <div class="space-y-3">
-                                <a href="{% url 'notes:bulletin_detail' bulletin.pk %}" 
-                                   class="w-full inline-flex items-center justify-center px-4 py-3 bg-blue-100 text-blue-700 rounded-xl font-semibold hover:bg-blue-200 hover:-translate-y-1 transition-all duration-300">
-                                    <i class="fas fa-eye mr-2" aria-hidden="true"></i>
-                                    Consulter le Bulletin
-                                </a>
                                 
-                                <div class="grid grid-cols-2 gap-3">
-                                    <a href="{% url 'notes:bulletin_pdf' bulletin.pk %}" 
-                                       class="inline-flex items-center justify-center px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 hover:-translate-y-1 transition-all duration-300">
-                                        <i class="fas fa-file-pdf mr-2" aria-hidden="true"></i>
-                                        PDF
+                                <!-- Actions de classe -->
+                                <div class="flex items-center gap-3">
+                                    <!-- Bouton PDF -->
+                                    {% if class_data.total_bulletins > 0 %}
+                                    <a href="{% url 'notes:bulletin_pdf_class' class_data.class.id %}" 
+                                       class="inline-flex items-center px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg font-medium transition-colors duration-200"
+                                       title="Générer les bulletins PDF de cette classe">
+                                        <i class="fas fa-file-pdf mr-2"></i>
+                                        PDF Classe
                                     </a>
-                                    {% if not bulletin.is_approved %}
-                                    <a href="{% url 'notes:bulletin_approve' bulletin.pk %}" 
-                                       class="inline-flex items-center justify-center px-4 py-3 bg-green-100 text-green-700 rounded-xl font-semibold hover:bg-green-200 hover:-translate-y-1 transition-all duration-300">
-                                        <i class="fas fa-check mr-2" aria-hidden="true"></i>
-                                        Approuver
-                                    </a>
+                                    {% endif %}
+                                    
+                                    <!-- Bouton Approuver tout -->
+                                    {% if class_data.can_manage and class_data.draft_bulletins > 0 %}
+                                    <form method="post" action="{% url 'notes:bulletin_approve_batch' %}" class="inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="bulletin_ids" value="{% for bulletin in class_data.bulletins %}{% if not bulletin.is_approved %}{{ bulletin.id }}{% if not forloop.last %},{% endif %}{% endif %}{% endfor %}">
+                                        <button type="submit" 
+                                                class="inline-flex items-center px-4 py-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-lg font-medium transition-colors duration-200"
+                                                onclick="return confirm('Approuver tous les bulletins brouillons de cette classe ?')">
+                                            <i class="fas fa-check-double mr-2"></i>
+                                            Approuver tout
+                                        </button>
+                                    </form>
                                     {% endif %}
                                 </div>
                             </div>
                         </div>
                     </div>
+
+                    <!-- Tableau des bulletins -->
+                    {% if class_data.bulletins %}
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-slate-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                                        <input type="checkbox" class="bulletin-select-all rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" 
+                                               data-class="{{ class_data.class.id }}">
+                                    </th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Élève</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Trimestre</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Moyenne</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Rang</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Statut</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Date</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-slate-200">
+                                {% for bulletin in class_data.bulletins %}
+                                <tr class="hover:bg-slate-50 transition-colors duration-200">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        {% if not bulletin.is_approved and class_data.can_manage %}
+                                        <input type="checkbox" name="bulletin_ids" value="{{ bulletin.id }}" 
+                                               class="bulletin-checkbox rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                               data-class="{{ class_data.class.id }}">
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center">
+                                            <div class="flex-shrink-0 h-10 w-10">
+                                                <div class="h-10 w-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold">
+                                                    {{ bulletin.student.first_name|first }}{{ bulletin.student.last_name|first }}
+                                                </div>
+                                            </div>
+                                            <div class="ml-4">
+                                                <div class="text-sm font-medium text-slate-900">
+                                                    {{ bulletin.student.last_name|upper }} {{ bulletin.student.first_name }}
+                                                </div>
+                                                <div class="text-sm text-slate-500">{{ bulletin.student.matricule }}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
+                                        {{ bulletin.trimester.get_trimester_display }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm font-bold text-slate-900">{{ bulletin.student_average|floatformat:2 }}/20</div>
+                                        <div class="text-xs text-slate-500">{{ bulletin.class_average|floatformat:2 }} moy. classe</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
+                                        {{ bulletin.student_rank|default:"-" }}/{{ bulletin.class_size }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        {% if bulletin.is_approved %}
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+                                            <i class="fas fa-check-circle mr-1"></i>
+                                            Approuvé
+                                        </span>
+                                        {% else %}
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                                            <i class="fas fa-clock mr-1"></i>
+                                            Brouillon
+                                        </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                                        {{ bulletin.generated_at|date:"d/m/Y" }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <div class="flex items-center gap-2">
+                                            <a href="{% url 'notes:bulletin_detail' bulletin.pk %}" 
+                                               class="text-indigo-600 hover:text-indigo-900 transition-colors duration-200"
+                                               title="Consulter">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="{% url 'notes:bulletin_pdf' bulletin.pk %}" 
+                                               class="text-red-600 hover:text-red-900 transition-colors duration-200"
+                                               title="PDF">
+                                                <i class="fas fa-file-pdf"></i>
+                                            </a>
+                                            {% if not bulletin.is_approved and class_data.can_manage %}
+                                            <a href="{% url 'notes:bulletin_approve' bulletin.pk %}" 
+                                               class="text-emerald-600 hover:text-emerald-900 transition-colors duration-200"
+                                               title="Approuver"
+                                               onclick="return confirm('Approuver ce bulletin ?')">
+                                                <i class="fas fa-check"></i>
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="p-8 text-center">
+                        <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-file-alt text-2xl text-slate-400"></i>
+                        </div>
+                        <h4 class="text-lg font-semibold text-slate-900 mb-2">Aucun bulletin</h4>
+                        <p class="text-slate-500 text-sm mb-4">
+                            {% if request.GET %}
+                                Aucun bulletin ne correspond aux critères de recherche
+                            {% else %}
+                                Aucun bulletin généré pour cette classe
+                            {% endif %}
+                        </p>
+                        {% if current_trimester and class_data.can_manage %}
+                        <a href="{% url 'notes:generate_bulletins' current_trimester.id %}?class_id={{ class_data.class.id }}" 
+                           class="inline-flex items-center px-4 py-2 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-lg font-medium transition-colors duration-200">
+                            <i class="fas fa-plus mr-2"></i>
+                            Générer les bulletins
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
                 </div>
                 {% endfor %}
             </div>
-        </div>
-
-        <!-- Pagination -->
-        {% if bulletins.has_other_pages %}
-        <div class="mt-12 animate-fade-in-up animation-delay-500">
-            <nav aria-label="Pagination des bulletins" class="flex justify-center">
-                <ul class="pagination-modern flex items-center gap-2">
-                    {% if bulletins.has_previous %}
-                    <li class="page-item">
-                        <a class="page-link bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 hover:-translate-y-1 transition-all duration-300 rounded-xl px-4 py-3 font-semibold" 
-                           href="?page={{ bulletins.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
-                            <i class="fas fa-chevron-left" aria-hidden="true"></i>
-                        </a>
-                    </li>
-                    {% endif %}
-
-                    {% for num in bulletins.paginator.page_range %}
-                    <li class="page-item {% if bulletins.number == num %}active{% endif %}">
-                        <a class="page-link {% if bulletins.number == num %}bg-gradient-primary text-white shadow-lg{% else %}bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400{% endif %} hover:-translate-y-1 transition-all duration-300 rounded-xl px-4 py-3 font-semibold" 
-                           href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
-                            {{ num }}
-                        </a>
-                    </li>
-                    {% endfor %}
-
-                    {% if bulletins.has_next %}
-                    <li class="page-item">
-                        <a class="page-link bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 hover:-translate-y-1 transition-all duration-300 rounded-xl px-4 py-3 font-semibold" 
-                           href="?page={{ bulletins.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
-                            <i class="fas fa-chevron-right" aria-hidden="true"></i>
-                        </a>
-                    </li>
-                    {% endif %}
-                </ul>
-            </nav>
-        </div>
-        {% endif %}
-
-        {% else %}
-        <!-- État vide -->
-        <div class="text-center py-20 animate-fade-in-up">
-            <div class="max-w-md mx-auto">
-                <div class="w-32 h-32 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-8">
-                    <i class="fas fa-file-alt text-6xl text-gray-400" aria-hidden="true"></i>
+            {% else %}
+            <div class="text-center py-12">
+                <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-file-alt text-2xl text-slate-400"></i>
                 </div>
-                <h2 class="text-3xl font-bold text-gray-900 mb-4">
+                <h3 class="text-lg font-semibold text-slate-900 mb-2">
+                    Aucune classe avec bulletins
+                </h3>
+                <p class="text-slate-500 text-sm mb-4">
                     {% if request.GET %}
-                        Aucun Bulletin Trouvé
+                        Aucune classe ne correspond à vos critères de recherche
                     {% else %}
-                        Aucun Bulletin Disponible
-                    {% endif %}
-                </h2>
-                <p class="text-lg text-gray-600 mb-8 leading-relaxed">
-                    {% if request.GET %}
-                        Aucun bulletin ne correspond aux critères de recherche sélectionnés. 
-                        Essayez de modifier vos filtres.
-                    {% else %}
-                        Commencez par générer les bulletins pour le trimestre en cours 
-                        afin de pouvoir les consulter et les gérer.
+                        Commencez par générer vos premiers bulletins
                     {% endif %}
                 </p>
-                <div class="space-y-4">
-                    {% if current_trimester %}
-                    <a href="{% url 'notes:generate_bulletins' current_trimester.id %}" 
-                       class="inline-flex items-center px-8 py-4 bg-gradient-primary text-white rounded-xl font-bold hover-lift hover-glow transition-all duration-300 shadow-lg">
-                        <i class="fas fa-plus mr-3" aria-hidden="true"></i>
-                        Générer les Bulletins
-                    </a>
-                    {% endif %}
-                    {% if request.GET %}
-                    <div>
-                        <a href="{% url 'notes:bulletin_list' %}" 
-                           class="inline-flex items-center px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 hover:border-gray-400 hover-lift transition-all duration-300">
-                            <i class="fas fa-times mr-3" aria-hidden="true"></i>
-                            Effacer les Filtres
-                        </a>
-                    </div>
-                    {% endif %}
-                </div>
+                {% if current_trimester %}
+                <a href="{% url 'notes:generate_bulletins' current_trimester.id %}" 
+                   class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all duration-200">
+                    <i class="fas fa-plus mr-2"></i>
+                    Générer les bulletins
+                </a>
+                {% endif %}
             </div>
-        </div>
-        {% endif %}
-
-        <!-- Informations et conseils -->
-        <div class="mt-12 grid grid-cols-1 lg:grid-cols-3 gap-8 animate-fade-in-up animation-delay-500">
-            <!-- Conseils -->
-            <div class="bg-blue-50 border-2 border-blue-200 rounded-2xl p-6">
-                <div class="flex items-center gap-3 mb-4">
-                    <div class="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center text-white">
-                        <i class="fas fa-lightbulb" aria-hidden="true"></i>
-                    </div>
-                    <h3 class="text-lg font-bold text-blue-900">Conseils de Gestion</h3>
-                </div>
-                <ul class="text-blue-800 space-y-2 text-sm">
-                    <li class="flex items-start gap-2">
-                        <i class="fas fa-check-circle text-blue-600 mt-0.5 flex-shrink-0" aria-hidden="true"></i>
-                        <span>Vérifiez les bulletins avant approbation</span>
-                    </li>
-                    <li class="flex items-start gap-2">
-                        <i class="fas fa-check-circle text-blue-600 mt-0.5 flex-shrink-0" aria-hidden="true"></i>
-                        <span>Générez les PDF pour l'archivage</span>
-                    </li>
-                    <li class="flex items-start gap-2">
-                        <i class="fas fa-check-circle text-blue-600 mt-0.5 flex-shrink-0" aria-hidden="true"></i>
-                        <span>Utilisez les filtres pour une recherche efficace</span>
-                    </li>
-                </ul>
-            </div>
-
-            <!-- Rappels -->
-            <div class="bg-amber-50 border-2 border-amber-200 rounded-2xl p-6">
-                <div class="flex items-center gap-3 mb-4">
-                    <div class="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center text-white">
-                        <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
-                    </div>
-                    <h3 class="text-lg font-bold text-amber-900">Points d'Attention</h3>
-                </div>
-                <ul class="text-amber-800 space-y-2 text-sm">
-                    <li class="flex items-start gap-2">
-                        <i class="fas fa-info-circle text-amber-600 mt-0.5 flex-shrink-0" aria-hidden="true"></i>
-                        <span>Les bulletins approuvés ne peuvent plus être modifiés</span>
-                    </li>
-                    <li class="flex items-start gap-2">
-                        <i class="fas fa-info-circle text-amber-600 mt-0.5 flex-shrink-0" aria-hidden="true"></i>
-                        <span>Sauvegardez régulièrement les PDF</span>
-                    </li>
-                    <li class="flex items-start gap-2">
-                        <i class="fas fa-info-circle text-amber-600 mt-0.5 flex-shrink-0" aria-hidden="true"></i>
-                        <span>Vérifiez les moyennes avant validation</span>
-                    </li>
-                </ul>
-            </div>
-
-            <!-- Support -->
-            <div class="bg-green-50 border-2 border-green-200 rounded-2xl p-6">
-                <div class="flex items-center gap-3 mb-4">
-                    <div class="w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center text-white">
-                        <i class="fas fa-question-circle" aria-hidden="true"></i>
-                    </div>
-                    <h3 class="text-lg font-bold text-green-900">Besoin d'Aide ?</h3>
-                </div>
-                <ul class="text-green-800 space-y-2 text-sm">
-                    <li class="flex items-start gap-2">
-                        <i class="fas fa-phone text-green-600 mt-0.5 flex-shrink-0" aria-hidden="true"></i>
-                        <span>Support technique : ext. 1234</span>
-                    </li>
-                    <li class="flex items-start gap-2">
-                        <i class="fas fa-envelope text-green-600 mt-0.5 flex-shrink-0" aria-hidden="true"></i>
-                        <span>Email : support@ecole.fr</span>
-                    </li>
-                    <li class="flex items-start gap-2">
-                        <i class="fas fa-book text-green-600 mt-0.5 flex-shrink-0" aria-hidden="true"></i>
-                        <span>Guide utilisateur disponible</span>
-                    </li>
-                </ul>
-            </div>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -569,156 +398,59 @@
 
 {% block extra_js %}
 <script>
-    // Gestionnaire de la page des bulletins
-    class BulletinManager {
-        constructor() {
-            this.init();
-        }
+document.addEventListener('DOMContentLoaded', function() {
+    // Gestion des cases à cocher "Sélectionner tout"
+    document.querySelectorAll('.bulletin-select-all').forEach(selectAll => {
+        selectAll.addEventListener('change', function() {
+            const classId = this.dataset.class;
+            const checkboxes = document.querySelectorAll(`.bulletin-checkbox[data-class="${classId}"]`);
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+        });
+    });
 
-        init() {
-            this.setupAnimations();
-            this.setupInteractions();
-            this.setupFilters();
-            this.setupAccessibility();
-        }
-
-        setupAnimations() {
-            // Observer pour les animations au scroll
-            if ('IntersectionObserver' in window) {
-                const observer = new IntersectionObserver((entries) => {
-                    entries.forEach(entry => {
-                        if (entry.isIntersecting) {
-                            entry.target.classList.add('animate-fade-in-up');
-                        }
-                    });
-                }, { threshold: 0.1 });
-
-                document.querySelectorAll('.hover-lift').forEach(element => {
-                    observer.observe(element);
-                });
-            }
-        }
-
-        setupInteractions() {
-            // Améliorer les interactions des cartes
-            const cards = document.querySelectorAll('.hover-lift');
+    // Gestion des cases à cocher individuelles
+    document.querySelectorAll('.bulletin-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const classId = this.dataset.class;
+            const selectAll = document.querySelector(`.bulletin-select-all[data-class="${classId}"]`);
+            const checkboxes = document.querySelectorAll(`.bulletin-checkbox[data-class="${classId}"]`);
+            const checkedBoxes = document.querySelectorAll(`.bulletin-checkbox[data-class="${classId}"]:checked`);
             
-            cards.forEach(card => {
-                card.addEventListener('mouseenter', () => {
-                    card.style.transform = 'translateY(-8px) scale(1.02)';
-                });
-                
-                card.addEventListener('mouseleave', () => {
-                    card.style.transform = '';
-                });
-
-                // Animation de clic
-                card.addEventListener('mousedown', () => {
-                    card.style.transform = 'translateY(-4px) scale(1.01)';
-                });
-
-                card.addEventListener('mouseup', () => {
-                    card.style.transform = 'translateY(-8px) scale(1.02)';
-                });
-            });
-
-            // Gestion des clics sur les statistiques
-            const statItems = document.querySelectorAll('.text-center.p-4');
-            statItems.forEach(item => {
-                item.addEventListener('click', () => {
-                    item.style.transform = 'scale(0.95)';
-                    setTimeout(() => {
-                        item.style.transform = '';
-                    }, 150);
-                });
-            });
-        }
-
-        setupFilters() {
-            const form = document.querySelector('form[method="get"]');
-            const selects = form.querySelectorAll('select');
-            
-            // Auto-submit sur changement de filtre
-            selects.forEach(select => {
-                select.addEventListener('change', () => {
-                    // Ajouter un indicateur de chargement
-                    this.showLoadingState();
-                    
-                    // Soumettre le formulaire après un court délai
-                    setTimeout(() => {
-                        form.submit();
-                    }, 300);
-                });
-            });
-        }
-
-        showLoadingState() {
-            const cards = document.querySelectorAll('.hover-lift');
-            cards.forEach(card => {
-                card.classList.add('animate-shimmer');
-                card.style.pointerEvents = 'none';
-            });
-        }
-
-        setupAccessibility() {
-            // Navigation au clavier améliorée
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape') {
-                    document.activeElement.blur();
-                }
-            });
-
-            // Améliorer l'accessibilité des liens de pagination
-            const paginationLinks = document.querySelectorAll('.pagination-modern .page-link');
-            paginationLinks.forEach(link => {
-                link.addEventListener('focus', () => {
-                    link.style.transform = 'translateY(-2px)';
-                });
-                
-                link.addEventListener('blur', () => {
-                    link.style.transform = '';
-                });
-            });
-        }
-
-        // Méthode pour afficher des notifications
-        showNotification(message, type = 'info') {
-            const notification = document.createElement('div');
-            notification.className = `fixed top-4 right-4 z-50 p-6 rounded-xl shadow-2xl max-w-sm transform transition-all duration-300 translate-x-full border-l-4`;
-            
-            if (type === 'success') {
-                notification.classList.add('bg-green-50', 'text-green-800', 'border-green-500');
-            } else if (type === 'error') {
-                notification.classList.add('bg-red-50', 'text-red-800', 'border-red-500');
+            if (checkedBoxes.length === checkboxes.length) {
+                selectAll.checked = true;
+                selectAll.indeterminate = false;
+            } else if (checkedBoxes.length > 0) {
+                selectAll.checked = false;
+                selectAll.indeterminate = true;
             } else {
-                notification.classList.add('bg-blue-50', 'text-blue-800', 'border-blue-500');
+                selectAll.checked = false;
+                selectAll.indeterminate = false;
             }
-            
-            notification.innerHTML = `
-                <div class="flex items-center gap-3">
-                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'} text-lg"></i>
-                    <span class="font-medium">${message}</span>
-                </div>
-            `;
-            
-            document.body.appendChild(notification);
-            
-            setTimeout(() => notification.classList.remove('translate-x-full'), 100);
-            setTimeout(() => {
-                notification.classList.add('translate-x-full');
-                setTimeout(() => document.body.removeChild(notification), 300);
-            }, 5000);
-        }
+        });
+    });
+
+    // Auto-submit des filtres
+    const selects = document.querySelectorAll('select[name="trimester"], select[name="class_filter"], select[name="status"]');
+    selects.forEach(select => {
+        select.addEventListener('change', function() {
+            this.form.submit();
+        });
+    });
+
+    // Forcer l'activation du lien Notes dans la sidebar
+    const notesLink = document.querySelector('[data-page="notes"]');
+    if (notesLink) {
+        notesLink.classList.add('active');
     }
-
-    // Initialisation
-    document.addEventListener('DOMContentLoaded', () => {
-        window.bulletinManager = new BulletinManager();
+    
+    // Désactiver les autres liens actifs
+    document.querySelectorAll('.sidebar-link.active').forEach(link => {
+        if (link !== notesLink) {
+            link.classList.remove('active');
+        }
     });
-
-    // Gestion des erreurs
-    window.addEventListener('error', (event) => {
-        console.error('Erreur dans la gestion des bulletins:', event.error);
-    });
+});
 </script>
 {% endblock %}

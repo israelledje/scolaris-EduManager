@@ -154,3 +154,235 @@ class TimetableSlot(models.Model):
 
     def __str__(self):
         return f"{self.get_day_display()} {self.period} - {self.subject} ({self.teacher})"
+
+
+class Attendance(models.Model):
+    """
+    Modèle simple pour le suivi des présences des élèves
+    """
+    STATUS_CHOICES = [
+        ('present', 'Présent'),
+        ('absent', 'Absent'),
+        ('late', 'Retard'),
+        ('excused', 'Absence justifiée'),
+    ]
+    
+    student = models.ForeignKey(
+        'students.Student',
+        on_delete=models.CASCADE,
+        related_name='attendances',
+        help_text="Élève concerné par cette présence"
+    )
+    school_class = models.ForeignKey(
+        SchoolClass,
+        on_delete=models.CASCADE,
+        related_name='attendances',
+        help_text="Classe de l'élève"
+    )
+    subject = models.ForeignKey(
+        Subject,
+        on_delete=models.CASCADE,
+        related_name='attendances',
+        help_text="Matière concernée"
+    )
+    date = models.DateField(help_text="Date de la présence")
+    status = models.CharField(
+        max_length=10,
+        choices=STATUS_CHOICES,
+        default='present',
+        help_text="Statut de présence"
+    )
+    remark = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Remarque sur la présence"
+    )
+    recorded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='recorded_attendances',
+        help_text="Utilisateur qui a enregistré la présence"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        unique_together = ('student', 'subject', 'date')
+        ordering = ['-date', 'student__last_name']
+        verbose_name = "Présence"
+        verbose_name_plural = "Présences"
+    
+    def __str__(self):
+        return f"{self.student} - {self.subject} - {self.date} ({self.get_status_display()})"
+    
+    @classmethod
+    def get_student_attendance_stats(cls, student, school_class, period='month'):
+        """
+        Calcule les statistiques de présence pour un élève
+        """
+        from django.utils import timezone
+        from datetime import timedelta
+        
+        now = timezone.now().date()
+        
+        if period == 'today':
+            start_date = now
+            end_date = now
+        elif period == 'week':
+            start_date = now - timedelta(days=now.weekday())
+            end_date = start_date + timedelta(days=6)
+        elif period == 'month':
+            start_date = now.replace(day=1)
+            if now.month == 12:
+                end_date = now.replace(year=now.year + 1, month=1, day=1) - timedelta(days=1)
+            else:
+                end_date = now.replace(month=now.month + 1, day=1) - timedelta(days=1)
+        else:
+            start_date = now - timedelta(days=30)
+            end_date = now
+        
+        attendances = cls.objects.filter(
+            student=student,
+            school_class=school_class,
+            date__range=[start_date, end_date]
+        )
+        
+        total = attendances.count()
+        present = attendances.filter(status='present').count()
+        absent = attendances.filter(status='absent').count()
+        late = attendances.filter(status='late').count()
+        excused = attendances.filter(status='excused').count()
+        
+        attendance_rate = (present / total * 100) if total > 0 else 0
+        
+        return {
+            'total': total,
+            'present': present,
+            'absent': absent,
+            'late': late,
+            'excused': excused,
+            'attendance_rate': round(attendance_rate, 1)
+        }
+
+
+class Sanction(models.Model):
+    """
+    Modèle pour les sanctions disciplinaires
+    """
+    SANCTION_CHOICES = [
+        ('avertissement', 'Avertissement'),
+        ('retenue', 'Retenue'),
+        ('exclusion', 'Exclusion temporaire'),
+        ('conseil', 'Conseil de discipline'),
+    ]
+    
+    student = models.ForeignKey(
+        'students.Student',
+        on_delete=models.CASCADE,
+        related_name='sanctions',
+        help_text="Élève sanctionné"
+    )
+    school_class = models.ForeignKey(
+        SchoolClass,
+        on_delete=models.CASCADE,
+        related_name='sanctions',
+        help_text="Classe de l'élève"
+    )
+    sanction_type = models.CharField(
+        max_length=20,
+        choices=SANCTION_CHOICES,
+        help_text="Type de sanction"
+    )
+    reason = models.TextField(help_text="Motif de la sanction")
+    sanction_date = models.DateField(help_text="Date de la sanction")
+    duration = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        help_text="Durée (pour retenue/exclusion)"
+    )
+    recorded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='recorded_sanctions',
+        help_text="Utilisateur qui a enregistré la sanction"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-sanction_date', 'student__last_name']
+        verbose_name = "Sanction"
+        verbose_name_plural = "Sanctions"
+    
+    def __str__(self):
+        return f"{self.student} - {self.get_sanction_type_display()} - {self.sanction_date}"
+
+
+class ParentConvocation(models.Model):
+    """
+    Modèle pour les convocations de parents
+    """
+    CONVOCATION_REASON_CHOICES = [
+        ('comportement', 'Problème de comportement'),
+        ('resultats', 'Résultats scolaires'),
+        ('assiduite', 'Problème d\'assiduité'),
+        ('autre', 'Autre motif'),
+    ]
+    
+    student = models.ForeignKey(
+        'students.Student',
+        on_delete=models.CASCADE,
+        related_name='convocations',
+        help_text="Élève concerné"
+    )
+    school_class = models.ForeignKey(
+        SchoolClass,
+        on_delete=models.CASCADE,
+        related_name='convocations',
+        help_text="Classe de l'élève"
+    )
+    convocation_reason = models.CharField(
+        max_length=20,
+        choices=CONVOCATION_REASON_CHOICES,
+        help_text="Motif de la convocation"
+    )
+    details = models.TextField(help_text="Détails de la convocation")
+    proposed_datetime = models.DateTimeField(help_text="Date et heure proposées")
+    meeting_person = models.CharField(
+        max_length=100,
+        help_text="Personne qui recevra les parents"
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ('pending', 'En attente'),
+            ('confirmed', 'Confirmée'),
+            ('completed', 'Effectuée'),
+            ('cancelled', 'Annulée'),
+        ],
+        default='pending',
+        help_text="Statut de la convocation"
+    )
+    recorded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='recorded_convocations',
+        help_text="Utilisateur qui a enregistré la convocation"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-proposed_datetime', 'student__last_name']
+        verbose_name = "Convocation parent"
+        verbose_name_plural = "Convocations parents"
+    
+    def __str__(self):
+        return f"{self.student} - {self.get_convocation_reason_display()} - {self.proposed_datetime}"

@@ -32,18 +32,23 @@ class LoginForm(forms.Form):
     )
 
 def login_view(request):
-    # Utiliser le logo statique
+    # Utiliser le logo statique par défaut
     from django.conf import settings
     from django.templatetags.static import static
+    from school.models import School, DocumentHeader
     
     school_logo = static('images/logo.png')
     school_name = "Scolaris"
     
     try:
-        # Récupérer le nom de l'école s'il existe
+        # Récupérer l'école et son en-tête par défaut
         school = School.objects.first()
         if school:
             school_name = school.name
+            # Récupérer le logo depuis l'en-tête par défaut de l'école
+            header = school.get_active_header()
+            if header and header.logo:
+                school_logo = header.logo.url
     except:
         pass
     

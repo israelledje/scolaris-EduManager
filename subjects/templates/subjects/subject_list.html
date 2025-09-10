@@ -179,7 +179,7 @@
                         
                         {% if can_modify %}
                         <button
-                            onclick="openSubjectModal('edit', {{ subject.id }})"
+                            onclick="console.log('Bouton cliqué pour sujet {{ subject.id }}'); openSubjectModal('edit', {{ subject.id }}, '{{ subject.name|escapejs }}');"
                             class="p-2 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all duration-200" title="Modifier"><i class="fas fa-edit"></i></button>
                         {% endif %}
                         
@@ -269,6 +269,16 @@
                                         </label>
                                         <input type="text" name="code" id="id_code" class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200">
                                         <div class="text-red-600 text-xs mt-1 hidden" id="code_error"></div>
+                                    </div>
+                                    <div>
+                                        <label for="id_group" class="block text-slate-700 font-medium mb-1">
+                                            Groupe<span class="text-red-500">*</span>
+                                        </label>
+                                        <select name="group" id="id_group" required class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200">
+                                            <option value="1">Groupe 1</option>
+                                            <option value="2">Groupe 2</option>
+                                        </select>
+                                        <div class="text-red-600 text-xs mt-1 hidden" id="group_error"></div>
                                     </div>
                                     <div class="md:col-span-2">
                                         <label for="id_description" class="block text-slate-700 font-medium mb-1">
@@ -555,8 +565,7 @@ function loadSubjectData(subjectId) {
                 document.getElementById('id_name').value = subject.name || '';
                 document.getElementById('id_code').value = subject.code || '';
                 document.getElementById('id_description').value = subject.description || '';
-                document.getElementById('id_coefficient').value = subject.coefficient || '';
-                document.getElementById('id_hours_per_week').value = subject.hours_per_week || '';
+                document.getElementById('id_group').value = subject.group || 1;
                 // À adapter si tu as un champ enseignants
             } else {
                 showNotification('Erreur lors du chargement des données', 'error');

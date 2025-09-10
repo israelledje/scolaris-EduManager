@@ -568,30 +568,80 @@ def grade_delete(request, pk):
 @login_required
 @user_passes_test(is_admin_or_direction)
 def bulletin_list(request):
-    """Liste des bulletins"""
+    """Liste des bulletins organisés par classe"""
     year = SchoolYear.objects.filter(statut='EN_COURS').first()
-    bulletins = Bulletin.objects.filter(trimester__year=year).select_related(
-        'student', 'trimester'
-    ).order_by('-generated_at')
     
     # Filtres
     trimester_filter = request.GET.get('trimester')
-    class_filter = request.GET.get('class')
+    class_filter = request.GET.get('class_filter')
     status_filter = request.GET.get('status')
     
-    if trimester_filter:
-        bulletins = bulletins.filter(trimester_id=trimester_filter)
-    if class_filter:
-        bulletins = bulletins.filter(student__school_class_id=class_filter)
-    if status_filter == 'approved':
-        bulletins = bulletins.filter(is_approved=True)
-    elif status_filter == 'draft':
-        bulletins = bulletins.filter(is_approved=False)
+    # Récupérer les classes avec leurs bulletins
+    classes_query = SchoolClass.objects.filter(
+        year=year, 
+        is_active=True
+    ).select_related('main_teacher').order_by('name')
     
-    # Pagination
-    paginator = Paginator(bulletins, 25)
-    page_number = request.GET.get('page')
-    bulletins = paginator.get_page(page_number)
+    # Appliquer le filtre de classe si spécifié
+    if class_filter:
+        classes_query = classes_query.filter(id=class_filter)
+    
+    # Organiser les données par classe
+    classes_data = []
+    total_bulletins_all = 0
+    total_approved_all = 0
+    total_draft_all = 0
+    
+    for school_class in classes_query:
+        # Récupérer les bulletins de cette classe
+        bulletins_query = Bulletin.objects.filter(
+            student__current_class=school_class,
+            trimester__year=year
+        ).select_related('student', 'trimester').order_by('student__last_name', 'student__first_name')
+        
+        # Appliquer les filtres
+        if trimester_filter:
+            bulletins_query = bulletins_query.filter(trimester_id=trimester_filter)
+        if status_filter == 'approved':
+            bulletins_query = bulletins_query.filter(is_approved=True)
+        elif status_filter == 'draft':
+            bulletins_query = bulletins_query.filter(is_approved=False)
+        
+        # Statistiques de la classe
+        total_bulletins = bulletins_query.count()
+        approved_bulletins = bulletins_query.filter(is_approved=True).count()
+        draft_bulletins = total_bulletins - approved_bulletins
+        
+        # Ne montrer que les classes qui ont des bulletins
+        if total_bulletins > 0:
+            # Calculer la moyenne de classe si il y a des bulletins
+            class_average = 0
+            if total_bulletins > 0:
+                avg_result = bulletins_query.aggregate(avg=models.Avg('student_average'))
+                class_average = avg_result['avg'] or 0
+            
+            # Vérifier si l'utilisateur peut gérer cette classe
+            can_manage_class = (
+                request.user.is_superuser or 
+                request.user.groups.filter(name__in=["ADMIN", "DIRECTION"]).exists() or
+                (hasattr(request.user, 'teacher_profile') and 
+                 request.user.teacher_profile == school_class.main_teacher)
+            )
+            
+            classes_data.append({
+                'class': school_class,
+                'bulletins': bulletins_query,
+                'total_bulletins': total_bulletins,
+                'approved_bulletins': approved_bulletins,
+                'draft_bulletins': draft_bulletins,
+                'class_average': class_average,
+                'can_manage': can_manage_class,
+            })
+            
+            # Ajouter aux totaux globaux
+            total_bulletins_all += total_bulletins
+            total_approved_all += approved_bulletins
+            total_draft_all += draft_bulletins
     
     # Trimestre en cours
     current_trimester = None
@@ -605,33 +655,115 @@ def bulletin_list(request):
     if current_trimester is None and active_trimesters.exists():
         current_trimester = active_trimesters.first()
     
+    # Récupérer toutes les classes pour les filtres
+    all_classes = SchoolClass.objects.filter(
+        year=year, 
+        is_active=True
+    ).select_related('main_teacher').order_by('name')
+    
+    # Vérifier les permissions de l'utilisateur
+    user_can_generate_all = (
+        request.user.is_superuser or 
+        request.user.groups.filter(name__in=["ADMIN", "DIRECTION"]).exists()
+    )
+    
+    # Classes pour lesquelles l'utilisateur peut générer des bulletins
+    user_authorized_classes = []
+    if hasattr(request.user, 'teacher_profile') and request.user.teacher_profile:
+        # L'utilisateur est un enseignant
+        teacher = request.user.teacher_profile
+        # Classes où il est titulaire
+        titular_classes = SchoolClass.objects.filter(
+            year=year,
+            main_teacher=teacher,
+            is_active=True
+        )
+        user_authorized_classes = list(titular_classes)
+    
     context = {
-        'bulletins': bulletins,
+        'classes_data': classes_data,
         'trimesters': Trimester.objects.filter(year=year),
-        'classes': SchoolClass.objects.filter(year=year),
+        'classes': all_classes,
         'current_trimester': current_trimester,
         'selected_trimester': trimester_filter,
         'selected_class': class_filter,
         'status_filter': status_filter,
+        'user_can_generate_all': user_can_generate_all,
+        'user_authorized_classes': user_authorized_classes,
+        'total_bulletins_all': total_bulletins_all,
+        'total_approved_all': total_approved_all,
+        'total_draft_all': total_draft_all,
     }
     return render(request, 'notes/bulletin_list.html', context)
 
 @login_required
-@user_passes_test(is_admin_or_direction)
 def generate_bulletins(request, trimester_id):
     """Générer les bulletins pour un trimestre"""
     trimester = get_object_or_404(Trimester, pk=trimester_id)
+    year = SchoolYear.objects.filter(statut='EN_COURS').first()
+    
+    # Vérifier les permissions
+    user_can_generate_all = (
+        request.user.is_superuser or 
+        request.user.groups.filter(name__in=["ADMIN", "DIRECTION"]).exists()
+    )
+    
+    # Récupérer le class_id depuis l'URL ou POST
+    class_id = request.GET.get('class_id') or request.POST.get('class_id')
+    
+    # Si un class_id est spécifié, vérifier les permissions
+    if class_id:
+        try:
+            school_class = SchoolClass.objects.get(id=class_id, year=year)
+            
+            # Vérifier si l'utilisateur peut générer pour cette classe
+            can_generate_for_class = user_can_generate_all
+            if not can_generate_for_class and hasattr(request.user, 'teacher_profile') and request.user.teacher_profile:
+                # Vérifier si l'utilisateur est titulaire de cette classe
+                can_generate_for_class = (school_class.main_teacher == request.user.teacher_profile)
+            
+            if not can_generate_for_class:
+                messages.error(request, "Vous n'avez pas l'autorisation de générer les bulletins pour cette classe.")
+                return redirect('notes:bulletin_list')
+                
+        except SchoolClass.DoesNotExist:
+            messages.error(request, "Classe non trouvée.")
+            return redirect('notes:bulletin_list')
     
     if request.method == 'POST':
         try:
-            count = BulletinUtils.generate_bulletins_for_trimester(trimester_id)
-            messages.success(request, f"{count} bulletins ont été générés avec succès.")
+            if class_id:
+                # Générer pour une classe spécifique
+                count = BulletinUtils.generate_bulletins_for_class(trimester_id, class_id)
+                class_name = SchoolClass.objects.get(id=class_id).name
+                messages.success(request, f"{count} bulletins ont été générés avec succès pour la classe {class_name}.")
+            else:
+                # Générer pour toutes les classes (admin/direction uniquement)
+                if not user_can_generate_all:
+                    messages.error(request, "Vous n'avez pas l'autorisation de générer tous les bulletins.")
+                    return redirect('notes:bulletin_list')
+                count = BulletinUtils.generate_bulletins_for_trimester(trimester_id)
+                messages.success(request, f"{count} bulletins ont été générés avec succès pour toutes les classes.")
             return redirect('notes:bulletin_list')
         except Exception as e:
             messages.error(request, f"Erreur lors de la génération des bulletins: {str(e)}")
     
+    # Récupérer les classes pour la sélection
+    classes = SchoolClass.objects.filter(year=year, is_active=True).order_by('name')
+    
+    # Si un class_id est spécifié, pré-sélectionner cette classe
+    selected_class = None
+    if class_id:
+        try:
+            selected_class = SchoolClass.objects.get(id=class_id, year=year)
+        except SchoolClass.DoesNotExist:
+            pass
+    
     context = {
         'trimester': trimester,
+        'classes': classes,
+        'selected_class': selected_class,
+        'user_can_generate_all': user_can_generate_all,
     }
     return render(request, 'notes/generate_bulletins_confirm.html', context)
 
@@ -643,32 +775,57 @@ def bulletin_detail(request, pk):
     
     # Récupérer les informations de l'école
     try:
-        school = School.objects.first()
-        school_name = school.nom if school else "Établissement Scolaire"
+        school = School.objects.select_related('ministry', 'regional_delegation', 'type', 'education_system').first()
         
-        # Récupérer l'en-tête de document de l'école
-        school_logo_url = request.build_absolute_uri(static('images/logo.png'))  # Fallback par défaut
         if school:
+            school_name = school.name
+            school_authorization = school.authorization_number or "N/A"
+            school_contact = f"B.P. {school.address.split(',')[0] if school.address else '0000'} - Tél. {school.phone or '000.00.00.00'}"
+            school_motto = "Discipline - Travail - Réussite"  # Devise par défaut
+            
+            # Ministère de tutelle
+            ministry_name = school.ministry.name if school.ministry else "MINISTÈRE DES ENSEIGNEMENTS SECONDAIRES"
+            
+            # Délégation régionale
+            delegation_name = school.regional_delegation.name if school.regional_delegation else "Délégation Régionale"
+            
+            # Récupérer l'en-tête de document de l'école
+            school_logo_url = request.build_absolute_uri(static('images/logo.png'))  # Fallback par défaut
             document_header = school.get_active_header()
             if document_header and document_header.logo:
                 try:
                     school_logo_url = request.build_absolute_uri(document_header.logo.url)
                 except Exception:
                     pass  # Garder le fallback si erreur
+        else:
+            school_name = "ÉTABLISSEMENT SCOLAIRE"
+            school_authorization = "N/A"
+            school_contact = "B.P. 0000 - Tél. 000.00.00.00"
+            school_motto = "Discipline - Travail - Réussite"
+            ministry_name = "MINISTÈRE DES ENSEIGNEMENTS SECONDAIRES"
+            delegation_name = "Délégation Régionale"
+            school_logo_url = request.build_absolute_uri(static('images/logo.png'))
     except Exception:
-        school_name = "Établissement Scolaire"
+        school_name = "ÉTABLISSEMENT SCOLAIRE"
+        school_authorization = "N/A"
+        school_contact = "B.P. 0000 - Tél. 000.00.00.00"
+        school_motto = "Discipline - Travail - Réussite"
+        ministry_name = "MINISTÈRE DES ENSEIGNEMENTS SECONDAIRES"
+        delegation_name = "Délégation Régionale"
         school_logo_url = request.build_absolute_uri(static('images/logo.png'))
     
     # Récupérer les notes détaillées pour chaque matière
     bulletin_lines_with_grades = []
     
     for line in bulletin.lines.all():
-        # Récupérer les évaluations EVAL1 et EVAL2 pour cette matière dans ce trimestre
+        # Récupérer les évaluations selon le trimestre pour cette matière
+        from .models import BulletinUtils
+        eval_types = BulletinUtils._get_eval_types_for_trimester(bulletin.trimester.trimester)
         evaluations = Evaluation.objects.filter(
             trimester=bulletin.trimester,
             subject=line.subject,
             school_class=bulletin.student.current_class,
-            eval_type__in=['EVAL1', 'EVAL2']
+            eval_type__in=eval_types
         ).order_by('eval_type')
         
         # Récupérer le coefficient et l'enseignant depuis TeachingAssignment
@@ -688,14 +845,23 @@ def bulletin_detail(request, pk):
         ).select_related('evaluation')
         
         # Organiser les notes par type d'évaluation
-        eval1_score = None
-        eval2_score = None
-        
+        eval_scores = {}
         for grade in grades:
-            if grade.evaluation.eval_type == 'EVAL1':
-                eval1_score = grade.score
-            elif grade.evaluation.eval_type == 'EVAL2':
-                eval2_score = grade.score
+            eval_scores[grade.evaluation.eval_type] = grade.score
+        
+        # Récupérer les scores selon le trimestre
+        if bulletin.trimester.trimester == '1ER':
+            eval1_score = eval_scores.get('EVAL1')
+            eval2_score = eval_scores.get('EVAL2')
+        elif bulletin.trimester.trimester == '2EME':
+            eval1_score = eval_scores.get('EVAL3')
+            eval2_score = eval_scores.get('EVAL4')
+        elif bulletin.trimester.trimester == '3EME':
+            eval1_score = eval_scores.get('EVAL5')
+            eval2_score = eval_scores.get('EVAL6')
+        else:
+            eval1_score = None
+            eval2_score = None
         
         # Calculer les statistiques de classe pour cette matière
         all_class_grades = StudentGrade.objects.filter(
@@ -847,6 +1013,11 @@ def bulletin_detail(request, pk):
     context = {
         'bulletin': bulletin,
         'school_name': school_name,
+        'school_authorization': school_authorization,
+        'school_contact': school_contact,
+        'school_motto': school_motto,
+        'ministry_name': ministry_name,
+        'delegation_name': delegation_name,
         'school_logo': school_logo_url,
         'bulletin_lines_with_grades': bulletin_lines_with_grades,
         'group1_average': group1_average,
@@ -878,30 +1049,59 @@ def bulletin_pdf(request, pk):
 
     # Récupérer les informations de l'école et le logo
     try:
-        school = School.objects.first()
-        school_name = school.nom if school else "Établissement Scolaire"
-        school_address = school.adresse if school else "Adresse de l'établissement"
-        school_phone = school.telephone if school else "Téléphone de l'établissement"
-        if school and getattr(school, 'logo', None):
-            school_logo_url = request.build_absolute_uri(school.logo.url)
+        school = School.objects.select_related('ministry', 'regional_delegation', 'type', 'education_system').first()
+        
+        if school:
+            school_name = school.name
+            school_authorization = school.authorization_number or "N/A"
+            school_contact = f"B.P. {school.address.split(',')[0] if school.address else '0000'} - Tél. {school.phone or '000.00.00.00'}"
+            school_motto = "Discipline - Travail - Réussite"  # Devise par défaut
+            
+            # Ministère de tutelle
+            ministry_name = school.ministry.name if school.ministry else "MINISTÈRE DES ENSEIGNEMENTS SECONDAIRES"
+            
+            # Délégation régionale
+            delegation_name = school.regional_delegation.name if school.regional_delegation else "Délégation Régionale"
+            
+            # Récupérer l'en-tête de document de l'école
+            school_logo_url = request.build_absolute_uri(static('images/logo.png'))  # Fallback par défaut
+            document_header = school.get_active_header()
+            if document_header and document_header.logo:
+                try:
+                    school_logo_url = request.build_absolute_uri(document_header.logo.url)
+                except Exception:
+                    pass  # Garder le fallback si erreur
+            school_signature_url = None  # À implémenter si nécessaire
         else:
+            school_name = "ÉTABLISSEMENT SCOLAIRE"
+            school_authorization = "N/A"
+            school_contact = "B.P. 0000 - Tél. 000.00.00.00"
+            school_motto = "Discipline - Travail - Réussite"
+            ministry_name = "MINISTÈRE DES ENSEIGNEMENTS SECONDAIRES"
+            delegation_name = "Délégation Régionale"
             school_logo_url = request.build_absolute_uri(static('images/logo.png'))
-        school_signature_url = request.build_absolute_uri(school.signature.url) if school and getattr(school, 'signature', None) else None
+            school_signature_url = None
     except Exception:
-        school_name = "Établissement Scolaire"
-        school_address = "Adresse de l'établissement"
-        school_phone = "Téléphone de l'établissement"
+        school_name = "ÉTABLISSEMENT SCOLAIRE"
+        school_authorization = "N/A"
+        school_contact = "B.P. 0000 - Tél. 000.00.00.00"
+        school_motto = "Discipline - Travail - Réussite"
+        ministry_name = "MINISTÈRE DES ENSEIGNEMENTS SECONDAIRES"
+        delegation_name = "Délégation Régionale"
         school_logo_url = request.build_absolute_uri(static('images/logo.png'))
         school_signature_url = None
 
     # Reprendre les mêmes calculs que la page détail pour garantir l'identité des données
     bulletin_lines_with_grades = []
     for line in bulletin.lines.all():
+        # Récupérer les évaluations selon le trimestre
+        from .models import BulletinUtils
+        eval_types = BulletinUtils._get_eval_types_for_trimester(bulletin.trimester.trimester)
         evaluations = Evaluation.objects.filter(
             trimester=bulletin.trimester,
             subject=line.subject,
             school_class=bulletin.student.current_class,
-            eval_type__in=['EVAL1', 'EVAL2']
+            eval_type__in=eval_types
         ).order_by('eval_type')
 
         teaching_assignment = TeachingAssignment.objects.filter(
@@ -918,13 +1118,24 @@ def bulletin_pdf(request, pk):
             evaluation__in=evaluations
         ).select_related('evaluation')
 
-        eval1_score = None
-        eval2_score = None
+        # Organiser les notes par type d'évaluation
+        eval_scores = {}
         for grade in grades:
-            if grade.evaluation.eval_type == 'EVAL1':
-                eval1_score = grade.score
-            elif grade.evaluation.eval_type == 'EVAL2':
-                eval2_score = grade.score
+            eval_scores[grade.evaluation.eval_type] = grade.score
+        
+        # Récupérer les scores selon le trimestre
+        if bulletin.trimester.trimester == '1ER':
+            eval1_score = eval_scores.get('EVAL1')
+            eval2_score = eval_scores.get('EVAL2')
+        elif bulletin.trimester.trimester == '2EME':
+            eval1_score = eval_scores.get('EVAL3')
+            eval2_score = eval_scores.get('EVAL4')
+        elif bulletin.trimester.trimester == '3EME':
+            eval1_score = eval_scores.get('EVAL5')
+            eval2_score = eval_scores.get('EVAL6')
+        else:
+            eval1_score = None
+            eval2_score = None
 
         all_class_grades = StudentGrade.objects.filter(
             evaluation__trimester=bulletin.trimester,
@@ -1023,8 +1234,11 @@ def bulletin_pdf(request, pk):
     context = {
         'bulletin': bulletin,
         'school_name': school_name,
-        'school_address': school_address,
-        'school_phone': school_phone,
+        'school_authorization': school_authorization,
+        'school_contact': school_contact,
+        'school_motto': school_motto,
+        'ministry_name': ministry_name,
+        'delegation_name': delegation_name,
         'school_logo': school_logo_url,
         'school_signature': school_signature_url,
         'bulletin_lines_with_grades': bulletin_lines_with_grades,
@@ -1057,6 +1271,45 @@ def bulletin_pdf(request, pk):
 
 @login_required
 @user_passes_test(is_admin_or_direction)
+def bulletin_approve_batch(request):
+    """Approuver plusieurs bulletins en lot"""
+    if request.method == 'POST':
+        bulletin_ids = request.POST.getlist('bulletin_ids')
+        if bulletin_ids:
+            # Vérifier les permissions pour chaque bulletin
+            bulletins = Bulletin.objects.filter(
+                id__in=bulletin_ids,
+                is_approved=False
+            ).select_related('student__current_class')
+            
+            approved_count = 0
+            for bulletin in bulletins:
+                # Vérifier si l'utilisateur peut approuver ce bulletin
+                can_approve = (
+                    request.user.is_superuser or 
+                    request.user.groups.filter(name__in=["ADMIN", "DIRECTION"]).exists() or
+                    (hasattr(request.user, 'teacher_profile') and 
+                     request.user.teacher_profile == bulletin.student.current_class.main_teacher)
+                )
+                
+                if can_approve:
+                    bulletin.is_approved = True
+                    bulletin.approved_at = timezone.now()
+                    bulletin.approved_by = request.user
+                    bulletin.save()
+                    approved_count += 1
+            
+            if approved_count > 0:
+                messages.success(request, f"{approved_count} bulletin(s) approuvé(s) avec succès.")
+            else:
+                messages.warning(request, "Aucun bulletin n'a pu être approuvé.")
+        else:
+            messages.error(request, "Aucun bulletin sélectionné.")
+    
+    return redirect('notes:bulletin_list')
+
+@login_required
+@user_passes_test(is_admin_or_direction)
 def bulletin_approve(request, pk):
     """Approuver un bulletin"""
     bulletin = get_object_or_404(Bulletin, pk=pk)
@@ -1070,6 +1323,279 @@ def bulletin_approve(request, pk):
         return redirect('notes:bulletin_detail', pk=pk)
     
     return render(request, 'notes/bulletin_approve_confirm.html', {'bulletin': bulletin})
+
+@login_required
+@user_passes_test(is_admin_or_direction)
+def bulletin_pdf_class(request, class_id):
+    """Générer les bulletins PDF d'une classe spécifique"""
+    year = SchoolYear.objects.filter(statut='EN_COURS').first()
+    
+    try:
+        # Récupérer la classe
+        school_class = SchoolClass.objects.get(id=class_id, year=year, is_active=True)
+        
+        # Récupérer les bulletins de la classe
+        bulletins = Bulletin.objects.filter(
+            student__current_class=school_class,
+            trimester__year=year
+        ).select_related('student', 'trimester', 'student__current_class').order_by('student__last_name', 'student__first_name')
+        
+        if not bulletins.exists():
+            messages.error(request, f"Aucun bulletin trouvé pour la classe {school_class.name}.")
+            return redirect('notes:bulletin_list')
+        
+        # Récupérer les informations de l'école
+        try:
+            school = School.objects.select_related('ministry', 'regional_delegation', 'type', 'education_system').first()
+            
+            if school:
+                school_name = school.name
+                school_authorization = school.authorization_number or "N/A"
+                school_contact = f"B.P. {school.address.split(',')[0] if school.address else '0000'} - Tél. {school.phone or '000.00.00.00'}"
+                school_motto = "Discipline - Travail - Réussite"  # Devise par défaut
+                
+                # Ministère de tutelle
+                ministry_name = school.ministry.name if school.ministry else "MINISTÈRE DES ENSEIGNEMENTS SECONDAIRES"
+                
+                # Délégation régionale
+                delegation_name = school.regional_delegation.name if school.regional_delegation else "Délégation Régionale"
+            else:
+                school_name = "ÉTABLISSEMENT SCOLAIRE"
+                school_authorization = "N/A"
+                school_contact = "B.P. 0000 - Tél. 000.00.00.00"
+                school_motto = "Discipline - Travail - Réussite"
+                ministry_name = "MINISTÈRE DES ENSEIGNEMENTS SECONDAIRES"
+                delegation_name = "Délégation Régionale"
+        except:
+            school_name = "ÉTABLISSEMENT SCOLAIRE"
+            school_authorization = "N/A"
+            school_contact = "B.P. 0000 - Tél. 000.00.00.00"
+            school_motto = "Discipline - Travail - Réussite"
+            ministry_name = "MINISTÈRE DES ENSEIGNEMENTS SECONDAIRES"
+            delegation_name = "Délégation Régionale"
+        
+        # Préparer le contexte pour chaque bulletin
+        bulletins_data = []
+        for bulletin in bulletins:
+            # Récupérer les données enrichies pour chaque bulletin
+            bulletin_lines_with_grades = []
+            
+            for line in bulletin.lines.all():
+                # Récupérer les évaluations selon le trimestre
+                from .models import BulletinUtils
+                eval_types = BulletinUtils._get_eval_types_for_trimester(bulletin.trimester.trimester)
+                evaluations = Evaluation.objects.filter(
+                    trimester=bulletin.trimester,
+                    subject=line.subject,
+                    school_class=bulletin.student.current_class,
+                    eval_type__in=eval_types
+                ).order_by('eval_type')
+                
+                # Récupérer le coefficient et l'enseignant
+                teaching_assignment = TeachingAssignment.objects.filter(
+                    subject=line.subject,
+                    school_class=bulletin.student.current_class,
+                    year=bulletin.trimester.year
+                ).select_related('teacher').first()
+                
+                real_coefficient = teaching_assignment.coefficient if teaching_assignment else line.coefficient
+                teacher_name = f"{teaching_assignment.teacher.last_name.upper()} {teaching_assignment.teacher.first_name}" if teaching_assignment and teaching_assignment.teacher else "Non assigné"
+                
+                # Récupérer les notes de l'élève pour ces évaluations
+                grades = StudentGrade.objects.filter(
+                    student=bulletin.student,
+                    evaluation__in=evaluations
+                ).select_related('evaluation')
+                
+                # Organiser les notes par type d'évaluation
+                eval_scores = {}
+                for grade in grades:
+                    eval_scores[grade.evaluation.eval_type] = grade.score
+                
+                # Récupérer les scores selon le trimestre
+                if bulletin.trimester.trimester == '1ER':
+                    eval1_score = eval_scores.get('EVAL1')
+                    eval2_score = eval_scores.get('EVAL2')
+                elif bulletin.trimester.trimester == '2EME':
+                    eval1_score = eval_scores.get('EVAL3')
+                    eval2_score = eval_scores.get('EVAL4')
+                elif bulletin.trimester.trimester == '3EME':
+                    eval1_score = eval_scores.get('EVAL5')
+                    eval2_score = eval_scores.get('EVAL6')
+                else:
+                    eval1_score = None
+                    eval2_score = None
+                
+                # Calculer les statistiques de classe pour cette matière
+                all_class_grades = StudentGrade.objects.filter(
+                    evaluation__trimester=bulletin.trimester,
+                    evaluation__subject=line.subject,
+                    evaluation__school_class=bulletin.student.current_class
+                )
+                
+                class_average = 0
+                student_rank = 0
+                if all_class_grades.exists():
+                    # Calculer la moyenne de classe
+                    total_score = sum(float(grade.score) for grade in all_class_grades)
+                    class_average = total_score / all_class_grades.count()
+                    
+                    # Calculer le rang de l'élève
+                    better_students = all_class_grades.filter(score__gt=line.average).count()
+                    student_rank = better_students + 1
+                
+                # Calculer le pourcentage par rapport à la moyenne de classe
+                percentage = 0
+                if class_average > 0:
+                    percentage = (float(line.average) / class_average) * 100
+                
+                # Déterminer la cote et l'appréciation
+                cote = ""
+                appreciation = ""
+                if line.average >= 16:
+                    cote = "A+"
+                    appreciation = "Excellent"
+                elif line.average >= 14:
+                    cote = "A"
+                    appreciation = "Très bien"
+                elif line.average >= 12:
+                    cote = "B"
+                    appreciation = "Bien"
+                elif line.average >= 10:
+                    cote = "C"
+                    appreciation = "Assez bien"
+                elif line.average >= 8:
+                    cote = "D"
+                    appreciation = "Insuffisant"
+                else:
+                    cote = "E"
+                    appreciation = "Très insuffisant"
+                
+                bulletin_lines_with_grades.append({
+                    'line': line,
+                    'subject': line.subject,
+                    'coefficient': real_coefficient,
+                    'teacher_name': teacher_name,
+                    'eval1_score': eval1_score,
+                    'eval2_score': eval2_score,
+                    'class_average': class_average,
+                    'rank': student_rank,
+                    'percentage': percentage,
+                    'cote': cote,
+                    'appreciation': appreciation,
+                    'evaluations': evaluations,
+                    'grades': grades,
+                })
+            
+            # Calculer les moyennes par groupe
+            group1_average = 0
+            group1_coefficient = 0
+            group1_points = 0
+            group2_average = 0
+            group2_coefficient = 0
+            group2_points = 0
+            
+            for line_data in bulletin_lines_with_grades:
+                line = line_data['line']
+                coefficient = line_data['coefficient']
+                
+                if line.subject.group == 1:
+                    group1_coefficient += coefficient
+                    group1_points += line.average * coefficient
+                elif line.subject.group == 2:
+                    group2_coefficient += coefficient
+                    group2_points += line.average * coefficient
+            
+            if group1_coefficient > 0:
+                group1_average = group1_points / group1_coefficient
+            if group2_coefficient > 0:
+                group2_average = group2_points / group2_coefficient
+            
+            # Récupérer les bulletins précédents
+            previous_bulletins = Bulletin.objects.filter(
+                student=bulletin.student,
+                trimester__year=bulletin.trimester.year,
+                trimester__trimester__lt=bulletin.trimester.trimester
+            ).order_by('trimester__trimester')
+            
+            previous_averages = []
+            for prev_bulletin in previous_bulletins:
+                previous_averages.append({
+                    'trimester': prev_bulletin.trimester.get_trimester_display(),
+                    'average': prev_bulletin.student_average,
+                    'rank': prev_bulletin.student_rank
+                })
+            
+            # Calculer les statistiques de classe
+            all_class_bulletins = Bulletin.objects.filter(
+                trimester=bulletin.trimester,
+                student__current_class=bulletin.student.current_class
+            ).order_by('student_average')
+            
+            class_highest = 0
+            class_lowest = 20
+            standard_deviation = 0
+            
+            if all_class_bulletins.exists():
+                averages = [float(b.student_average) for b in all_class_bulletins]
+                class_highest = max(averages)
+                class_lowest = min(averages)
+                
+                # Calculer l'écart type
+                mean = sum(averages) / len(averages)
+                variance = sum((x - mean) ** 2 for x in averages) / len(averages)
+                standard_deviation = variance ** 0.5
+            
+            bulletin_data = {
+                'bulletin': bulletin,
+                'school_name': school_name,
+                'school_authorization': school_authorization,
+                'school_contact': school_contact,
+                'school_motto': school_motto,
+                'ministry_name': ministry_name,
+                'delegation_name': delegation_name,
+                'bulletin_lines_with_grades': bulletin_lines_with_grades,
+                'group1_average': group1_average,
+                'group1_coefficient': group1_coefficient,
+                'group1_points': group1_points,
+                'group2_average': group2_average,
+                'group2_coefficient': group2_coefficient,
+                'group2_points': group2_points,
+                'previous_averages': previous_averages,
+                'class_highest': class_highest,
+                'class_lowest': class_lowest,
+                'standard_deviation': standard_deviation,
+                'conduct': {},
+                'work_appreciation': {},
+                'supervisor_observations': '',
+                'parent_observations': '',
+                'main_teacher_visa': '',
+                'progress_status': 'En cours'
+            }
+            
+            bulletins_data.append(bulletin_data)
+        
+        # Générer le PDF
+        html_string = render_to_string('notes/bulletin_pdf_batch.html', {
+            'bulletins_data': bulletins_data,
+            'school_logo': request.build_absolute_uri(static('images/logo.png'))
+        })
+        
+        html = HTML(string=html_string, base_url=request.build_absolute_uri())
+        pdf_file = html.write_pdf()
+        
+        # Créer la réponse
+        response = HttpResponse(pdf_file, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="bulletins_{school_class.name}_{year.annee}.pdf"'
+        
+        return response
+        
+    except SchoolClass.DoesNotExist:
+        messages.error(request, "Classe non trouvée.")
+        return redirect('notes:bulletin_list')
+    except Exception as e:
+        messages.error(request, f"Erreur lors de la génération du PDF: {str(e)}")
+        return redirect('notes:bulletin_list')
 
 @login_required
 @user_passes_test(is_admin_or_direction)
@@ -1092,7 +1618,7 @@ def bulletin_pdf_batch(request):
                 bulletins = bulletins.filter(trimester_id=trimester_id)
             
             if class_id:
-                bulletins = bulletins.filter(student__current_class_id=class_id)
+                bulletins = bulletins.filter(student__current_class__id=class_id)
             
             # Filtrer par statut
             if include_approved and not include_draft:
@@ -1109,14 +1635,33 @@ def bulletin_pdf_batch(request):
             
             # Récupérer les informations de l'école
             try:
-                school = School.objects.first()
-                school_name = school.nom if school else "Établissement Scolaire"
-                school_address = school.adresse if school else "Adresse de l'établissement"
-                school_phone = school.telephone if school else "Téléphone de l'établissement"
+                school = School.objects.select_related('ministry', 'regional_delegation', 'type', 'education_system').first()
+                
+                if school:
+                    school_name = school.name
+                    school_authorization = school.authorization_number or "N/A"
+                    school_contact = f"B.P. {school.address.split(',')[0] if school.address else '0000'} - Tél. {school.phone or '000.00.00.00'}"
+                    school_motto = "Discipline - Travail - Réussite"  # Devise par défaut
+                    
+                    # Ministère de tutelle
+                    ministry_name = school.ministry.name if school.ministry else "MINISTÈRE DES ENSEIGNEMENTS SECONDAIRES"
+                    
+                    # Délégation régionale
+                    delegation_name = school.regional_delegation.name if school.regional_delegation else "Délégation Régionale"
+                else:
+                    school_name = "ÉTABLISSEMENT SCOLAIRE"
+                    school_authorization = "N/A"
+                    school_contact = "B.P. 0000 - Tél. 000.00.00.00"
+                    school_motto = "Discipline - Travail - Réussite"
+                    ministry_name = "MINISTÈRE DES ENSEIGNEMENTS SECONDAIRES"
+                    delegation_name = "Délégation Régionale"
             except:
-                school_name = "Établissement Scolaire"
-                school_address = "Adresse de l'établissement"
-                school_phone = "Téléphone de l'établissement"
+                school_name = "ÉTABLISSEMENT SCOLAIRE"
+                school_authorization = "N/A"
+                school_contact = "B.P. 0000 - Tél. 000.00.00.00"
+                school_motto = "Discipline - Travail - Réussite"
+                ministry_name = "MINISTÈRE DES ENSEIGNEMENTS SECONDAIRES"
+                delegation_name = "Délégation Régionale"
             
             # Préparer le contexte pour chaque bulletin
             bulletins_data = []
@@ -1125,12 +1670,14 @@ def bulletin_pdf_batch(request):
                 bulletin_lines_with_grades = []
                 
                 for line in bulletin.lines.all():
-                    # Récupérer les évaluations EVAL1 et EVAL2
+                    # Récupérer les évaluations selon le trimestre
+                    from .models import BulletinUtils
+                    eval_types = BulletinUtils._get_eval_types_for_trimester(bulletin.trimester.trimester)
                     evaluations = Evaluation.objects.filter(
                         trimester=bulletin.trimester,
                         subject=line.subject,
                         school_class=bulletin.student.current_class,
-                        eval_type__in=['EVAL1', 'EVAL2']
+                        eval_type__in=eval_types
                     ).order_by('eval_type')
                     
                     # Récupérer le coefficient et l'enseignant
@@ -1149,14 +1696,24 @@ def bulletin_pdf_batch(request):
                         evaluation__in=evaluations
                     ).select_related('evaluation')
                     
-                    eval1_score = None
-                    eval2_score = None
-                    
+                    # Organiser les notes par type d'évaluation
+                    eval_scores = {}
                     for grade in grades:
-                        if grade.evaluation.eval_type == 'EVAL1':
-                            eval1_score = grade.score
-                        elif grade.evaluation.eval_type == 'EVAL2':
-                            eval2_score = grade.score
+                        eval_scores[grade.evaluation.eval_type] = grade.score
+                    
+                    # Récupérer les scores selon le trimestre
+                    if bulletin.trimester.trimester == '1ER':
+                        eval1_score = eval_scores.get('EVAL1')
+                        eval2_score = eval_scores.get('EVAL2')
+                    elif bulletin.trimester.trimester == '2EME':
+                        eval1_score = eval_scores.get('EVAL3')
+                        eval2_score = eval_scores.get('EVAL4')
+                    elif bulletin.trimester.trimester == '3EME':
+                        eval1_score = eval_scores.get('EVAL5')
+                        eval2_score = eval_scores.get('EVAL6')
+                    else:
+                        eval1_score = None
+                        eval2_score = None
                     
                     # Calculer les statistiques de classe
                     all_class_grades = StudentGrade.objects.filter(
@@ -1297,6 +1854,11 @@ def bulletin_pdf_batch(request):
                 bulletin_data = {
                     'bulletin': bulletin,
                     'school_name': school_name,
+                    'school_authorization': school_authorization,
+                    'school_contact': school_contact,
+                    'school_motto': school_motto,
+                    'ministry_name': ministry_name,
+                    'delegation_name': delegation_name,
                     'bulletin_lines_with_grades': bulletin_lines_with_grades,
                     'group1_average': group1_average,
                     'group1_coefficient': group1_coefficient,
@@ -1321,9 +1883,7 @@ def bulletin_pdf_batch(request):
             # Générer le PDF groupé
             html_string = render_to_string('notes/bulletin_pdf_batch.html', {
                 'bulletins_data': bulletins_data,
-                'school_name': school_name,
-                'school_address': school_address,
-                'school_phone': school_phone,
+                'school_logo': request.build_absolute_uri(static('images/logo.png')),
                 'generated_at': timezone.now(),
             })
             

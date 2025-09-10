@@ -74,6 +74,70 @@
                 </div>
             </div>
 
+            <!-- Sélection de classe -->
+            <div class="px-6 py-6">
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-3 flex-1">
+                            <h3 class="text-sm font-medium text-blue-800 mb-3">Sélection de classe</h3>
+                            <div class="space-y-3">
+                                {% if selected_class %}
+                                    <!-- Classe pré-sélectionnée -->
+                                    <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                                        <div class="flex items-center">
+                                            <i class="fas fa-check-circle text-green-500 mr-3"></i>
+                                            <div>
+                                                <div class="font-medium text-green-800">Classe sélectionnée : {{ selected_class.name }}</div>
+                                                {% if selected_class.main_teacher %}
+                                                <div class="text-sm text-green-600">Titulaire: {{ selected_class.main_teacher.last_name|upper }} {{ selected_class.main_teacher.first_name }}</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <input type="hidden" name="class_id" value="{{ selected_class.id }}">
+                                    </div>
+                                {% else %}
+                                    <!-- Sélecteur de classe -->
+                                    <div>
+                                        <label for="class_selection" class="block text-sm font-medium text-blue-700 mb-2">
+                                            {% if user_can_generate_all %}
+                                                Choisir une classe spécifique (optionnel)
+                                            {% else %}
+                                                Sélectionner votre classe
+                                            {% endif %}
+                                        </label>
+                                        <select name="class_id" id="class_selection" 
+                                                class="w-full px-4 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200">
+                                            {% if user_can_generate_all %}
+                                            <option value="">Toutes les classes</option>
+                                            {% endif %}
+                                            {% for class in classes %}
+                                            <option value="{{ class.id }}">{{ class.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                {% endif %}
+                                
+                                <div class="text-xs text-blue-600">
+                                    {% if selected_class %}
+                                        <p><strong>Génération ciblée :</strong> Les bulletins seront générés uniquement pour la classe {{ selected_class.name }}.</p>
+                                    {% elif user_can_generate_all %}
+                                        <p><strong>Toutes les classes :</strong> Génère les bulletins pour tous les étudiants de toutes les classes du trimestre.</p>
+                                        <p><strong>Classe spécifique :</strong> Génère les bulletins uniquement pour les étudiants de la classe sélectionnée.</p>
+                                    {% else %}
+                                        <p><strong>Génération par classe :</strong> Vous pouvez générer les bulletins uniquement pour les classes dont vous êtes titulaire.</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Avertissement -->
             <div class="px-6 py-6">
                 <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
@@ -86,8 +150,9 @@
                         <div class="ml-3">
                             <h3 class="text-sm font-medium text-yellow-800">Attention</h3>
                             <div class="mt-2 text-sm text-yellow-700">
-                                <p>La génération de bulletins va créer des bulletins pour tous les étudiants du trimestre. Cette action peut prendre quelques minutes selon le nombre d'étudiants.</p>
+                                <p>La génération de bulletins va créer des bulletins pour les étudiants sélectionnés. Cette action peut prendre quelques minutes selon le nombre d'étudiants.</p>
                                 <p class="mt-1">Assurez-vous que toutes les notes sont correctement saisies avant de procéder.</p>
+                                <p class="mt-1"><strong>Note :</strong> Les bulletins existants pour la classe sélectionnée seront supprimés et recréés.</p>
                             </div>
                         </div>
                     </div>

@@ -19,7 +19,8 @@ from classes.models import SchoolClass
 from teachers.models import Teacher
 from django.urls import reverse_lazy
 from finances.models import TranchePayment, FeeDiscount, PaymentRefund, ExtraFee, FeeStructure
-from students.models import Evaluation, Attendance, Sanction
+from students.models import Evaluation, Attendance
+from classes.models import Sanction
 from django.http import JsonResponse
 from .forms import GuardianForm
 
@@ -320,16 +321,16 @@ class StudentDetailView(LoginRequiredMixin, View):
             })
         
         # Sanctions récentes
-        recent_sanctions = sanctions.order_by('-date')[:3]
+        recent_sanctions = sanctions.order_by('-sanction_date')[:3]
         for sanction in recent_sanctions:
             recent_activities.append({
                 'type': 'sanction',
                 'title': f'Sanction : {sanction.sanction_type}',
                 'description': sanction.reason[:50] + '...' if len(sanction.reason) > 50 else sanction.reason,
-                'date': sanction.date,
+                'date': sanction.sanction_date,
                 'icon': 'fas fa-exclamation-triangle',
                 'color': 'red',
-                'time_ago': self._get_time_ago(sanction.date)
+                'time_ago': self._get_time_ago(sanction.sanction_date)
             })
         
         # Trier par date (plus récent en premier)
@@ -725,7 +726,7 @@ class StudentReportCardView(LoginRequiredMixin, View):
             
             for trimester in trimesters:
                 trimester_bulletin = bulletins.filter(trimester=trimester).first()
-                trimester_sanctions = sanctions.filter(date__gte=trimester.start_date, date__lte=trimester.end_date)
+                trimester_sanctions = sanctions.filter(sanction_date__gte=trimester.start_date, sanction_date__lte=trimester.end_date)
                 trimester_decision = council_decisions.filter(council__trimester=trimester).first()
                 
                 trimester_data = {
@@ -804,10 +805,10 @@ class StudentReportCardView(LoginRequiredMixin, View):
                 # Ajouter les sanctions
                 for sanction in sanctions:
                     response_data['discipline_records'].append({
-                        'date': sanction.date.isoformat(),
+                        'date': sanction.sanction_date.isoformat(),
                         'type': sanction.sanction_type,
                         'reason': sanction.reason,
-                        'issued_by': sanction.issued_by
+                        'issued_by': sanction.recorded_by.get_full_name() if sanction.recorded_by else 'Non spécifié'
                     })
                 
                 # Ajouter les décisions de conseil

@@ -3,9 +3,9 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse, JsonResponse, HttpResponseBadRequest
 from django.urls import reverse
 from django.views.decorators.http import require_http_methods, require_POST
-from .models import SchoolClass, Timetable, TimetableSlot
+from .models import SchoolClass, Timetable, TimetableSlot, Attendance, Sanction, ParentConvocation
 from .forms import SchoolClassForm, TimetableForm, TimetableSlotForm
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 import openpyxl
 from openpyxl.utils import get_column_letter
 from django.template.loader import render_to_string
@@ -18,11 +18,23 @@ from subjects.models import Subject
 from school.models import SchoolYear, EducationSystem, SchoolLevel
 import json
 from django.views.decorators.csrf import csrf_exempt
+from django.utils import timezone
+from students.models import Student
 from django.contrib.auth.mixins import LoginRequiredMixin
 import re
 
 # Configuration du logger
 logger = logging.getLogger(__name__)
+
+# ==================== VÉRIFICATIONS DROITS ====================
+
+def is_teacher_or_admin(user):
+    """Vérifie si l'utilisateur est un enseignant ou un administrateur"""
+    return (
+        user.is_superuser or 
+        user.groups.filter(name__in=["ADMIN", "DIRECTION", "TEACHER"]).exists() or
+        hasattr(user, 'teacher_profile')
+    )
 
 # ---------------------- SchoolClass CRUD HTMX ----------------------
 
@@ -176,6 +188,125 @@ def schoolclass_list(request):
     
     return render(request, 'classes/schoolclass_list.html', context)
 
+def get_attendance_stats_for_class(schoolclass):
+    """
+    Récupère les statistiques de présence pour tous les élèves d'une classe
+    """
+    students_with_stats = []
+    for student in schoolclass.students.filter(is_active=True):
+        # Statistiques pour le mois en cours
+        monthly_stats = Attendance.get_student_attendance_stats(student, schoolclass, 'month')
+        
+        # Statistiques pour la semaine en cours
+        weekly_stats = Attendance.get_student_attendance_stats(student, schoolclass, 'week')
+        
+        # Statistiques pour aujourd'hui
+        today_stats = Attendance.get_student_attendance_stats(student, schoolclass, 'today')
+        
+        students_with_stats.append({
+            'student': student,
+            'monthly': monthly_stats,
+            'weekly': weekly_stats,
+            'today': today_stats,
+        })
+    
+    return students_with_stats
+
+def get_class_statistics(schoolclass):
+    """
+    Calcule les statistiques générales de la classe
+    """
+    from notes.models import Bulletin, BulletinLine
+    from django.db.models import Avg, Count, Q
+    from django.utils import timezone
+    from datetime import timedelta
+    
+    # Récupérer les bulletins de la classe pour l'année en cours
+    try:
+        bulletins = Bulletin.objects.filter(
+            student__current_class=schoolclass,
+            trimester__year=schoolclass.year
+        )
+        
+        if bulletins.exists():
+            # Récupérer le bulletin le plus récent (dernier trimestre) pour obtenir les statistiques de classe
+            latest_bulletin = bulletins.order_by('-trimester__trimester').first()
+            
+            # Utiliser les valeurs déjà calculées dans le bulletin
+            general_average = float(latest_bulletin.class_average) if latest_bulletin else 0
+            success_rate = float(latest_bulletin.success_rate) if latest_bulletin else 0
+        else:
+            general_average = 0
+            success_rate = 0
+    except:
+        general_average = 0
+        success_rate = 0
+    
+    # Calcul du taux de présence moyen de la classe depuis le modèle Attendance
+    try:
+        students = schoolclass.students.filter(is_active=True)
+        total_attendance_rate = 0
+        student_count = 0
+        
+        for student in students:
+            monthly_stats = Attendance.get_student_attendance_stats(student, schoolclass, 'month')
+            if monthly_stats['total'] > 0:  # Seulement si l'élève a des données de présence
+                total_attendance_rate += monthly_stats['attendance_rate']
+                student_count += 1
+        
+        attendance_rate = (total_attendance_rate / student_count) if student_count > 0 else 0
+    except:
+        attendance_rate = 0
+    
+    return {
+        'general_average': round(general_average, 1),
+        'attendance_rate': round(attendance_rate, 1),
+        'success_rate': round(success_rate, 1),
+    }
+
+def get_discipline_statistics(schoolclass):
+    """
+    Calcule les statistiques de discipline de la classe
+    """
+    from django.utils import timezone
+    from datetime import timedelta
+    
+    now = timezone.now().date()
+    month_start = now.replace(day=1)
+    
+    # Calcul des sanctions du mois
+    try:
+        sanctions_count = Sanction.objects.filter(
+            school_class=schoolclass,
+            sanction_date__gte=month_start
+        ).count()
+    except:
+        sanctions_count = 0
+    
+    # Calcul des élèves concernés par des sanctions ce mois
+    try:
+        students_with_sanctions = Sanction.objects.filter(
+            school_class=schoolclass,
+            sanction_date__gte=month_start
+        ).values('student').distinct().count()
+    except:
+        students_with_sanctions = 0
+    
+    # Calcul des convocations en attente
+    try:
+        pending_convocations = ParentConvocation.objects.filter(
+            school_class=schoolclass,
+            status='pending'
+        ).count()
+    except:
+        pending_convocations = 0
+    
+    return {
+        'sanctions_count': sanctions_count,
+        'students_with_sanctions': students_with_sanctions,
+        'pending_convocations': pending_convocations,
+    }
+
 @login_required
 def schoolclass_detail(request, pk):
     schoolclass = get_object_or_404(SchoolClass, pk=pk)
@@ -317,6 +448,24 @@ def schoolclass_detail(request, pk):
         'subjects_progress': subjects_progress,
         'recent_lessons': recent_lessons,
         'avg_completion': round(avg_completion, 1),
+        
+        # Données de présence pour l'onglet discipline
+        'attendance_stats': get_attendance_stats_for_class(schoolclass),
+        
+        # Statistiques calculées pour remplacer les données en dur
+        'class_statistics': get_class_statistics(schoolclass),
+        
+        # Statistiques de discipline
+        'discipline_statistics': get_discipline_statistics(schoolclass),
+        
+        # Données détaillées pour les modales
+        'recent_sanctions': Sanction.objects.filter(
+            school_class=schoolclass
+        ).select_related('student', 'recorded_by').order_by('-sanction_date')[:10],
+        
+        'recent_attendances': Attendance.objects.filter(
+            school_class=schoolclass
+        ).select_related('student', 'subject', 'recorded_by').order_by('-date')[:20],
     })
 
 def export_students_excel(request, class_id):
@@ -760,3 +909,277 @@ def delete_timetable_slot(request):
         
     except Exception as e:
         return JsonResponse({'success': False, 'error': f'Erreur: {str(e)}'})
+
+# ==================== GESTION DE LA DISCIPLINE ====================
+
+@login_required
+@user_passes_test(is_teacher_or_admin)
+def save_attendance(request):
+    """Sauvegarder les présences"""
+    if request.method == 'POST':
+        try:
+            class_id = request.POST.get('class_id')
+            date = request.POST.get('date')
+            subject_id = request.POST.get('subject')
+            
+            if not all([class_id, date, subject_id]):
+                return JsonResponse({'success': False, 'error': 'Données manquantes'})
+            
+            schoolclass = SchoolClass.objects.get(id=class_id)
+            subject = Subject.objects.get(id=subject_id)
+            
+            # Récupérer tous les étudiants de la classe
+            students = schoolclass.students.filter(is_active=True)
+            
+            attendance_count = 0
+            for student in students:
+                attendance_status = request.POST.get(f'attendance_{student.id}')
+                remark = request.POST.get(f'remark_{student.id}', '')
+                
+                if attendance_status:
+                    # Créer ou mettre à jour l'enregistrement de présence
+                    attendance, created = Attendance.objects.update_or_create(
+                        student=student,
+                        school_class=schoolclass,
+                        subject=subject,
+                        date=date,
+                        defaults={
+                            'status': attendance_status,
+                            'remark': remark,
+                            'recorded_by': request.user
+                        }
+                    )
+                    attendance_count += 1
+            
+            return JsonResponse({
+                'success': True, 
+                'message': f'Présences enregistrées pour {attendance_count} élèves'
+            })
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    
+    return JsonResponse({'success': False, 'error': 'Méthode non autorisée'})
+
+@login_required
+@user_passes_test(is_teacher_or_admin)
+def save_sanction(request):
+    """Sauvegarder une sanction"""
+    if request.method == 'POST':
+        try:
+            class_id = request.POST.get('class_id')
+            student_id = request.POST.get('student')
+            sanction_type = request.POST.get('sanction_type')
+            reason = request.POST.get('reason')
+            sanction_date = request.POST.get('sanction_date')
+            duration = request.POST.get('duration', '')
+            
+            if not all([class_id, student_id, sanction_type, reason, sanction_date]):
+                return JsonResponse({'success': False, 'error': 'Données manquantes'})
+            
+            # Créer la sanction
+            student = Student.objects.get(id=student_id)
+            schoolclass = SchoolClass.objects.get(id=class_id)
+            
+            sanction = Sanction.objects.create(
+                student=student,
+                school_class=schoolclass,
+                sanction_type=sanction_type,
+                reason=reason,
+                sanction_date=sanction_date,
+                duration=duration,
+                recorded_by=request.user
+            )
+            
+            return JsonResponse({
+                'success': True, 
+                'message': 'Sanction enregistrée avec succès'
+            })
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    
+    return JsonResponse({'success': False, 'error': 'Méthode non autorisée'})
+
+@login_required
+@user_passes_test(is_teacher_or_admin)
+def sanctions_detail_htmx(request, class_id):
+    """Afficher le détail des sanctions de la classe"""
+    schoolclass = get_object_or_404(SchoolClass, pk=class_id)
+    
+    # Récupérer toutes les sanctions de la classe
+    sanctions = Sanction.objects.filter(
+        school_class=schoolclass
+    ).select_related('student', 'recorded_by').order_by('-sanction_date')
+    
+    return render(request, 'classes/partials/sanctions_detail.html', {
+        'sanctions': sanctions
+    })
+
+@login_required
+@user_passes_test(is_teacher_or_admin)
+def attendance_history_htmx(request, class_id):
+    """Afficher l'historique des présences de la classe"""
+    schoolclass = get_object_or_404(SchoolClass, pk=class_id)
+    
+    # Récupérer l'historique des présences de la classe
+    attendances = Attendance.objects.filter(
+        school_class=schoolclass
+    ).select_related('student', 'subject', 'recorded_by').order_by('-date')
+    
+    return render(request, 'classes/partials/attendance_history.html', {
+        'attendances': attendances
+    })
+
+
+
+@login_required
+@user_passes_test(is_teacher_or_admin)
+def save_convocation(request):
+    """Sauvegarder une convocation parent"""
+    if request.method == 'POST':
+        try:
+            class_id = request.POST.get('class_id')
+            student_id = request.POST.get('student')
+            convocation_reason = request.POST.get('convocation_reason')
+            details = request.POST.get('details')
+            proposed_datetime = request.POST.get('proposed_datetime')
+            meeting_person = request.POST.get('meeting_person')
+            
+            if not all([class_id, student_id, convocation_reason, details, proposed_datetime]):
+                return JsonResponse({'success': False, 'error': 'Données manquantes'})
+            
+            # Créer la convocation
+            student = Student.objects.get(id=student_id)
+            schoolclass = SchoolClass.objects.get(id=class_id)
+            
+            convocation = ParentConvocation.objects.create(
+                student=student,
+                school_class=schoolclass,
+                convocation_reason=convocation_reason,
+                details=details,
+                proposed_datetime=proposed_datetime,
+                meeting_person=meeting_person,
+                recorded_by=request.user
+            )
+            
+            return JsonResponse({
+                'success': True, 
+                'message': 'Convocation envoyée avec succès'
+            })
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    
+    return JsonResponse({'success': False, 'error': 'Méthode non autorisée'})
+
+@login_required
+@user_passes_test(is_teacher_or_admin)
+def parent_convocation_pdf(request, class_id):
+    """Générer le PDF de convocation parent"""
+    try:
+        schoolclass = SchoolClass.objects.get(id=class_id)
+        students = schoolclass.students.filter(is_active=True)
+        
+        # Récupérer les informations de l'école
+        from school.models import School
+        school = School.objects.first()
+        
+        context = {
+            'schoolclass': schoolclass,
+            'students': students,
+            'school_name': school.name if school else "École Secondaire",
+            'school_address': school.address if school else "Adresse de l'école",
+            'school_phone': school.phone if school else "+237 XXX XX XX XX",
+            'current_date': timezone.now(),
+            # Données de la convocation (à récupérer depuis la base de données)
+            'student': students.first(),  # Pour l'exemple
+            'convocation_reason': 'Problème de comportement',
+            'details': 'L\'élève présente des difficultés comportementales qui nécessitent une rencontre avec les parents.',
+            'proposed_date': '15/01/2025',
+            'proposed_time': '14h00',
+            'meeting_person': 'Professeur titulaire',
+        }
+        
+        # Générer le PDF
+        from django.template.loader import render_to_string
+        from weasyprint import HTML
+        
+        html_string = render_to_string('classes/parent_convocation_pdf.html', context)
+        html = HTML(string=html_string, base_url=request.build_absolute_uri('/'))
+        pdf = html.write_pdf()
+        
+        response = HttpResponse(pdf, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="convocation_parents_{schoolclass.name}.pdf"'
+        return response
+        
+    except Exception as e:
+        return HttpResponse(f"Erreur lors de la génération du PDF: {str(e)}", status=500)
+
+@login_required
+@user_passes_test(is_teacher_or_admin)
+def discipline_report_export(request, class_id):
+    """Exporter le rapport de discipline"""
+    if request.method == 'POST':
+        try:
+            schoolclass = SchoolClass.objects.get(id=class_id)
+            
+            # Créer un fichier Excel avec les données de discipline
+            import openpyxl
+            from openpyxl.styles import Font, PatternFill, Alignment
+            
+            wb = openpyxl.Workbook()
+            ws = wb.active
+            ws.title = f"Rapport Discipline {schoolclass.name}"
+            
+            # En-têtes
+            headers = [
+                "Date", "Élève", "Type", "Motif", "Sanction", "Statut", "Remarques"
+            ]
+            ws.append(headers)
+            
+            # Style des en-têtes
+            header_font = Font(bold=True, color="FFFFFF")
+            header_fill = PatternFill(start_color="1e40af", end_color="1e40af", fill_type="solid")
+            
+            for col in range(1, len(headers) + 1):
+                cell = ws.cell(row=1, column=col)
+                cell.font = header_font
+                cell.fill = header_fill
+                cell.alignment = Alignment(horizontal="center")
+            
+            # Données factices pour l'exemple
+            sample_data = [
+                ["15/01/2025", "DUPONT Jean", "Sanction", "Retard répété", "Avertissement", "Traité", "Premier avertissement"],
+                ["16/01/2025", "MARTIN Marie", "Convocation", "Comportement", "Convocation parent", "En attente", "Rencontre prévue"],
+            ]
+            
+            for row_data in sample_data:
+                ws.append(row_data)
+            
+            # Ajuster la largeur des colonnes
+            for col in ws.columns:
+                max_length = 0
+                column = col[0].column_letter
+                for cell in col:
+                    try:
+                        if len(str(cell.value)) > max_length:
+                            max_length = len(str(cell.value))
+                    except:
+                        pass
+                adjusted_width = min(max_length + 2, 50)
+                ws.column_dimensions[column].width = adjusted_width
+            
+            # Réponse
+            response = HttpResponse(
+                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            )
+            response['Content-Disposition'] = f'attachment; filename="rapport_discipline_{schoolclass.name}.xlsx"'
+            
+            wb.save(response)
+            return response
+            
+        except Exception as e:
+            return HttpResponse(f"Erreur lors de l'export: {str(e)}", status=500)
+    
+    return HttpResponse("Méthode non autorisée", status=405)

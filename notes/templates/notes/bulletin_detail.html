@@ -178,10 +178,11 @@
         <div class="flex justify-between items-start">
             <!-- Gauche -->
             <div class="flex-1">
-                <div class="text-sm font-bold text-blue-800">MINISTÈRE DES ENSEIGNEMENTS SECONDAIRES</div>
-                <div class="text-lg font-bold text-blue-800">{{ school_name|default:"ÉTABLISSEMENT SCOLAIRE" }}</div>
-                <div class="text-sm text-gray-600">Discipline - Travail - Réussite</div>
-                <div class="text-xs text-gray-600">B.P. 0000 - Tél. 000.00.00.00</div>
+                <div class="text-sm font-bold text-blue-800">{{ ministry_name }}</div>
+                <div class="text-lg font-bold text-blue-800">{{ school_name }}</div>
+                <div class="text-sm text-gray-600">{{ school_motto }}</div>
+                <div class="text-xs text-gray-600">N° d'autorisation: {{ school_authorization }}</div>
+                <div class="text-xs text-gray-600">{{ school_contact }}</div>
             </div>
             
             <!-- Centre - Logo -->
@@ -197,6 +198,8 @@
             <div class="flex-1 text-right">
                 <div class="text-sm font-bold text-blue-800">RÉPUBLIQUE DU CAMEROUN</div>
                 <div class="text-xs text-gray-600">Paix - Travail - Patrie</div>
+                <div class="text-sm font-bold text-blue-800">{{ ministry_name }}</div>
+                <div class="text-xs text-gray-600">{{ delegation_name }}</div>
                 <div class="text-sm font-bold text-blue-800">Année scolaire: {{ bulletin.trimester.year.annee }}</div>
             </div>
         </div>
@@ -238,8 +241,19 @@
             <thead>
                 <tr>
                     <th class="subject-name">Matières</th>
-                    <th>EVAL1</th>
-                    <th>EVAL2</th>
+                    {% if bulletin.trimester.trimester == '1ER' %}
+                        <th>EVAL1</th>
+                        <th>EVAL2</th>
+                    {% elif bulletin.trimester.trimester == '2EME' %}
+                        <th>EVAL3</th>
+                        <th>EVAL4</th>
+                    {% elif bulletin.trimester.trimester == '3EME' %}
+                        <th>EVAL5</th>
+                        <th>EVAL6</th>
+                    {% else %}
+                        <th>EVAL1</th>
+                        <th>EVAL2</th>
+                    {% endif %}
                     <th>M/20</th>
                     <th>Coefs</th>
                     <th>MxCoef</th>

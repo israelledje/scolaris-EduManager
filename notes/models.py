@@ -238,18 +238,303 @@ class BulletinUtils:
     
     @staticmethod
     def generate_bulletins_for_trimester(trimester_id):
-        """Génère tous les bulletins pour un trimestre donné"""
+        """Génère tous les bulletins pour un trimestre donné - PAR CLASSE"""
         from students.models import Student
         from subjects.models import Subject
+        from classes.models import SchoolClass
         
         trimester = Trimester.objects.get(id=trimester_id)
+        
+        # Récupérer toutes les classes de l'année scolaire
+        classes = SchoolClass.objects.filter(year=trimester.year, is_active=True)
+        
+        total_bulletins_created = 0
+        
+        # Traiter chaque classe séparément
+        for school_class in classes:
+            # Récupérer les élèves de cette classe uniquement
+            students = Student.objects.filter(
+                current_class=school_class,
+                year=trimester.year,
+                is_active=True
+            ).order_by('last_name', 'first_name')
+            
+            if not students.exists():
+                continue  # Passer à la classe suivante si aucun élève
+            
+            result_data = []
+            
+            # Déterminer les évaluations selon le trimestre
+            eval_types = BulletinUtils._get_eval_types_for_trimester(trimester.trimester)
+            
+            for student in students:
+                # Calculer la moyenne par matière
+                subject_averages = {}
+                total_points = 0
+                total_coefs = 0
+                
+                # Récupérer toutes les matières de la classe via TeachingAssignment
+                teaching_assignments = TeachingAssignment.objects.filter(
+                    school_class=school_class,
+                    year=trimester.year
+                ).select_related('subject', 'teacher')
+                
+                # Initialiser toutes les matières de la classe
+                for assignment in teaching_assignments:
+                    subject = assignment.subject
+                    if subject not in subject_averages:
+                        subject_averages[subject] = {
+                            'grades': [],
+                            'teaching_assignment': assignment
+                        }
+                
+                # Récupérer les évaluations spécifiques au trimestre pour cette classe
+                evaluations = Evaluation.objects.filter(
+                    trimester=trimester,
+                    school_class=school_class,
+                    eval_type__in=eval_types
+                ).select_related('subject')
+                
+                # Grouper les notes par matière
+                for eval in evaluations:
+                    subject = eval.subject
+                    grades = StudentGrade.objects.filter(
+                        student=student,
+                        evaluation=eval
+                    )
+                    
+                    if grades.exists():
+                        if subject not in subject_averages:
+                            subject_averages[subject] = {
+                                'grades': [],
+                                'teaching_assignment': None
+                            }
+                        subject_averages[subject]['grades'].extend(grades)
+                
+                # Calculer la moyenne par matière (toutes les matières de la classe)
+                for subject, subject_data in subject_averages.items():
+                    grades = subject_data['grades']
+                    teaching_assignment = subject_data['teaching_assignment']
+                    
+                    real_coefficient = teaching_assignment.coefficient if teaching_assignment else 1.0
+                    teacher_name = f"{teaching_assignment.teacher.last_name.upper()} {teaching_assignment.teacher.first_name}" if teaching_assignment and teaching_assignment.teacher else "Non assigné"
+                    
+                    if grades:
+                        # Calculer la moyenne simple (note eval1 + note eval2)/2 par matière
+                        total_score = sum(grade.score for grade in grades)
+                        moyenne = total_score / len(grades) if len(grades) > 0 else 0
+                        
+                        # Calculer la cote (lettre) basée sur le pourcentage
+                        percentage = (moyenne / 20) * 100
+                        if percentage >= 90:
+                            cote = "A+"
+                            appreciation = "Expert"
+                        elif percentage >= 70:
+                            cote = "A"
+                            appreciation = "Acquis"
+                        elif percentage >= 55:
+                            cote = "B"
+                            appreciation = "En cours d'acquisition"
+                        elif percentage >= 30:
+                            cote = "C"
+                            appreciation = "Compétence moyennement acquise (CMA)"
+                        else:
+                            cote = "D"
+                            appreciation = "Non acquis"
+                    else:
+                        # Matière sans notes
+                        moyenne = 0
+                        cote = "D"
+                        appreciation = "Non évalué"
+                    
+                    # MxCoef = moyenne × coefficient
+                    mx_coef = moyenne * real_coefficient
+                    
+                    subject_averages[subject] = {
+                        'average': moyenne,
+                        'coefficient': real_coefficient,
+                        'total_points': mx_coef,  # MxCoef
+                        'grades': grades,
+                        'teacher_name': teacher_name,
+                        'cote': cote,
+                        'appreciation': appreciation
+                    }
+                    total_points += mx_coef
+                    total_coefs += real_coefficient
+                
+                # Calculer la moyenne générale
+                moyenne_generale = total_points / total_coefs if total_coefs > 0 else 0
+                
+                result_data.append({
+                    'student': student,
+                    'moyenne_generale': moyenne_generale,
+                    'total_points': total_points,
+                    'total_coefs': total_coefs,
+                    'subject_averages': subject_averages
+                })
+            
+            # Trier par moyenne générale (décroissant) - POUR CETTE CLASSE UNIQUEMENT
+            result_data.sort(key=lambda x: x['moyenne_generale'], reverse=True)
+            
+            # Calculer la moyenne de classe et autres statistiques - POUR CETTE CLASSE UNIQUEMENT
+            if result_data:
+                moyenne_classe = sum(r['moyenne_generale'] for r in result_data) / len(result_data)
+                class_size = len(result_data)
+            else:
+                moyenne_classe = 0
+                class_size = 0
+            
+            # Calculer les statistiques par matière pour tous les étudiants DE CETTE CLASSE
+            subject_stats = {}
+            for student_data in result_data:
+                for subject, subject_data in student_data['subject_averages'].items():
+                    if subject not in subject_stats:
+                        subject_stats[subject] = []
+                    subject_stats[subject].append(subject_data['average'])
+            
+            # Calculer les moyennes de classe par matière - POUR CETTE CLASSE UNIQUEMENT
+            subject_class_averages = {}
+            for subject, averages in subject_stats.items():
+                subject_class_averages[subject] = sum(averages) / len(averages) if averages else 0
+            
+            # Calculer les rangs par matière pour tous les étudiants
+            subject_ranks = BulletinUtils._calculate_subject_ranks(result_data, subject_stats)
+            
+            # Créer les bulletins POUR CETTE CLASSE
+            bulletins_created = []
+            with transaction.atomic():
+                for rank, data in enumerate(result_data, start=1):
+                    bulletin = Bulletin.objects.create(
+                        student=data['student'],
+                        trimester=trimester,
+                        class_size=class_size,
+                        student_rank=rank,
+                        class_average=moyenne_classe,
+                        student_average=data['moyenne_generale'],
+                        total_points=data['total_points'],
+                        total_coefficients=data['total_coefs'],
+                        success_rate=0  # À calculer
+                    )
+                    
+                # Séparer les matières par groupe
+                group1_subjects = []
+                group2_subjects = []
+                
+                for subject, subject_data in data['subject_averages'].items():
+                    if subject.group == 1:
+                        group1_subjects.append((subject, subject_data))
+                    else:  # group == 2
+                        group2_subjects.append((subject, subject_data))
+                
+                # Trier les matières par nom dans chaque groupe
+                group1_subjects.sort(key=lambda x: x[0].name)
+                group2_subjects.sort(key=lambda x: x[0].name)
+                
+                # Créer les lignes du bulletin - Groupe 1 d'abord
+                for subject, subject_data in group1_subjects:
+                    # Calculer le pourcentage par rapport à la moyenne de classe
+                    class_avg = subject_class_averages.get(subject, 0)
+                    class_average_percent = 0
+                    if class_avg > 0:
+                        # Limiter le pourcentage à 100% maximum
+                        percent = (subject_data['average'] / class_avg) * 100
+                        class_average_percent = min(percent, 100)
+                    
+                    # Récupérer le rang de l'élève pour cette matière
+                    student_rank_in_subject = subject_ranks.get(subject, {}).get(data['student'].id, 0)
+                    
+                    BulletinLine.objects.create(
+                        bulletin=bulletin,
+                        subject=subject,
+                        coefficient=subject_data['coefficient'],
+                        average=subject_data['average'],
+                        total_points=subject_data['total_points'],
+                        max_coefficient_rank=student_rank_in_subject,  # Rang par matière
+                        class_average_percent=class_average_percent,
+                        appreciation=subject_data['appreciation']
+                    )
+                
+                # Créer les lignes du bulletin - Groupe 2 ensuite
+                for subject, subject_data in group2_subjects:
+                    # Calculer le pourcentage par rapport à la moyenne de classe
+                    class_avg = subject_class_averages.get(subject, 0)
+                    class_average_percent = 0
+                    if class_avg > 0:
+                        # Limiter le pourcentage à 100% maximum
+                        percent = (subject_data['average'] / class_avg) * 100
+                        class_average_percent = min(percent, 100)
+                    
+                    # Récupérer le rang de l'élève pour cette matière
+                    student_rank_in_subject = subject_ranks.get(subject, {}).get(data['student'].id, 0)
+                    
+                    BulletinLine.objects.create(
+                        bulletin=bulletin,
+                        subject=subject,
+                        coefficient=subject_data['coefficient'],
+                        average=subject_data['average'],
+                        total_points=subject_data['total_points'],
+                        max_coefficient_rank=student_rank_in_subject,  # Rang par matière
+                        class_average_percent=class_average_percent,
+                        appreciation=subject_data['appreciation']
+                    )
+                
+                # Stocker les données du bulletin pour les notifications
+                bulletin_data = {
+                    'student': data['student'],
+                    'trimester': trimester,
+                    'moyenne_generale': data['moyenne_generale'],
+                    'class_average': moyenne_classe,
+                    'rank': rank,
+                    'class_size': class_size,
+                    'subject_averages': data['subject_averages']
+                }
+                bulletins_created.append(bulletin_data)
+            
+            # Envoyer les notifications automatiques aux parents (en arrière-plan)
+            try:
+                from .services import bulletin_notification_service
+                for bulletin_data in bulletins_created:
+                    try:
+                        # Envoyer les notifications de manière asynchrone (simulation)
+                        notification_results = bulletin_notification_service.send_bulletin_notifications(bulletin_data)
+                        logger.info(f"Notifications de bulletin envoyées pour {bulletin_data['student']}: {notification_results}")
+                    except Exception as e:
+                        logger.error(f"Erreur lors de l'envoi des notifications pour {bulletin_data['student']}: {e}")
+            except ImportError:
+                logger.warning("Service de notification de bulletin non disponible")
+            except Exception as e:
+                logger.error(f"Erreur générale lors de l'envoi des notifications: {e}")
+            
+            total_bulletins_created += len(result_data)
+            logger.info(f"Bulletins générés pour la classe {school_class.name}: {len(result_data)} bulletins")
+        
+        return total_bulletins_created
+
+    @staticmethod
+    def generate_bulletins_for_class(trimester_id, class_id):
+        """Génère les bulletins pour une classe spécifique"""
+        from students.models import Student
+        from subjects.models import Subject
+        from classes.models import SchoolClass
+        
+        trimester = Trimester.objects.get(id=trimester_id)
+        school_class = SchoolClass.objects.get(id=class_id)
+        
+        # Récupérer les élèves de cette classe uniquement
         students = Student.objects.filter(
-            current_class__in=trimester.year.classes.all(),
+            current_class=school_class,
             year=trimester.year,
             is_active=True
         ).order_by('last_name', 'first_name')
         
+        if not students.exists():
+            logger.warning(f"Aucun élève trouvé pour la classe {school_class.name}")
+            return 0
+        
         result_data = []
+        
+        # Déterminer les évaluations selon le trimestre
+        eval_types = BulletinUtils._get_eval_types_for_trimester(trimester.trimester)
         
         for student in students:
             # Calculer la moyenne par matière
@@ -257,13 +542,29 @@ class BulletinUtils:
             total_points = 0
             total_coefs = 0
             
-            # Récupérer toutes les évaluations du trimestre
+            # Récupérer toutes les matières de la classe via TeachingAssignment
+            teaching_assignments = TeachingAssignment.objects.filter(
+                school_class=school_class,
+                year=trimester.year
+            ).select_related('subject', 'teacher')
+            
+            # Initialiser toutes les matières de la classe
+            for assignment in teaching_assignments:
+                subject = assignment.subject
+                if subject not in subject_averages:
+                    subject_averages[subject] = {
+                        'grades': [],
+                        'teaching_assignment': assignment
+                    }
+            
+            # Récupérer les évaluations spécifiques au trimestre pour cette classe
             evaluations = Evaluation.objects.filter(
                 trimester=trimester,
-                school_class=student.current_class
+                school_class=school_class,
+                eval_type__in=eval_types
             ).select_related('subject')
             
-            # Grouper par matière
+            # Grouper les notes par matière
             for eval in evaluations:
                 subject = eval.subject
                 grades = StudentGrade.objects.filter(
@@ -273,26 +574,24 @@ class BulletinUtils:
                 
                 if grades.exists():
                     if subject not in subject_averages:
-                        subject_averages[subject] = []
-                    subject_averages[subject].extend(grades)
+                        subject_averages[subject] = {
+                            'grades': [],
+                            'teaching_assignment': None
+                        }
+                    subject_averages[subject]['grades'].extend(grades)
             
-            # Calculer la moyenne par matière
-            for subject, grades in subject_averages.items():
+            # Calculer la moyenne par matière (toutes les matières de la classe)
+            for subject, subject_data in subject_averages.items():
+                grades = subject_data['grades']
+                teaching_assignment = subject_data['teaching_assignment']
+                
+                real_coefficient = teaching_assignment.coefficient if teaching_assignment else 1.0
+                teacher_name = f"{teaching_assignment.teacher.last_name.upper()} {teaching_assignment.teacher.first_name}" if teaching_assignment and teaching_assignment.teacher else "Non assigné"
+                
                 if grades:
-                    # Récupérer le coefficient et l'enseignant depuis TeachingAssignment
-                    teaching_assignment = TeachingAssignment.objects.filter(
-                        subject=subject,
-                        school_class=student.current_class,
-                        year=trimester.year
-                    ).select_related('teacher').first()
-                    
-                    real_coefficient = teaching_assignment.coefficient if teaching_assignment else 1.0
-                    teacher_name = f"{teaching_assignment.teacher.last_name.upper()} {teaching_assignment.teacher.first_name}" if teaching_assignment and teaching_assignment.teacher else "Non assigné"
-                    
-                    # Calculer la moyenne pondérée par coefficient
-                    total_score = sum(grade.score * real_coefficient for grade in grades)
-                    total_coef = real_coefficient * len(grades)
-                    moyenne = total_score / total_coef if total_coef > 0 else 0
+                    # Calculer la moyenne simple (note eval1 + note eval2)/2 par matière
+                    total_score = sum(grade.score for grade in grades)
+                    moyenne = total_score / len(grades) if len(grades) > 0 else 0
                     
                     # Calculer la cote (lettre) basée sur le pourcentage
                     percentage = (moyenne / 20) * 100
@@ -311,18 +610,26 @@ class BulletinUtils:
                     else:
                         cote = "D"
                         appreciation = "Non acquis"
-                    
-                    subject_averages[subject] = {
-                        'average': moyenne,
-                        'coefficient': real_coefficient,
-                        'total_points': moyenne * real_coefficient,
-                        'grades': grades,
-                        'teacher_name': teacher_name,
-                        'cote': cote,
-                        'appreciation': appreciation
-                    }
-                    total_points += moyenne * real_coefficient
-                    total_coefs += real_coefficient
+                else:
+                    # Matière sans notes
+                    moyenne = 0
+                    cote = "D"
+                    appreciation = "Non évalué"
+                
+                # MxCoef = moyenne × coefficient
+                mx_coef = moyenne * real_coefficient
+                
+                subject_averages[subject] = {
+                    'average': moyenne,
+                    'coefficient': real_coefficient,
+                    'total_points': mx_coef,  # MxCoef
+                    'grades': grades,
+                    'teacher_name': teacher_name,
+                    'cote': cote,
+                    'appreciation': appreciation
+                }
+                total_points += mx_coef
+                total_coefs += real_coefficient
             
             # Calculer la moyenne générale
             moyenne_generale = total_points / total_coefs if total_coefs > 0 else 0
@@ -335,10 +642,10 @@ class BulletinUtils:
                 'subject_averages': subject_averages
             })
         
-        # Trier par moyenne générale (décroissant)
+        # Trier par moyenne générale (décroissant) - POUR CETTE CLASSE UNIQUEMENT
         result_data.sort(key=lambda x: x['moyenne_generale'], reverse=True)
         
-        # Calculer la moyenne de classe et autres statistiques
+        # Calculer la moyenne de classe et autres statistiques - POUR CETTE CLASSE UNIQUEMENT
         if result_data:
             moyenne_classe = sum(r['moyenne_generale'] for r in result_data) / len(result_data)
             class_size = len(result_data)
@@ -346,7 +653,7 @@ class BulletinUtils:
             moyenne_classe = 0
             class_size = 0
         
-        # Calculer les statistiques par matière pour tous les étudiants
+        # Calculer les statistiques par matière pour tous les étudiants DE CETTE CLASSE
         subject_stats = {}
         for student_data in result_data:
             for subject, subject_data in student_data['subject_averages'].items():
@@ -354,12 +661,21 @@ class BulletinUtils:
                     subject_stats[subject] = []
                 subject_stats[subject].append(subject_data['average'])
         
-        # Calculer les moyennes de classe par matière
+        # Calculer les moyennes de classe par matière - POUR CETTE CLASSE UNIQUEMENT
         subject_class_averages = {}
         for subject, averages in subject_stats.items():
             subject_class_averages[subject] = sum(averages) / len(averages) if averages else 0
         
-        # Créer les bulletins
+        # Calculer les rangs par matière pour tous les étudiants
+        subject_ranks = BulletinUtils._calculate_subject_ranks(result_data, subject_stats)
+        
+        # Supprimer les bulletins existants pour cette classe et ce trimestre
+        Bulletin.objects.filter(
+            student__current_class=school_class,
+            trimester=trimester
+        ).delete()
+        
+        # Créer les bulletins POUR CETTE CLASSE
         bulletins_created = []
         with transaction.atomic():
             for rank, data in enumerate(result_data, start=1):
@@ -375,8 +691,22 @@ class BulletinUtils:
                     success_rate=0  # À calculer
                 )
                 
-                # Créer les lignes du bulletin
+                # Séparer les matières par groupe
+                group1_subjects = []
+                group2_subjects = []
+                
                 for subject, subject_data in data['subject_averages'].items():
+                    if subject.group == 1:
+                        group1_subjects.append((subject, subject_data))
+                    else:  # group == 2
+                        group2_subjects.append((subject, subject_data))
+                
+                # Trier les matières par nom dans chaque groupe
+                group1_subjects.sort(key=lambda x: x[0].name)
+                group2_subjects.sort(key=lambda x: x[0].name)
+                
+                # Créer les lignes du bulletin - Groupe 1 d'abord
+                for subject, subject_data in group1_subjects:
                     # Calculer le pourcentage par rapport à la moyenne de classe
                     class_avg = subject_class_averages.get(subject, 0)
                     class_average_percent = 0
@@ -385,13 +715,40 @@ class BulletinUtils:
                         percent = (subject_data['average'] / class_avg) * 100
                         class_average_percent = min(percent, 100)
                     
+                    # Récupérer le rang de l'élève pour cette matière
+                    student_rank_in_subject = subject_ranks.get(subject, {}).get(data['student'].id, 0)
+                    
                     BulletinLine.objects.create(
                         bulletin=bulletin,
                         subject=subject,
                         coefficient=subject_data['coefficient'],
                         average=subject_data['average'],
                         total_points=subject_data['total_points'],
-                        max_coefficient_rank=0,  # À calculer
+                        max_coefficient_rank=student_rank_in_subject,  # Rang par matière
+                        class_average_percent=class_average_percent,
+                        appreciation=subject_data['appreciation']
+                    )
+                
+                # Créer les lignes du bulletin - Groupe 2 ensuite
+                for subject, subject_data in group2_subjects:
+                    # Calculer le pourcentage par rapport à la moyenne de classe
+                    class_avg = subject_class_averages.get(subject, 0)
+                    class_average_percent = 0
+                    if class_avg > 0:
+                        # Limiter le pourcentage à 100% maximum
+                        percent = (subject_data['average'] / class_avg) * 100
+                        class_average_percent = min(percent, 100)
+                    
+                    # Récupérer le rang de l'élève pour cette matière
+                    student_rank_in_subject = subject_ranks.get(subject, {}).get(data['student'].id, 0)
+                    
+                    BulletinLine.objects.create(
+                        bulletin=bulletin,
+                        subject=subject,
+                        coefficient=subject_data['coefficient'],
+                        average=subject_data['average'],
+                        total_points=subject_data['total_points'],
+                        max_coefficient_rank=student_rank_in_subject,  # Rang par matière
                         class_average_percent=class_average_percent,
                         appreciation=subject_data['appreciation']
                     )
@@ -423,6 +780,7 @@ class BulletinUtils:
         except Exception as e:
             logger.error(f"Erreur générale lors de l'envoi des notifications: {e}")
         
+        logger.info(f"Bulletins générés pour la classe {school_class.name}: {len(result_data)} bulletins")
         return len(result_data)
 
     @staticmethod
@@ -431,3 +789,38 @@ class BulletinUtils:
         evaluation = Evaluation.objects.get(id=evaluation_id)
         evaluation.close_evaluation()
         return evaluation
+    
+    @staticmethod
+    def _get_eval_types_for_trimester(trimester_code):
+        """Retourne les types d'évaluations selon le trimestre"""
+        if trimester_code == '1ER':
+            return ['EVAL1', 'EVAL2']
+        elif trimester_code == '2EME':
+            return ['EVAL3', 'EVAL4']
+        elif trimester_code == '3EME':
+            return ['EVAL5', 'EVAL6']
+        else:
+            return []
+    
+    @staticmethod
+    def _calculate_subject_ranks(result_data, subject_stats):
+        """Calcule les rangs de chaque élève par matière"""
+        subject_ranks = {}
+        
+        for subject, averages in subject_stats.items():
+            # Créer une liste de tuples (student_id, average) pour cette matière
+            student_averages = []
+            for student_data in result_data:
+                student_id = student_data['student'].id
+                student_avg = student_data['subject_averages'].get(subject, {}).get('average', 0)
+                student_averages.append((student_id, student_avg))
+            
+            # Trier par moyenne décroissante
+            student_averages.sort(key=lambda x: x[1], reverse=True)
+            
+            # Assigner les rangs
+            subject_ranks[subject] = {}
+            for rank, (student_id, _) in enumerate(student_averages, start=1):
+                subject_ranks[subject][student_id] = rank
+        
+        return subject_ranks
