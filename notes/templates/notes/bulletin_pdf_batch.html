@@ -256,7 +256,7 @@
                     <tr>
                         <td class="subject-name">
                             {{ line_data.line.subject.name }}
-                            <div class="text-xs text-gray-600">{{ line_data.teacher_name|truncatechars:10 }}</div>
+                            <div class="text-xs text-gray-600">{{ line_data.teacher_name }}</div>
                         </td>
                         <td>{{ line_data.eval1_score|floatformat:1|default:"--" }}</td>
                         <td>{{ line_data.eval2_score|floatformat:1|default:"--" }}</td>
@@ -266,7 +266,7 @@
                         <td>{{ line_data.rank|default:"--" }}</td>
                         <td>{{ line_data.percentage|floatformat:0|default:"--" }}%</td>
                         <td class="font-bold">{{ line_data.cote }}</td>
-                        <td class="text-xs">{{ line_data.appreciation|truncatechars:8|default:"--" }}</td>
+                        <td class="text-xs">{{ line_data.appreciation|default:"--" }}</td>
                     </tr>
                     {% endif %}
                     {% endfor %}
@@ -290,7 +290,7 @@
                     <tr>
                         <td class="subject-name">
                             {{ line_data.line.subject.name }}
-                            <div class="text-xs text-gray-600">{{ line_data.teacher_name|truncatechars:10 }}</div>
+                            <div class="text-xs text-gray-600">{{ line_data.teacher_name }}</div>
                         </td>
                         <td>{{ line_data.eval1_score|floatformat:1|default:"--" }}</td>
                         <td>{{ line_data.eval2_score|floatformat:1|default:"--" }}</td>
@@ -300,7 +300,7 @@
                         <td>{{ line_data.rank|default:"--" }}</td>
                         <td>{{ line_data.percentage|floatformat:0|default:"--" }}%</td>
                         <td class="font-bold">{{ line_data.cote }}</td>
-                        <td class="text-xs">{{ line_data.appreciation|truncatechars:8|default:"--" }}</td>
+                        <td class="text-xs">{{ line_data.appreciation|default:"--" }}</td>
                     </tr>
                     {% endif %}
                     {% endfor %}

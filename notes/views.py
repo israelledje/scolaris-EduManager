@@ -1449,27 +1449,23 @@ def bulletin_pdf_class(request, class_id):
                 if class_average > 0:
                     percentage = (float(line.average) / class_average) * 100
                 
-                # Déterminer la cote et l'appréciation
-                cote = ""
-                appreciation = ""
-                if line.average >= 16:
+                # Calculer la cote basée sur la moyenne (même logique que bulletin_detail)
+                average_percentage = (float(line.average) / 20) * 100
+                if average_percentage >= 90:
                     cote = "A+"
-                    appreciation = "Excellent"
-                elif line.average >= 14:
+                    appreciation = "Expert"
+                elif average_percentage >= 70:
                     cote = "A"
-                    appreciation = "Très bien"
-                elif line.average >= 12:
+                    appreciation = "Acquis"
+                elif average_percentage >= 55:
                     cote = "B"
-                    appreciation = "Bien"
-                elif line.average >= 10:
+                    appreciation = "En cours d'acquisition"
+                elif average_percentage >= 30:
                     cote = "C"
-                    appreciation = "Assez bien"
-                elif line.average >= 8:
-                    cote = "D"
-                    appreciation = "Insuffisant"
+                    appreciation = "Compétence moyennement acquise (CMA)"
                 else:
-                    cote = "E"
-                    appreciation = "Très insuffisant"
+                    cote = "D"
+                    appreciation = "Non acquis"
                 
                 bulletin_lines_with_grades.append({
                     'line': line,
