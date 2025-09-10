@@ -482,9 +482,21 @@ def grade_entry(request, evaluation_id):
     existing_grades = StudentGrade.objects.filter(evaluation=evaluation)
     grades_dict = {grade.student_id: grade for grade in existing_grades}
     
+    # Enrichir les étudiants avec leurs notes existantes
+    students_with_grades = []
+    for student in students:
+        existing_grade = grades_dict.get(student.id)
+        students_with_grades.append({
+            'student': student,
+            'existing_score': existing_grade.score if existing_grade else '',
+            'existing_remarks': existing_grade.remarks if existing_grade else '',
+            'has_grade': existing_grade is not None
+        })
+    
     context = {
         'evaluation': evaluation,
         'students': students,
+        'students_with_grades': students_with_grades,
         'grades_dict': grades_dict,
     }
     return render(request, 'notes/grade_entry.html', context)
@@ -1408,16 +1420,43 @@ def save_grade_ajax(request):
         if not evaluation.is_open:
             return JsonResponse({'error': 'Cette évaluation est fermée'}, status=400)
         
+        # Nettoyer et valider le score
+        if score is not None and score != '':
+            # Nettoyer les espaces non-sécables et autres caractères invisibles
+            score_str = str(score).strip().replace('\xa0', '').replace('\u00a0', '')
+            
+            # Vérifier si c'est vide après nettoyage
+            if not score_str:
+                score = None
+            else:
+                try:
+                    score = float(score_str)
+                    # Valider la plage
+                    if score < 0 or score > 20:
+                        return JsonResponse({'error': 'La note doit être entre 0 et 20'}, status=400)
+                except (ValueError, TypeError):
+                    return JsonResponse({'error': f'Format de note invalide: "{score_str}"'}, status=400)
+        else:
+            score = None
+        
         # Créer ou mettre à jour la note
-        grade, created = StudentGrade.objects.update_or_create(
-            student=student,
-            evaluation=evaluation,
-            defaults={
-                'score': score,
-                'remarks': remarks,
-                'graded_by': request.user
-            }
-        )
+        if score is not None:
+            grade, created = StudentGrade.objects.update_or_create(
+                student=student,
+                evaluation=evaluation,
+                defaults={
+                    'score': score,
+                    'remarks': remarks,
+                    'graded_by': request.user
+                }
+            )
+        else:
+            # Si pas de score, supprimer la note existante si elle existe
+            StudentGrade.objects.filter(student=student, evaluation=evaluation).delete()
+            return JsonResponse({
+                'success': True,
+                'deleted': True
+            })
         
         return JsonResponse({
             'success': True,

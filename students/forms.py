@@ -3,7 +3,7 @@ from django.core.exceptions import ValidationError
 from .models import Student, Guardian
 from school.services import MatriculeService
 from classes.models import SchoolClass
-from school.models import SchoolYear
+from school.models import SchoolYear, School
 
 class StudentForm(forms.ModelForm):
     class Meta:
@@ -11,7 +11,7 @@ class StudentForm(forms.ModelForm):
         fields = [
             'matricule', 'first_name', 'last_name', 'birth_date', 'birth_place',
             'gender', 'nationality', 'address', 'phone', 'current_class',
-            'photo', 'is_repeating'
+            'photo', 'year', 'school', 'is_repeating'
         ]
         widgets = {
             'matricule': forms.TextInput(attrs={
@@ -28,6 +28,8 @@ class StudentForm(forms.ModelForm):
             'phone': forms.TextInput(attrs={'class': 'form-control'}),
             'current_class': forms.Select(attrs={'class': 'form-control'}),
             'photo': forms.FileInput(attrs={'class': 'form-control'}),
+            'year': forms.Select(attrs={'class': 'form-control'}),
+            'school': forms.Select(attrs={'class': 'form-control'}),
             'is_repeating': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
@@ -40,6 +42,18 @@ class StudentForm(forms.ModelForm):
             self.fields['current_class'].queryset = SchoolClass.objects.filter(
                 year=current_year, is_active=True
             )
+            # Pré-sélectionner l'année courante
+            self.fields['year'].initial = current_year
+        
+        # Configurer les options pour year et school
+        self.fields['year'].queryset = SchoolYear.objects.all().order_by('-annee')
+        self.fields['school'].queryset = School.objects.filter(is_active=True)
+        
+        # Pré-sélectionner la première école active si c'est un nouveau student
+        if not self.instance.pk:
+            default_school = School.objects.filter(is_active=True).first()
+            if default_school:
+                self.fields['school'].initial = default_school
         
         # Si c'est un nouveau student, pré-remplir le matricule si génération automatique
         if not self.instance.pk:
@@ -75,6 +89,12 @@ class StudentForm(forms.ModelForm):
             current_year = SchoolYear.objects.filter(statut='EN_COURS').first()
             if current_year:
                 student.year = current_year
+        
+        # S'assurer que l'école est définie
+        if not student.school_id:
+            default_school = School.objects.filter(is_active=True).first()
+            if default_school:
+                student.school = default_school
         
         if commit:
             student.save()

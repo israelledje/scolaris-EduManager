@@ -5,13 +5,9 @@
 
 {% block page_actions %}
 <div class="flex items-center gap-3">
-    <button onclick="printProfile()" class="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors duration-200">
-        <i class="fas fa-print text-slate-500"></i>
-        <span class="text-slate-700 font-medium">Imprimer</span>
-    </button>
-    <button onclick="exportProfile()" class="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors duration-200">
-        <i class="fas fa-download text-slate-500"></i>
-        <span class="text-slate-700 font-medium">Exporter</span>
+    <button onclick="exportReportCard()" class="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors duration-200">
+        <i class="fas fa-file-pdf text-slate-500"></i>
+        <span class="text-slate-700 font-medium">Livret scolaire</span>
     </button>
     <button onclick="editStudent()" class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl">
         <i class="fas fa-edit"></i>
@@ -467,13 +463,13 @@ function closeStudentModal() {
     document.body.style.overflow = 'auto';
 }
 
-function printProfile() {
-    window.print();
-}
-
-function exportProfile() {
-    // Add export logic
-    console.log('Exporting profile...');
+function exportReportCard() {
+    // Exporter le livret scolaire complet de l'élève
+    const studentId = {{ student.id }};
+    const reportUrl = `{% url 'students:student_reportcard' pk=student.id %}`;
+    
+    // Ouvrir dans une nouvelle fenêtre pour impression/sauvegarde
+    window.open(reportUrl, '_blank');
 }
 
 function editStudent() {

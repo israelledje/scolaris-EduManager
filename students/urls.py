@@ -14,6 +14,7 @@ from .views import (
     EvaluationCreateHtmxView, EvaluationUpdateHtmxView, EvaluationDeleteHtmxView,
     AttendanceCreateHtmxView, AttendanceUpdateHtmxView, AttendanceDeleteHtmxView,
     SanctionCreateHtmxView, SanctionUpdateHtmxView, SanctionDeleteHtmxView,
+    StudentReportCardView,
 )
 
 app_name = 'students'
@@ -60,6 +61,8 @@ urlpatterns = [
     path('<int:student_id>/sanction/create/', SanctionCreateHtmxView.as_view(), name='sanction_create'),
     path('sanction/<int:pk>/update/', SanctionUpdateHtmxView.as_view(), name='sanction_update'),
     path('sanction/<int:pk>/delete/', SanctionDeleteHtmxView.as_view(), name='sanction_delete'),
+    # Livret scolaire
+    path('<int:pk>/reportcard/', StudentReportCardView.as_view(), name='student_reportcard'),
 ]
 if settings.DEBUG:
          urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

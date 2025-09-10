@@ -483,57 +483,64 @@
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
-                            {% for student in students %}
-                            <tr class="student-row" data-student-id="{{ student.id }}">
+                            {% for item in students_with_grades %}
+                            <tr class="student-row" data-student-id="{{ item.student.id }}">
                                 <td class="px-6 py-6 whitespace-nowrap text-sm font-bold text-gray-900">
                                     {{ forloop.counter }}
                                 </td>
                                 <td class="px-6 py-6 whitespace-nowrap">
                                     <div class="flex items-center gap-4">
                                         <div class="student-avatar rounded-full flex items-center justify-center text-white font-bold text-lg">
-                                            {{ student.first_name|first }}{{ student.last_name|first }}
+                                            {{ item.student.first_name|first }}{{ item.student.last_name|first }}
                                         </div>
                                         <div>
                                             <div class="text-lg font-bold text-gray-900">
-                                                {{ student.last_name.upper }} {{ student.first_name }}
+                                                {{ item.student.last_name.upper }} {{ item.student.first_name }}
                                             </div>
                                             <div class="text-sm text-gray-500 font-medium">
-                                                Matricule: {{ student.matricule }}
+                                                Matricule: {{ item.student.matricule }}
                                             </div>
                                         </div>
                                     </div>
                                 </td>
                                 <td class="px-6 py-6 whitespace-nowrap text-center">
                                     <input type="number"
-                                           class="grade-input w-24 px-4 py-3 border-2 border-gray-300 rounded-xl text-center text-lg font-bold focus-ring transition-all duration-300"
-                                           id="grade-{{ student.id }}"
-                                           data-student-id="{{ student.id }}"
+                                           class="grade-input w-24 px-4 py-3 border-2 border-gray-300 rounded-xl text-center text-lg font-bold focus-ring transition-all duration-300{% if item.has_grade %} grade-valid{% endif %}"
+                                           id="grade-{{ item.student.id }}"
+                                           data-student-id="{{ item.student.id }}"
                                            min="0"
                                            max="20"
                                            step="0.25"
-                                           value="{% for grade in grades_dict.values %}{% if grade.student_id == student.id %}{{ grade.score }}{% endif %}{% endfor %}"
+                                           value="{{ item.existing_score }}"
                                            onchange="validateGrade(this)"
-                                           onblur="saveGrade({{ student.id }})"
+                                           onblur="saveGrade({{ item.student.id }})"
                                            placeholder="0.00">
                                 </td>
                                 <td class="px-6 py-6">
                                     <textarea class="remarks-input w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus-ring transition-all duration-300 resize-none"
-                                              id="remarks-{{ student.id }}"
-                                              data-student-id="{{ student.id }}"
+                                              id="remarks-{{ item.student.id }}"
+                                              data-student-id="{{ item.student.id }}"
                                               placeholder="Commentaires et observations..."
-                                              onblur="saveGrade({{ student.id }})"
-                                              rows="2">{% for grade in grades_dict.values %}{% if grade.student_id == student.id %}{{ grade.remarks }}{% endif %}{% endfor %}</textarea>
+                                              onblur="saveGrade({{ item.student.id }})"
+                                              rows="2">{{ item.existing_remarks }}</textarea>
                                 </td>
                                 <td class="px-6 py-6 whitespace-nowrap text-center">
-                                    <div class="grade-status" id="status-{{ student.id }}">
+                                    <div class="grade-status" id="status-{{ item.student.id }}">
+                                        {% if item.has_grade %}
+                                        <span class="status-badge inline-flex items-center px-3 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                                            <i class="fas fa-check mr-1" aria-hidden="true"></i>
+                                            Sauvegardé
+                                        </span>
+                                        {% else %}
                                         <span class="status-badge inline-flex items-center px-3 py-1 rounded-full text-xs bg-gray-100 text-gray-800">
                                             <i class="fas fa-clock mr-1" aria-hidden="true"></i>
                                             En attente
                                         </span>
+                                        {% endif %}
                                     </div>
                                 </td>
                                 <td class="px-6 py-6 whitespace-nowrap text-center">
-                                    <button onclick="saveGrade({{ student.id }})" 
+                                    <button onclick="saveGrade({{ item.student.id }})" 
                                             class="action-btn inline-flex items-center justify-center w-10 h-10 bg-blue-100 text-blue-600 rounded-xl hover:bg-blue-200 hover:text-blue-700 hover:scale-110 transition-all duration-300">
                                         <i class="fas fa-save" aria-hidden="true"></i>
                                     </button>
@@ -613,11 +620,27 @@
         // Charger les notes existantes
         loadExistingGrades() {
             document.querySelectorAll('.grade-input').forEach(input => {
-                if (input.value) {
-                    this.savedGrades.add(parseInt(input.dataset.studentId));
-                    this.updateStatus(parseInt(input.dataset.studentId), 'saved');
+                if (input.value && input.value.trim() !== '') {
+                    const studentId = parseInt(input.dataset.studentId);
+                    this.savedGrades.add(studentId);
+                    this.updateStatus(studentId, 'saved');
+                    // Marquer visuellement comme valide
+                    input.classList.add('grade-valid');
                 }
             });
+            
+            // Charger aussi les remarques existantes
+            document.querySelectorAll('.remarks-input').forEach(textarea => {
+                if (textarea.value && textarea.value.trim() !== '') {
+                    const studentId = parseInt(textarea.dataset.studentId);
+                    // Si pas déjà marqué comme sauvegardé par la note, le marquer maintenant
+                    if (!this.savedGrades.has(studentId)) {
+                        this.savedGrades.add(studentId);
+                        this.updateStatus(studentId, 'saved');
+                    }
+                }
+            });
+            
             this.updateCounters();
         }
 

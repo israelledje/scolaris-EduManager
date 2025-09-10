@@ -8,6 +8,9 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
+from django.utils import timezone
+import logging
+
 from authentication.permissions import TeacherPermissionManager, require_teacher_assignment
 from .models import Student, StudentClassHistory, Guardian, StudentDocument, Scholarship
 from .forms import StudentForm
@@ -19,6 +22,8 @@ from finances.models import TranchePayment, FeeDiscount, PaymentRefund, ExtraFee
 from students.models import Evaluation, Attendance, Sanction
 from django.http import JsonResponse
 from .forms import GuardianForm
+
+logger = logging.getLogger(__name__)
 
 # Vue pour afficher la liste des élèves
 class StudentListView(LoginRequiredMixin, ListView):
@@ -670,3 +675,168 @@ class SanctionDeleteHtmxView(LoginRequiredMixin, View):
     def post(self, request, pk, *args, **kwargs):
         # TODO: Traiter la suppression
         pass
+
+# ==================== LIVRET SCOLAIRE (STUDENT REPORT CARD) ====================
+
+class StudentReportCardView(LoginRequiredMixin, View):
+    """Vue pour générer et exporter le livret scolaire complet d'un élève"""
+    
+    def get(self, request, pk, *args, **kwargs):
+        from django.http import HttpResponse
+        from django.template.loader import render_to_string
+        from notes.models import Bulletin, Trimester
+        from .models import Sanction, ClassCouncilDecision
+        import json
+        
+        try:
+            student = get_object_or_404(Student, pk=pk)
+            current_year = student.year
+            
+            # Récupérer tous les bulletins de l'élève pour l'année en cours
+            bulletins = Bulletin.objects.filter(
+                student=student,
+                trimester__year=current_year
+            ).select_related('trimester').prefetch_related('lines__subject').order_by('trimester__trimester')
+            
+            # Récupérer toutes les sanctions de l'élève pour l'année en cours
+            sanctions = Sanction.objects.filter(
+                student=student,
+                year=current_year
+            ).order_by('-date')
+            
+            # Récupérer les décisions de conseil de classe pour l'année en cours
+            council_decisions = ClassCouncilDecision.objects.filter(
+                student=student,
+                council__trimester__year=current_year
+            ).select_related('council', 'council__trimester').order_by('council__trimester__trimester')
+            
+            # Organiser les données par trimestre
+            report_data = {
+                'student': student,
+                'school_year': current_year,
+                'trimesters_data': []
+            }
+            
+            # Récupérer tous les trimestres de l'année
+            trimesters = Trimester.objects.filter(
+                year=current_year,
+                school=student.school
+            ).order_by('trimester')
+            
+            for trimester in trimesters:
+                trimester_bulletin = bulletins.filter(trimester=trimester).first()
+                trimester_sanctions = sanctions.filter(date__gte=trimester.start_date, date__lte=trimester.end_date)
+                trimester_decision = council_decisions.filter(council__trimester=trimester).first()
+                
+                trimester_data = {
+                    'trimester': trimester,
+                    'bulletin': trimester_bulletin,
+                    'sanctions': trimester_sanctions,
+                    'council_decision': trimester_decision,
+                    'has_data': bool(trimester_bulletin or trimester_sanctions.exists() or trimester_decision)
+                }
+                
+                report_data['trimesters_data'].append(trimester_data)
+            
+            # Calculer les statistiques générales
+            if bulletins.exists():
+                total_average = sum(b.student_average for b in bulletins) / bulletins.count()
+                best_rank = min(b.student_rank for b in bulletins)
+                worst_rank = max(b.student_rank for b in bulletins)
+                
+                report_data['statistics'] = {
+                    'total_average': round(total_average, 2),
+                    'best_rank': best_rank,
+                    'worst_rank': worst_rank,
+                    'total_sanctions': sanctions.count(),
+                    'bulletins_count': bulletins.count()
+                }
+            else:
+                report_data['statistics'] = {
+                    'total_average': 0,
+                    'best_rank': 0,
+                    'worst_rank': 0,
+                    'total_sanctions': sanctions.count(),
+                    'bulletins_count': 0
+                }
+            
+            # Déterminer le format de réponse
+            export_format = request.GET.get('format', 'html')
+            
+            if export_format == 'json':
+                # Export JSON pour API ou intégration
+                response_data = {
+                    'student_info': {
+                        'matricule': student.matricule,
+                        'full_name': f"{student.first_name} {student.last_name}",
+                        'class': str(student.current_class),
+                        'school_year': str(current_year)
+                    },
+                    'academic_data': [],
+                    'discipline_records': [],
+                    'council_decisions': [],
+                    'statistics': report_data['statistics']
+                }
+                
+                # Ajouter les données académiques
+                for trimester_data in report_data['trimesters_data']:
+                    if trimester_data['bulletin']:
+                        bulletin = trimester_data['bulletin']
+                        academic_entry = {
+                            'trimester': bulletin.trimester.get_trimester_display(),
+                            'average': float(bulletin.student_average),
+                            'rank': bulletin.student_rank,
+                            'class_size': bulletin.class_size,
+                            'appreciation': bulletin.appreciation,
+                            'subjects': []
+                        }
+                        
+                        for line in bulletin.lines.all():
+                            academic_entry['subjects'].append({
+                                'subject': str(line.subject),
+                                'average': float(line.average),
+                                'coefficient': float(line.coefficient),
+                                'appreciation': line.appreciation
+                            })
+                        
+                        response_data['academic_data'].append(academic_entry)
+                
+                # Ajouter les sanctions
+                for sanction in sanctions:
+                    response_data['discipline_records'].append({
+                        'date': sanction.date.isoformat(),
+                        'type': sanction.sanction_type,
+                        'reason': sanction.reason,
+                        'issued_by': sanction.issued_by
+                    })
+                
+                # Ajouter les décisions de conseil
+                for decision in council_decisions:
+                    response_data['council_decisions'].append({
+                        'trimester': decision.council.trimester.get_trimester_display(),
+                        'decision_type': decision.get_decision_type_display(),
+                        'teacher_appreciation': decision.teacher_appreciation,
+                        'principal_appreciation': decision.principal_appreciation,
+                        'recommendations': decision.recommendations
+                    })
+                
+                return HttpResponse(
+                    json.dumps(response_data, indent=2, ensure_ascii=False),
+                    content_type='application/json; charset=utf-8'
+                )
+            
+            else:
+                # Export HTML par défaut
+                html_content = render_to_string('students/student_report_card.html', {
+                    'report_data': report_data,
+                    'export_date': timezone.now()
+                })
+                
+                return HttpResponse(html_content, content_type='text/html; charset=utf-8')
+                
+        except Exception as e:
+            logger.error(f"Erreur lors de la génération du livret scolaire pour l'élève {pk}: {e}")
+            return HttpResponse(
+                f"Erreur lors de la génération du livret scolaire: {str(e)}", 
+                status=500
+            )

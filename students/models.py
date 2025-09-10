@@ -249,3 +249,72 @@ class Sanction(models.Model):
 
     def __str__(self):
         return f"{self.sanction_type} - {self.student}"
+
+# -------------------- CONSEIL DE CLASSE --------------------
+
+class ClassCouncil(models.Model):
+    """Conseil de classe par trimestre"""
+    school_class = models.ForeignKey('classes.SchoolClass', on_delete=models.CASCADE, related_name='class_councils')
+    trimester = models.ForeignKey('notes.Trimester', on_delete=models.CASCADE, related_name='class_councils')
+    council_date = models.DateField(verbose_name="Date du conseil")
+    president = models.CharField(max_length=100, verbose_name="Président du conseil")
+    secretary = models.CharField(max_length=100, blank=True, verbose_name="Secrétaire")
+    attendees = models.TextField(blank=True, verbose_name="Participants")
+    general_observations = models.TextField(blank=True, verbose_name="Observations générales")
+    is_finalized = models.BooleanField(default=False, verbose_name="Finalisé")
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('school_class', 'trimester')
+        verbose_name = "Conseil de classe"
+        verbose_name_plural = "Conseils de classe"
+
+    def __str__(self):
+        return f"Conseil {self.school_class} - {self.trimester}"
+
+class ClassCouncilDecision(models.Model):
+    """Décision du conseil de classe pour un élève"""
+    DECISION_CHOICES = [
+        ('FELICITATIONS', 'Félicitations'),
+        ('ENCOURAGEMENTS', 'Encouragements'),
+        ('MISE_EN_GARDE_TRAVAIL', 'Mise en garde - Travail'),
+        ('MISE_EN_GARDE_CONDUITE', 'Mise en garde - Conduite'),
+        ('BLAME_TRAVAIL', 'Blâme - Travail'),
+        ('BLAME_CONDUITE', 'Blâme - Conduite'),
+        ('PASSAGE', 'Passage en classe supérieure'),
+        ('REDOUBLEMENT', 'Redoublement'),
+        ('ORIENTATION', 'Orientation'),
+        ('EXCLUSION', 'Exclusion définitive'),
+    ]
+
+    council = models.ForeignKey(ClassCouncil, on_delete=models.CASCADE, related_name='decisions')
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='council_decisions')
+    decision_type = models.CharField(max_length=30, choices=DECISION_CHOICES, verbose_name="Type de décision")
+    teacher_appreciation = models.TextField(blank=True, verbose_name="Appréciation des professeurs")
+    principal_appreciation = models.TextField(blank=True, verbose_name="Appréciation du chef d'établissement")
+    recommendations = models.TextField(blank=True, verbose_name="Recommandations")
+    next_class = models.ForeignKey('classes.SchoolClass', on_delete=models.SET_NULL, null=True, blank=True, 
+                                 related_name='incoming_students', verbose_name="Classe suivante")
+    is_appeal_possible = models.BooleanField(default=True, verbose_name="Recours possible")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('council', 'student')
+        verbose_name = "Décision du conseil de classe"
+        verbose_name_plural = "Décisions du conseil de classe"
+
+    def __str__(self):
+        return f"{self.get_decision_type_display()} - {self.student}"
+
+    @property
+    def is_positive_decision(self):
+        """Décision positive (félicitations, encouragements, passage)"""
+        return self.decision_type in ['FELICITATIONS', 'ENCOURAGEMENTS', 'PASSAGE']
+
+    @property
+    def is_negative_decision(self):
+        """Décision négative (blâmes, redoublement, exclusion)"""
+        return self.decision_type in ['BLAME_TRAVAIL', 'BLAME_CONDUITE', 'REDOUBLEMENT', 'EXCLUSION']
